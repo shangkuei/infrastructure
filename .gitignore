@@ -1,0 +1,128 @@
+# Terraform
+*.tfstate
+*.tfstate.*
+*.tfvars
+!terraform/environments/*/terraform.tfvars.example
+.terraform/
+.terraform.lock.hcl
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+
+# Terraform plan files
+*.tfplan
+tfplan*
+
+# Ansible
+*.retry
+ansible/.vault_pass
+ansible/group_vars/*/vault.yml
+!ansible/group_vars/*/vault.yml.example
+ansible/host_vars/*/vault.yml
+!ansible/host_vars/*/vault.yml.example
+
+# SSH keys
+*.pem
+*.key
+!*.pub
+id_rsa*
+id_ed25519*
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Secrets and credentials
+secrets/
+credentials/
+*.credentials
+*.secret
+
+# Cloud provider CLI configs
+.aws/credentials
+.azure/config
+.config/gcloud/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+env/
+venv/
+ENV/
+.pytest_cache/
+
+# Go (for Terratest)
+*.test
+*.out
+vendor/
+
+# Logs
+*.log
+logs/
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Kubernetes configs
+kubeconfig
+*.kubeconfig
+!kubeconfig.example
+
+# Certificates
+*.crt
+*.csr
+*.cer
+*.p12
+*.pfx
+!ca-bundle.crt
+
+# Build artifacts
+dist/
+build/
+*.zip
+*.tar.gz
+
+# Testing
+test-results/
+coverage/
+.coverage
+
+# Documentation build
+site/
+docs/_build/
+
+# Package manager
+node_modules/
+package-lock.json
+yarn.lock
+
+# Miscellaneous
+.cache/
+.history/

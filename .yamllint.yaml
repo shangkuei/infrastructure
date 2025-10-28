@@ -1,0 +1,42 @@
+---
+# yamllint configuration for infrastructure repository
+extends: default
+
+rules:
+  # Line length is handled by editors, not a critical issue
+  line-length:
+    max: 120
+    level: warning
+
+  # Allow multiple spaces after colon for alignment
+  colons:
+    max-spaces-after: -1
+
+  # Document start is optional for single-document files
+  document-start:
+    present: false
+
+  # Truthy values are common in Ansible and Terraform
+  truthy:
+    allowed-values: ['true', 'false', 'yes', 'no', 'on', 'off']
+    check-keys: false
+
+  # Comments indentation is flexible
+  comments-indentation: disable
+
+  # Allow empty values in mappings
+  empty-values:
+    forbid-in-block-mappings: false
+    forbid-in-flow-mappings: true
+
+  # Indentation should be consistent (2 spaces)
+  indentation:
+    spaces: 2
+    indent-sequences: true
+    check-multi-line-strings: false
+
+ignore: |
+  .github/workflows/
+  node_modules/
+  venv/
+  .terraform/
