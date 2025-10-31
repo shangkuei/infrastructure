@@ -44,6 +44,16 @@ credentials/
 *.credentials
 *.secret
 
+# SOPS (Secrets OPerationS) - Encrypted Secret Management
+# IMPORTANT:
+# - .sops.yaml is SAFE to commit (contains public keys only)
+# - *.enc.yaml and *.enc.json are SAFE to commit (encrypted with SOPS)
+# - age private keys must NEVER be committed (stored in GitHub Secrets)
+age-keys.txt
+keys.txt
+*.age
+.config/sops/age/keys.txt
+
 # Cloud provider CLI configs
 .aws/credentials
 .azure/config
