@@ -4,7 +4,11 @@ Date: 2025-10-21
 
 ## Status
 
-Accepted
+~~Accepted~~ → **Superseded by [ADR-0015: Oracle Cloud as Primary Provider](0015-oracle-cloud-primary.md)**
+
+**Note**: DigitalOcean remains in use as a secondary/backup provider for scaling beyond Oracle Cloud Always Free tier
+limits, disaster recovery, and enterprise features. This ADR documents the original rationale and continues to be
+relevant for secondary provider usage.
 
 ## Context
 
@@ -457,6 +461,22 @@ If migration from DigitalOcean becomes necessary:
 - Consider DO Monitoring for centralized observability
 - Test new services as they become GA
 
+## Status Update (2025-10-28)
+
+This ADR has been **superseded by [ADR-0015: Oracle Cloud as Primary Provider](0015-oracle-cloud-primary.md)**, which establishes Oracle Cloud Always Free tier as the primary cloud provider due to:
+
+- **Cost savings**: $0/month vs $90-120/month (100% reduction)
+- **Better resources**: 4 OCPUs + 24GB RAM within free tier
+- **Managed Kubernetes**: OKE remains free with Always Free compute
+- **Annual savings**: ~$1,200-1,440
+
+**DigitalOcean's New Role**: Secondary/backup provider for:
+
+- Scaling beyond Oracle Cloud Always Free limits
+- Geographic expansion to additional regions
+- Disaster recovery and high availability
+- Enterprise features and simplified operations
+
 ## References
 
 - [Research: Cloud Provider Evaluation](../research/0003-cloud-provider-evaluation.md)
@@ -467,3 +487,4 @@ If migration from DigitalOcean becomes necessary:
 - [ADR-0004: Cloudflare DNS and Edge Services](0004-cloudflare-dns-services.md)
 - [ADR-0005: Kubernetes as Container Platform](0005-kubernetes-container-platform.md)
 - [ADR-0009: Tailscale for Hybrid Cloud Networking](0009-tailscale-hybrid-networking.md)
+- [ADR-0015: Oracle Cloud as Primary Provider](0015-oracle-cloud-primary.md) (Supersedes this ADR)

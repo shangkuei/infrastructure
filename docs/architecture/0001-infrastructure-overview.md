@@ -1,72 +1,85 @@
 # Infrastructure Overview
 
-High-level architecture diagram showing the hybrid cloud infrastructure setup.
+High-level architecture diagram showing the local Kubernetes infrastructure with Talos Linux.
 
-## Architecture Diagram
+**Status**: Updated 2025-10-31 to reflect current Talos-based approach.
+
+**Previous versions**: Oracle Cloud and DigitalOcean architectures are retained as future migration options.
+
+## Current Architecture (Talos on Unraid)
 
 ```mermaid
 graph TB
-    subgraph "External"
-        Users[Users]
-        Developers[Developers]
+    subgraph DEV["Development Environment"]
+        Laptop[Laptop/Desktop<br/>with Tailscale]
     end
 
-    subgraph "DNS & CDN"
-        Cloudflare[Cloudflare DNS]
+    subgraph CLOUD["Cloud Services"]
+        CF[Cloudflare R2<br/>Terraform State<br/>& Backups]
     end
 
-    subgraph "DigitalOcean Cloud"
-        DOKS[DOKS Cluster<br/>Kubernetes 1.28+]
-        DOSpaces[DO Spaces<br/>Object Storage]
-        DODB[(DO Database<br/>PostgreSQL)]
-        DORegistry[DO Registry<br/>Container Images]
-    end
+    subgraph LOCAL["Local Infrastructure - Unraid Server"]
+        subgraph TALOS["Talos Kubernetes Cluster"]
+            CP[Control Plane VM<br/>2 vCPU, 4GB RAM<br/>Kubernetes API, etcd]
+            Worker[Worker VM<br/>4 vCPU, 8GB RAM<br/>Application Pods]
+        end
 
-    subgraph "On-Premise"
-        Talos[Talos Cluster<br/>Kubernetes 1.28+]
+        TS[Tailscale<br/>Secure VPN Mesh]
         Storage[Local Storage<br/>Persistent Volumes]
     end
 
-    subgraph "CI/CD"
-        GitHub[GitHub Actions]
-        ArgoCD[ArgoCD<br/>GitOps]
+    subgraph APPS["Deployed Applications"]
+        Ingress[Nginx Ingress]
+        Prometheus[Prometheus<br/>Monitoring]
+        Apps[Your Apps]
     end
 
-    subgraph "Monitoring"
-        Prometheus[Prometheus]
-        Grafana[Grafana]
-        Loki[Loki Logs]
-    end
+    %% Access Flow
+    Laptop <-->|Tailscale VPN| TS
+    TS <-->|Secure Access| CP
+    TS <-->|Secure Access| Worker
 
-    Users -->|HTTPS| Cloudflare
-    Cloudflare -->|Load Balance| DOKS
-    Cloudflare -->|Failover| Talos
+    %% Cluster Communication
+    CP <-->|Kubernetes API| Worker
+    CP -->|State Backup| CF
 
-    Developers -->|Push Code| GitHub
-    GitHub -->|Deploy| DOKS
-    GitHub -->|Deploy| Talos
+    %% Storage
+    Worker -->|Persistent Data| Storage
 
-    DOKS -->|State| DOSpaces
-    DOKS -->|Data| DODB
-    DOKS -->|Images| DORegistry
-    DOKS -->|Metrics| Prometheus
-    DOKS -->|Logs| Loki
+    %% Applications
+    Worker -->|Runs| Ingress
+    Worker -->|Runs| Prometheus
+    Worker -->|Runs| Apps
 
-    Talos -->|Sync| DOKS
-    Talos -->|Storage| Storage
-    Talos -->|Metrics| Prometheus
+    %% Monitoring
+    Prometheus -.->|Scrapes| CP
+    Prometheus -.->|Scrapes| Worker
 
-    ArgoCD -->|Manage| DOKS
-    ArgoCD -->|Manage| Talos
-
-    Prometheus --> Grafana
-    Loki --> Grafana
-
-    style DOKS fill:#0080ff,color:#fff
-    style Talos fill:#ff6600,color:#fff
-    style Cloudflare fill:#f48120,color:#fff
-    style GitHub fill:#333,color:#fff
+    style LOCAL fill:#90ee90,stroke:#333,stroke-width:3px
+    style TALOS fill:#e0f7fa,stroke:#333,stroke-width:2px
+    style CP fill:#ff6600,stroke:#333,stroke-width:2px,color:#fff
+    style Worker fill:#ff6600,stroke:#333,stroke-width:2px,color:#fff
+    style TS fill:#6366f1,stroke:#333,stroke-width:2px,color:#fff
+    style Laptop fill:#ffd700,stroke:#333,stroke-width:2px
+    style CF fill:#f4a460,stroke:#333,stroke-width:2px
 ```
+
+### Current Setup Details
+
+- **Platform**: Talos Linux VMs on Unraid server
+- **Cluster Size**: 2 nodes (1 control plane, 1 worker)
+- **Cost**: $0/month (local infrastructure)
+- **Access**: Tailscale mesh network for secure remote access
+- **Storage**: Local path provisioner for persistent volumes
+- **State Management**: Cloudflare R2 for Terraform state and backups
+
+### Why This Architecture
+
+1. **Learning First**: Immediate Kubernetes access without cloud setup delays
+2. **Zero Cost**: No monthly bills during development and learning
+3. **Production-Like**: Talos provides production-quality Kubernetes experience
+4. **Secure Access**: Tailscale VPN enables secure access from anywhere
+5. **Cloud Ready**: Same workloads easily migrate to cloud when needed
 
 ## Components
 

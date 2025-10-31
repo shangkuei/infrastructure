@@ -18,11 +18,12 @@ This repository contains Infrastructure as Code (IaC) for deploying and managing
 
 ### Design Goals
 
+- **Kubernetes First**: Prioritize rapid Kubernetes setup and hands-on learning
+- **Cost Optimization**: Zero cost during learning phase, scalable to cloud when needed
 - **Vendor Neutrality**: Avoid cloud provider lock-in through abstraction layers
 - **Infrastructure as Code**: All infrastructure versioned and managed as code
 - **Automation First**: Minimize manual operations through comprehensive automation
 - **Security by Default**: Implement security best practices at every layer
-- **Hybrid Cloud Ready**: DigitalOcean cloud + on-premise with future multi-cloud expansion capability
 - **GitOps Workflow**: Changes deployed through version-controlled pull requests
 
 ## Architecture
@@ -37,76 +38,121 @@ graph TB
 
     subgraph CF["Cloudflare Edge"]
         DNS["DNS Management"]
-        CDN["CDN & Caching"]
-        EMAIL["Email Routing"]
-        SSL["SSL/TLS"]
+        R2["R2 Object Storage<br/>(Terraform State & Backups)"]
     end
 
-    subgraph HYBRID["Hybrid Cloud Infrastructure"]
-        subgraph DO["DigitalOcean"]
-            DOKS["DOKS<br/>Kubernetes"]
+    subgraph LOCAL["Local Infrastructure (Primary)"]
+        subgraph UNRAID["Unraid Server"]
+            VM1["Talos VM 1<br/>(Control Plane)<br/>2 CPU, 4GB RAM"]
+            VM2["Talos VM 2<br/>(Worker)<br/>4 CPU, 8GB RAM"]
         end
 
-        subgraph ONPREM["On-Premise"]
-            TALOS["Talos<br/>Kubernetes"]
-        end
-
-        subgraph FUTURE["Future Expansion"]
-            CLOUD["AWS/Azure/GCP<br/>(Optional)"]
-        end
+        TS["Tailscale<br/>Mesh Network<br/>(Secure Access)"]
     end
 
-    USER["User Traffic"]
+    subgraph FUTURE["Future: Cloud (When Needed)"]
+        OCI["Oracle Cloud<br/>(Free Tier Option)"]
+        DO["DigitalOcean<br/>(Production Option)"]
+    end
+
+    DEV["Developer<br/>Laptop"]
 
     %% Configuration Management
-    GitHub -->|"Configure & Deploy"| CF
-    GitHub -->|"Configure & Deploy"| HYBRID
+    GitHub -->|"IaC Deploy"| LOCAL
+    GitHub -->|"Backup Storage"| CF
 
-    %% Traffic Flow
-    USER -->|"1. DNS Query"| CF
-    CF -.->|"2. DNS Response<br/>(IP Address)"| USER
-    USER -->|"3. Direct Connection"| HYBRID
+    %% Access Flow
+    DEV <-->|"Tailscale VPN"| TS
+    TS <-->|"Secure Access"| VM1
+    TS <-->|"Secure Access"| VM2
+
+    %% Cluster Communication
+    VM1 <-->|"Kubernetes API"| VM2
+
+    %% Future Expansion
+    LOCAL -.->|"Migrate When Needed"| FUTURE
+    TS -.->|"Can Connect"| OCI
+    TS -.->|"Can Connect"| DO
 
     style GitHub fill:#f9f9f9,stroke:#333,stroke-width:2px
     style CF fill:#f4a460,stroke:#333,stroke-width:2px
-    style HYBRID fill:#e0f7fa,stroke:#333,stroke-width:2px
-    style USER fill:#90ee90,stroke:#333,stroke-width:2px
-    style DO fill:#0080ff,stroke:#333,stroke-width:2px,color:#fff
-    style ONPREM fill:#666,stroke:#333,stroke-width:2px,color:#fff
-    style FUTURE fill:#ddd,stroke:#333,stroke-width:1px,stroke-dasharray: 5 5,color:#666
+    style LOCAL fill:#90ee90,stroke:#333,stroke-width:3px
+    style UNRAID fill:#e0f7fa,stroke:#333,stroke-width:2px
+    style FUTURE fill:#f0f0f0,stroke:#999,stroke-width:1px,stroke-dasharray: 5 5
+    style DEV fill:#ffd700,stroke:#333,stroke-width:2px
+    style TS fill:#6366f1,stroke:#333,stroke-width:2px,color:#fff
+    style VM1 fill:#ff6600,stroke:#333,stroke-width:2px,color:#fff
+    style VM2 fill:#ff6600,stroke:#333,stroke-width:2px,color:#fff
 ```
 
-### Edge Services (Cloudflare Free Plan)
+### Primary Infrastructure: Talos on Unraid
 
-- **DNS Management**: Authoritative DNS for all domains with DNSSEC
-- **Email Routing**: Forward emails to personal addresses (no mail server needed)
-- **SSL/TLS**: Universal SSL certificates with automatic renewal
-- **CDN**: Global content delivery with unlimited bandwidth
-- **DDoS Protection**: Unmetered protection against distributed attacks
-- **R2 Object Storage**: Terraform state storage with versioning and locking (10GB free, zero egress)
-- **Workers**: Serverless edge computing (100,000 requests/day free)
-- **Security**: Web Application Firewall (WAF) and rate limiting
+**Local Kubernetes Cluster**:
 
-**Terraform State Management**: State files are stored in Cloudflare R2 with native locking support,
-providing zero-cost state storage with high durability. See
-[ADR-0014: Cloudflare R2 for Terraform State Storage](docs/decisions/0014-cloudflare-r2-terraform-state.md)
-for details.
+- **Platform**: Talos Linux on Unraid VMs
+- **Configuration**: 2-node cluster (1 control plane + 1 worker)
+- **Control Plane**: 2 vCPU, 4GB RAM, 50GB disk
+- **Worker Node**: 4 vCPU, 8GB RAM, 100GB disk
+- **Cost**: $0/month (local infrastructure only)
+- **Access**: Tailscale mesh network for secure remote access
 
-See [ADR-0004: Cloudflare DNS and Services](docs/decisions/0004-cloudflare-dns-services.md)
-for the decision rationale and [Cloudflare Services Specification](specs/cloudflare/cloudflare-services.md)
-for detailed configuration.
+**Why Talos Linux**:
+
+- **Production-Grade**: Secure, immutable Kubernetes OS used in production environments
+- **API-Driven**: All operations via API (talosctl), no SSH access by design
+- **Secure by Default**: Minimal attack surface, mTLS for all communication
+- **Easy Management**: Simple configuration, automatic updates
+- **Learning Focus**: Real Kubernetes experience without cloud complexity
+
+**Why This Approach**:
+
+- **Immediate Availability**: Start learning Kubernetes today, no cloud account approval delays
+- **Zero Cost**: No monthly bills during learning and development phase
+- **Full Control**: Complete control over infrastructure for experimentation
+- **Cloud Ready**: Same Kubernetes workloads easily migrate to cloud when needed
+- **Production Experience**: Talos provides production-quality Kubernetes locally
+
+**Public Access via Hybrid Load Balancing**:
+
+- **Cloudflare Tunnel** (Primary): FREE production-grade public access with DDoS protection
+- **Ngrok** (Secondary): Development and testing, optional failover ($0-20/month)
+- **No Cloud VMs Needed**: Direct tunnels from cloud edge to on-premises cluster
+- **High Availability**: Multi-replica tunnels with automatic failover
+- **Kubernetes Native**: Standard Ingress resources for routing
+
+**Secure Access via Tailscale**:
+
+- **Zero-config VPN**: Access cluster securely from anywhere
+- **No Port Forwarding**: Tailscale handles NAT traversal automatically
+- **WireGuard Encryption**: Strong encryption for all traffic
+- **Multi-Device**: Access from laptop, desktop, mobile devices
+- **Team Friendly**: Easy to grant access to team members
+
+**Decision Rationale**:
+
+- Infrastructure: [ADR-0016: Talos Linux on Unraid as Primary Infrastructure](docs/decisions/0016-talos-unraid-primary.md)
+- Load Balancing: [ADR-0017: Hybrid Load Balancing with Cloudflare Tunnel and Ngrok](docs/decisions/0017-hybrid-load-balancing.md)
+
+### Cloud Services (Supporting Role)
+
+**Cloudflare R2**: Terraform state storage and backups (10GB free, zero egress)
+
+**Future Cloud Options** (when production needs arise):
+
+- **Oracle Cloud**: Always Free tier (4 OCPU, 24GB RAM) for cost-effective production
+- **DigitalOcean**: Managed services and enterprise features when simplicity needed
+- **Multi-Cloud**: Use Tailscale mesh to connect local and cloud infrastructure
 
 ## Quick Start
 
 ### Prerequisites
 
-- **Terraform** >= 1.6.0
-- **Ansible** >= 2.15.0
-- **kubectl** >= 1.28.0
-- **Git** >= 2.40.0
-- **GitHub CLI** (`gh`) >= 2.30.0
-- **DigitalOcean CLI** (`doctl`) >= 1.100.0
-- **Talos CLI** (`talosctl`) >= 1.6.0 (for on-premise clusters)
+- **Talos CLI** (`talosctl`) >= 1.6.0 - Cluster management
+- **kubectl** >= 1.28.0 - Kubernetes CLI
+- **Terraform** >= 1.6.0 - Infrastructure as Code
+- **Git** >= 2.40.0 - Version control
+- **Unraid Server** - VM host platform (or any hypervisor capable of running VMs)
+- **Tailscale Account** - Free account for secure access
 
 ### Installation
 
@@ -115,80 +161,83 @@ for detailed configuration.
 git clone https://github.com/shangkuei/infrastructure.git
 cd infrastructure
 
-# Install required tools (macOS)
-brew install terraform ansible kubectl gh
+# Install Talos CLI (macOS)
+brew install siderolabs/tap/talosctl
 
-# Install required tools (Linux)
-# See docs/setup/installation.md for platform-specific instructions
+# Install Talos CLI (Linux)
+curl -sL https://talos.dev/install | sh
+
+# Install kubectl (macOS)
+brew install kubectl
+
+# Install kubectl (Linux)
+curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
 
 # Verify installations
-terraform version
-ansible --version
+talosctl version
 kubectl version --client
 ```
 
 ### Initial Setup
 
-1. **Configure cloud provider credentials**:
+**Complete setup guide**: See [ADR-0016: Implementation Plan](docs/decisions/0016-talos-unraid-primary.md#implementation-plan) for detailed day-by-day setup instructions.
+
+**Quick overview**:
+
+1. **Create VMs on Unraid**:
+   - Control Plane: 2 vCPU, 4GB RAM, 50GB disk
+   - Worker: 4 vCPU, 8GB RAM, 100GB disk
+   - Boot from Talos Linux ISO
+
+2. **Generate Talos configuration**:
 
    ```bash
-   # DigitalOcean
-   doctl auth init
-
-   # Talos (for on-premise)
-   # Download talosctl from https://www.talos.dev/
+   talosctl gen config talos-home https://<control-plane-ip>:6443
    ```
 
-2. **Set up GitHub secrets** (for CI/CD):
+3. **Apply configuration to nodes**:
 
    ```bash
-   # Set DigitalOcean credentials
-   gh secret set DIGITALOCEAN_TOKEN
-
-   # Set Cloudflare credentials
-   gh secret set CLOUDFLARE_API_TOKEN
-
-   # Set Terraform variables
-   gh secret set TF_VAR_database_password
-   gh secret set TF_VAR_api_key
-
-   # Set Ansible Vault password
-   gh secret set ANSIBLE_VAULT_PASSWORD
+   talosctl apply-config --insecure --nodes <control-plane-ip> --file controlplane.yaml
+   talosctl apply-config --insecure --nodes <worker-ip> --file worker.yaml
    ```
 
-3. **Initialize Terraform**:
+4. **Bootstrap Kubernetes**:
 
    ```bash
-   cd terraform/environments/dev
-   terraform init
+   talosctl config endpoint <control-plane-ip>
+   talosctl config node <control-plane-ip>
+   talosctl bootstrap
    ```
 
-4. **Configure Ansible inventory**:
+5. **Get kubeconfig**:
 
    ```bash
-   cp ansible/inventory/sample.yml ansible/inventory/production.yml
-   # Edit ansible/inventory/production.yml with your hosts
+   talosctl kubeconfig ./kubeconfig
+   kubectl --kubeconfig=./kubeconfig get nodes
    ```
 
-### Deploy Development Environment
+6. **Set up Tailscale** (for remote access):
+
+   ```bash
+   # Create account at https://login.tailscale.com/
+   # Deploy Tailscale on cluster (see ADR-0016 Phase 2)
+   # Install on your laptop/desktop
+   ```
+
+### Deploy Your First Application
 
 ```bash
-# Navigate to dev environment
-cd terraform/environments/dev
+# Deploy test application
+kubectl create deployment nginx --image=nginx:latest
+kubectl expose deployment nginx --port=80 --type=NodePort
 
-# Validate configuration
-terraform validate
+# Check the service
+kubectl get svc nginx
 
-# Plan infrastructure changes
-terraform plan -out=tfplan
-
-# Review plan and apply
-terraform show tfplan
-terraform apply tfplan
-
-# Deploy applications with Ansible
-cd ../../../ansible
-ansible-playbook -i inventory/dev playbooks/deploy/app.yml
+# Access via node IP and NodePort
+curl http://<node-ip>:<nodeport>
 ```
 
 ## Repository Structure
@@ -411,10 +460,19 @@ See [docs/decisions/](docs/decisions/) for design decisions and rationale.
 - [ADR-0002: Terraform as Primary IaC Tool](docs/decisions/0002-terraform-primary-tool.md)
 - [ADR-0003: Ansible for Configuration Management](docs/decisions/0003-ansible-configuration-management.md)
 
-**Cloud & Edge Services**:
+**Infrastructure & Platform**:
+
+- [ADR-0005: Kubernetes as Container Platform](docs/decisions/0005-kubernetes-container-platform.md)
+- [ADR-0016: Talos Linux on Unraid as Primary Infrastructure](docs/decisions/0016-talos-unraid-primary.md) ⭐ **Current**
+- [ADR-0017: Hybrid Load Balancing with Cloudflare Tunnel and Ngrok](docs/decisions/0017-hybrid-load-balancing.md) ⭐ **Current**
+- [ADR-0009: Tailscale for Hybrid Cloud Networking](docs/decisions/0009-tailscale-hybrid-networking.md)
+
+**Cloud Services**:
 
 - [ADR-0004: Cloudflare DNS and Edge Services](docs/decisions/0004-cloudflare-dns-services.md)
-- [ADR-0005: Kubernetes as Container Platform](docs/decisions/0005-kubernetes-container-platform.md)
+- [ADR-0014: Cloudflare R2 for Terraform State Storage](docs/decisions/0014-cloudflare-r2-terraform-state.md)
+- [ADR-0015: Oracle Cloud as Primary Provider](docs/decisions/0015-oracle-cloud-primary.md) (Superseded → Future option)
+- [ADR-0013: DigitalOcean as Primary Cloud](docs/decisions/0013-digitalocean-primary-cloud.md) (Superseded → Future option)
 
 **CI/CD & GitOps**:
 
@@ -429,14 +487,18 @@ See [docs/decisions/](docs/decisions/) for design decisions and rationale.
 
 Operational procedures in [docs/runbooks/](docs/runbooks/):
 
-- [0001: Cloudflare Operations](docs/runbooks/0001-cloudflare-operations.md) - DNS, email routing, SSL/TLS, CDN, security configuration
+- [0001: Cloudflare Operations](docs/runbooks/0001-cloudflare-operations.md) - DNS, R2 storage, CDN configuration
+- Coming soon: Talos Operations - Cluster management, updates, troubleshooting
 
 ### Technical Specifications
 
 Detailed specs in [specs/](specs/):
 
+- Coming soon: Talos Cluster Specification - Node configuration, networking, storage
 - [Cloudflare Services](specs/cloudflare/cloudflare-services.md) - Edge services configuration
-- [Network Architecture](specs/network/README.md) - Network design and topology
+- [Network Architecture](specs/network/README.md) - Network design and Tailscale mesh
+- [Oracle Cloud Infrastructure](specs/oracle/oracle-cloud-infrastructure.md) - Future cloud option
+- [DigitalOcean Infrastructure](specs/digitalocean/digitalocean-infrastructure.md) - Future cloud option
 
 ## Contributing
 
