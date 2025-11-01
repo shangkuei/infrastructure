@@ -1,0 +1,22 @@
+# Example configuration for state-backend environment
+#
+# SOPS Encryption Workflow:
+# 1. Copy this file: cp terraform.tfvars.example terraform.tfvars
+# 2. Fill in your values (including sensitive API token)
+# 3. Encrypt with SOPS: sops -e terraform.tfvars > terraform.tfvars.enc
+# 4. Commit encrypted file: git add terraform.tfvars.enc
+# 5. Remove plain file: rm terraform.tfvars (IMPORTANT for security!)
+# 6. Apply: sops exec-file terraform.tfvars.enc 'terraform apply -var-file={}'
+
+# Cloudflare API Token (required, sensitive)
+# Create at: https://dash.cloudflare.com/profile/api-tokens
+# Required permissions: Account.Cloudflare R2 Read & Write
+cloudflare_api_token = "your-cloudflare-api-token-here"
+
+# Cloudflare Account ID (required)
+# Find this in Cloudflare dashboard under Account > Workers & Pages
+cloudflare_account_id = "your-cloudflare-account-id-here"
+
+# R2 Bucket Name (optional, defaults to "r2-terraform-state")
+# Must be globally unique and follow S3 naming conventions
+bucket_name = "r2-terraform-state"

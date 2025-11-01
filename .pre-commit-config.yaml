@@ -48,6 +48,9 @@ repos:
         args:
           - --minimum-severity=HIGH
           - --exclude-downloaded-modules
+        files: \.tf$
+        pass_filenames: false
+        require_serial: true
 
   # Ansible linting - disabled until Ansible playbooks are added
   # - repo: https://github.com/ansible/ansible-lint

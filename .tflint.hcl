@@ -2,8 +2,8 @@
 # https://github.com/terraform-linters/tflint
 
 config {
-  module = true
-  force   = false
+  call_module_type = "all"
+  force            = false
 }
 
 plugin "terraform" {
@@ -17,11 +17,12 @@ plugin "aws" {
   source  = "github.com/terraform-linters/tflint-ruleset-aws"
 }
 
-plugin "digitalocean" {
-  enabled = false
-  version = "0.24.0"
-  source  = "github.com/terraform-linters/tflint-ruleset-digitalocean"
-}
+# DigitalOcean plugin disabled - uncomment and update version if needed
+# plugin "digitalocean" {
+#   enabled = true
+#   version = "0.36.0"
+#   source  = "github.com/terraform-linters/tflint-ruleset-digitalocean"
+# }
 
 # Rules for best practices
 rule "terraform_naming_convention" {

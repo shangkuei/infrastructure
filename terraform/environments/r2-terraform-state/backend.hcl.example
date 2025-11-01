@@ -1,0 +1,40 @@
+# Terraform Backend Partial Configuration for R2
+# This file contains the backend configuration values that are loaded separately
+#
+# Usage:
+# 1. Copy this file: cp backend.hcl.example backend.hcl
+# 2. Fill in your actual values (from step 5 in README.md)
+# 3. Encrypt with SOPS: make encrypt-backend
+# 4. Remove plaintext file: rm backend.hcl
+# 5. Initialize with: sops exec-file backend.hcl.enc 'terraform init -backend-config={}'
+#
+# The encrypted backend.hcl.enc can be safely committed to git
+
+# R2 bucket name (created in step 4)
+bucket = "r2-terraform-state"
+
+# State file path within the bucket
+key = "environments/r2-terraform-state/terraform.tfstate"
+
+# R2 region (always "auto" for Cloudflare R2)
+region = "auto"
+
+# R2 S3-compatible endpoint
+# Replace with your actual Cloudflare account ID
+endpoints = {
+  s3 = "https://YOUR_ACCOUNT_ID.r2.cloudflarestorage.com"
+}
+
+# R2 Access Credentials
+# Create these at: https://dash.cloudflare.com → R2 → Manage R2 API Tokens
+# Permission: Admin Read & Write
+access_key = "your-r2-access-key-id"
+secret_key = "your-r2-secret-access-key"
+
+# S3 compatibility settings
+skip_credentials_validation = true
+skip_requesting_account_id  = true
+skip_metadata_api_check     = true
+skip_region_validation      = true
+skip_s3_checksum            = true
+use_path_style              = true

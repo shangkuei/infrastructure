@@ -37,6 +37,9 @@ id_ed25519*
 .env
 .env.*
 !.env.example
+.envrc
+!.envrc.example
+!.envrc.enc
 
 # Secrets and credentials
 secrets/

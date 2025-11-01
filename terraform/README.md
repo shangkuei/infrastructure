@@ -6,23 +6,67 @@ This directory contains Terraform configurations for provisioning and managing h
 
 ```
 terraform/
-├── modules/              # Reusable Terraform modules
-│   ├── network/         # Networking components
-│   ├── kubernetes/      # Kubernetes cluster modules
-│   ├── storage/         # Storage backends
-│   └── security/        # Security configurations
+├── modules/            # Reusable Terraform modules
+│   ├── talos-cluster/       # Talos Kubernetes cluster
+│   ├── cloudflare-r2/       # Cloudflare R2 bucket
+│   ├── digitalocean-vpc/    # DigitalOcean VPC
+│   ├── digitalocean-doks/   # DigitalOcean Kubernetes
+│   ├── oracle-vcn/          # Oracle Cloud VCN
+│   └── oracle-oke/          # Oracle Kubernetes Engine
 │
-├── environments/        # Environment-specific configurations
-│   ├── dev/            # Development environment
-│   ├── staging/        # Staging environment
-│   └── production/     # Production environment
-│
-└── providers/          # Cloud provider configurations
-    ├── digitalocean/   # DigitalOcean (primary cloud provider)
-    ├── cloudflare/     # Cloudflare edge services
-    ├── talos/          # Talos on-premise clusters
-    └── future/         # Future multi-cloud (AWS/Azure/GCP)
+└── environments/           # Environment deployments
+    ├── r2-terraform-state/ # R2 backend for Terraform state
+    ├── prod/               # Production (Oracle Cloud)
+    └── unraid/             # Homelab Talos on Unraid
 ```
+
+### Simple Two-Tier Architecture
+
+- **modules/**: Reusable infrastructure components
+- **environments/**: Actual deployments that use modules with environment-specific configuration
+
+**Key principle**: Environments reference modules directly and provide platform-specific patches/variables
+
+## State Backend Setup
+
+**First Step**: Deploy the Terraform state backend before working with other environments.
+
+The `r2-terraform-state` environment creates a Cloudflare R2 bucket for storing Terraform state remotely.
+
+```bash
+# Navigate to r2-terraform-state environment
+cd environments/r2-terraform-state
+
+# Generate age encryption key
+make age-keygen
+
+# Configure Cloudflare credentials (encrypted with SOPS)
+cp terraform.tfvars.example terraform.tfvars
+vim terraform.tfvars
+sops -e terraform.tfvars > terraform.tfvars.enc
+rm terraform.tfvars
+
+# Deploy R2 backend
+make apply
+
+# Configure backend credentials
+cp backend.hcl.example backend.hcl
+vim backend.hcl  # Add R2 access key and secret
+make encrypt-backend
+rm backend.hcl
+
+# Migrate state to R2
+make init  # Answer 'yes' when prompted
+```
+
+After deploying the state backend:
+
+1. R2 bucket is created and ready
+2. Backend credentials are encrypted with SOPS
+3. Local state is migrated to R2 (self-hosting)
+4. Other environments can use the same R2 bucket with their own state keys
+
+See [environments/r2-terraform-state/README.md](environments/r2-terraform-state/README.md) for complete documentation.
 
 ## Quick Start
 
@@ -165,14 +209,31 @@ Each environment directory contains:
 
 ### Creating an Environment
 
-```bash
-# Copy from template
-cp -r environments/dev environments/new-env
+Environments use provider configurations as modules:
 
-# Update configuration
-cd environments/new-env
+```bash
+# Example: Create new environment using Talos Unraid provider
+mkdir -p environments/production-unraid
+cd environments/production-unraid
+
+# Create main.tf that uses provider module
+cat > main.tf <<'EOF'
+module "talos_unraid" {
+  source = "../../providers/talos/unraid"
+
+  cluster_name = "production-cluster"
+  # ... configuration
+}
+EOF
+
+# Copy configuration templates
+cp ../homelab-unraid/variables.tf .
+cp ../homelab-unraid/outputs.tf .
+cp ../homelab-unraid/terraform.tfvars.example .
+
+# Configure for your environment
 vim terraform.tfvars.example
-vim backend.tf
+mv terraform.tfvars.example terraform.tfvars
 
 # Initialize
 terraform init
@@ -180,6 +241,15 @@ terraform init
 # Plan
 terraform plan
 ```
+
+### Example: Homelab Unraid Environment
+
+See [environments/homelab-unraid/](environments/homelab-unraid/) for a complete example:
+
+- Uses `providers/talos/unraid` module
+- Configures Talos Kubernetes on Unraid VMs
+- Integrates Tailscale VPN
+- Includes complete documentation
 
 ## State Management
 
@@ -227,12 +297,13 @@ terraform {
 
 **Setup Steps**:
 
-1. Create R2 bucket in Cloudflare dashboard
-2. Enable versioning on the bucket
-3. Generate R2 API token with Object Read/Write permissions
-4. Set credentials as environment variables (see below)
+1. Deploy R2 backend: `cd environments/r2-terraform-state && make apply`
+2. Create R2 API token with Object Read/Write permissions
+3. Configure backend credentials with SOPS encryption
+4. Migrate state: `make init` (answer 'yes' when prompted)
+5. Configure backend in other environments' `main.tf`
 
-See [ADR-0014: Cloudflare R2 for Terraform State Storage](../docs/decisions/0014-cloudflare-r2-terraform-state.md) for detailed rationale and implementation notes.
+See [environments/r2-terraform-state/README.md](environments/r2-terraform-state/README.md) for complete setup guide.
 
 ### State Commands
 
@@ -258,7 +329,60 @@ terraform state push terraform.tfstate
 
 ## Providers
 
-### DigitalOcean Provider (Primary Cloud)
+Provider configurations are organized by cloud/platform provider in `providers/` directory. Each provider may contain:
+
+- **modules/**: Reusable modules specific to the provider
+- **Platform configs**: Platform-specific deployments (e.g., unraid, proxmox)
+- **Backend configs**: Infrastructure services (e.g., r2-backend)
+
+### Active Providers
+
+#### Talos Linux (`providers/talos/`)
+
+**Purpose**: Kubernetes clusters on various platforms
+
+**Structure**:
+
+```
+providers/talos/
+├── modules/cluster/    # Core Talos cluster module
+├── unraid/            # Unraid VM platform
+├── proxmox/           # Proxmox platform (future)
+└── baremetal/         # Bare metal (future)
+```
+
+**Usage**:
+
+```hcl
+# In environment deployment
+module "talos_unraid" {
+  source = "../../providers/talos/unraid"
+
+  cluster_name     = "my-cluster"
+  cluster_endpoint = "https://192.168.1.100:6443"
+  # ... configuration
+}
+```
+
+**Documentation**:
+
+- [Module README](providers/talos/modules/cluster/README.md)
+- [Unraid Configuration](providers/talos/unraid/)
+- [Deployment Guide](../docs/guides/talos-unraid-deployment-guide.md)
+
+#### Cloudflare (`providers/cloudflare/`)
+
+**Purpose**: Edge services and infrastructure
+
+**Active Configurations**:
+
+- `r2-backend/`: Terraform state storage with R2
+
+**Documentation**: [R2 Backend README](providers/cloudflare/r2-backend/README.md)
+
+### Future Providers
+
+#### DigitalOcean (Primary Cloud - Future)
 
 ```hcl
 terraform {
@@ -355,52 +479,24 @@ export TF_VAR_digitalocean_token="your-do-token"
 gh secret set DIGITALOCEAN_TOKEN
 ```
 
-### Talos Provider (On-Premise Kubernetes)
+### Talos Provider Examples (Legacy - See Active Providers Section)
+
+**Note**: Talos configurations have been reorganized under `providers/talos/`. See the [Active Providers](#active-providers) section above for current structure.
+
+For Talos deployments, use the provider configurations:
 
 ```hcl
-terraform {
-  required_providers {
-    talos = {
-      source  = "siderolabs/talos"
-      version = "~> 0.4"
-    }
-  }
-}
-
-provider "talos" {}
-
-# Example: Talos Machine Configuration
-resource "talos_machine_secrets" "cluster" {}
-
-data "talos_machine_configuration" "controlplane" {
-  cluster_name     = "homelab-cluster"
-  machine_type     = "controlplane"
-  cluster_endpoint = "https://192.168.1.10:6443"
-  machine_secrets  = talos_machine_secrets.cluster.machine_secrets
-}
-
-data "talos_machine_configuration" "worker" {
-  cluster_name     = "homelab-cluster"
-  machine_type     = "worker"
-  cluster_endpoint = "https://192.168.1.10:6443"
-  machine_secrets  = talos_machine_secrets.cluster.machine_secrets
-}
-
-# Example: Apply configuration to nodes
-resource "talos_machine_configuration_apply" "controlplane" {
-  client_configuration        = talos_machine_secrets.cluster.client_configuration
-  machine_configuration_input = data.talos_machine_configuration.controlplane.machine_configuration
-  node                        = "192.168.1.10"
+# Use Talos Unraid provider in an environment
+module "talos_unraid" {
+  source = "../../providers/talos/unraid"
+  # Configuration handled by provider module
 }
 ```
 
-**Features**:
+**See**:
 
-- Declarative Kubernetes cluster provisioning
-- Immutable infrastructure (no SSH access)
-- API-driven configuration
-- Automatic updates and self-healing
-- Works with bare metal, VMs (Proxmox, ESXi), cloud VMs
+- [providers/talos/](providers/talos/) - Current Talos provider structure
+- [environments/homelab-unraid/](environments/homelab-unraid/) - Example deployment
 
 ### Cloudflare Provider (Edge Services)
 
@@ -670,32 +766,32 @@ terraform force-unlock <lock-id>
 
 **Provider authentication**:
 
+All credentials are managed with SOPS encryption:
+
 ```bash
-# DigitalOcean
-export DIGITALOCEAN_TOKEN="your-api-token"
+# Cloudflare API Token (for provider authentication)
+# Stored in terraform.tfvars.enc, automatically decrypted by make commands
+cd environments/r2-terraform-state
+sops terraform.tfvars.enc  # Edit encrypted file
 
-# Cloudflare R2 (for Terraform state backend)
-# R2 uses S3-compatible API, so use AWS credential environment variables
-export AWS_ACCESS_KEY_ID="your-r2-access-key-id"
-export AWS_SECRET_ACCESS_KEY="your-r2-secret-access-key"
+# R2 Backend Credentials (for state storage)
+# Stored in backend.hcl.enc, automatically loaded by make init
+sops backend.hcl.enc  # Edit encrypted backend config
 
-# Cloudflare (for DNS, CDN, etc.)
-export CLOUDFLARE_API_TOKEN="your-api-token"
-
-# Future cloud providers (if needed)
-# AWS: aws configure
-# Azure: az login
-# GCP: gcloud auth application-default login
+# Other environments follow the same pattern
+cd environments/prod
+sops terraform.tfvars.enc
+sops backend.hcl.enc
 ```
 
 **GitHub Secrets for CI/CD**:
 
 ```bash
-# Set secrets for GitHub Actions
-gh secret set DIGITALOCEAN_TOKEN
-gh secret set R2_ACCESS_KEY_ID
-gh secret set R2_SECRET_ACCESS_KEY
-gh secret set CLOUDFLARE_API_TOKEN
+# Set age private key for SOPS decryption
+gh secret set SOPS_AGE_KEY --body "$(cat ~/.config/sops/age/r2-terraform-state.txt)"
+
+# Environment-specific keys
+gh secret set SOPS_AGE_KEY_PROD --body "$(cat ~/.config/sops/age/prod.txt)"
 ```
 
 **Module not found**:

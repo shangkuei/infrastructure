@@ -1,0 +1,40 @@
+# Local Terraform state and sensitive files
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+
+# Backend configuration (plaintext only - encrypted .enc files are tracked)
+backend.hcl
+!backend.hcl.example
+!backend.hcl.enc
+
+# Age encryption keys
+.age/
+*.key
+key.txt
+
+# Generated files
+generated/
+
+# Kubeconfig files
+*.yaml
+!*.yaml.example
+
+# Crash log files
+crash.log
+crash.*.log
+
+# Override files
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# CLI configuration files
+.terraformrc
+terraform.rc
+
+# Provider plugins
+.terraform/
+.terraform.lock.hcl
