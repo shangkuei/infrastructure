@@ -1,0 +1,323 @@
+# Talos Cluster Environment - Example Configuration
+#
+# Copy this file to terraform.tfvars and customize for your environment.
+# IMPORTANT: Do not commit terraform.tfvars to version control (contains sensitive data).
+
+# =============================================================================
+# Cluster Configuration
+# =============================================================================
+
+cluster_name = "talos-tailscale"
+environment  = "dev"
+
+# Kubernetes API endpoint (auto-generated if empty)
+# Priority order for automatic endpoint selection:
+#   1. User-provided endpoint (if specified below)
+#   2. KubePrism local load balancer (if enable_kubeprism = true, default)
+#   3. Localhost direct API (fallback for simple setups)
+#
+# Recommended: Leave empty to use automatic selection
+# The cluster will use the most appropriate endpoint based on your configuration
+cluster_endpoint = ""
+
+# =============================================================================
+# Node Configuration
+# =============================================================================
+
+# Control plane nodes (minimum 1, recommended 3 for HA)
+# WORKFLOW: Initial config uses physical IPs → nodes join Tailscale → update with Tailscale IPs
+# NOTE: Tailscale assigns both IPv4 (100.64.0.0/10) and IPv6 (fd7a:115c:a1e0::/48) to each node
+#       Specify both addresses - certificates will include both automatically
+control_plane_nodes = {
+  # cp-example = {
+  #   tailscale_ipv4 = "auto-assigned"          # IPv4 address (REQUIRED) - will be auto-assigned by Tailscale
+  #   tailscale_ipv6 = null                     # IPv6 address (optional) - leave null until assigned
+  #   physical_ip    = "192.168.1.100"          # Physical IP for initial config application (REQUIRED for first apply)
+  #   install_disk   = "/dev/sda"               # Disk for Talos installation
+  #   hostname       = "talos-cp-example"       # Hostname (also used as Tailscale device name)
+  #   interface      = "eth0"                   # Physical network interface (will use DHCP)
+  #   platform       = "metal"                  # Platform type: metal (default), metal-arm64, metal-secureboot, aws, gcp, azure, etc.
+  #   extensions     = ["siderolabs/tailscale"] # Talos system extensions (default: Tailscale only)
+  #   # Additional extension examples:
+  #   # extensions = ["siderolabs/tailscale", "siderolabs/nvidia-container-toolkit"]  # GPU node
+  #   # extensions = ["siderolabs/tailscale", "siderolabs/qemu-guest-agent"]  # VM node
+  #   # Kubernetes topology and node labels (optional):
+  #   # region      = "us-west"                 # topology.kubernetes.io/region
+  #   # zone        = "us-west-1a"              # topology.kubernetes.io/zone
+  #   # arch        = "amd64"                   # kubernetes.io/arch (amd64, arm64, etc.)
+  #   # os          = "linux"                   # kubernetes.io/os (linux, windows, etc.)
+  #   # node_labels = {                         # Additional custom node labels
+  #   #   "node.kubernetes.io/instance-type" = "bare-metal"
+  #   #   "workload-type" = "general-purpose"
+  #   # }
+  # }
+  # Uncomment for HA setup (3+ nodes required for etcd quorum)
+  # cp-02 = {
+  #   tailscale_ipv4 = "100.64.0.11"              # IPv4 address from Tailscale
+  #   tailscale_ipv6 = "fd7a:115c:a1e0::1"        # IPv6 address from Tailscale (optional)
+  #   physical_ip    = "192.168.1.101"            # Optional after first boot
+  #   install_disk   = "/dev/sda"
+  #   hostname       = "talos-cp-02"
+  #   interface      = "tailscale0"
+  # }
+  # cp-03 = {
+  #   tailscale_ipv4 = "100.64.0.12"              # IPv4 address from Tailscale
+  #   tailscale_ipv6 = "fd7a:115c:a1e0::2"        # IPv6 address from Tailscale (optional)
+  #   physical_ip    = "192.168.1.102"            # Optional after first boot
+  #   install_disk   = "/dev/sda"
+  #   hostname       = "talos-cp-03"
+  #   interface      = "tailscale0"
+  # }
+}
+
+# Worker nodes (optional - control plane can run workloads in single-node setup)
+worker_nodes = {
+  # worker-01 = {
+  #   tailscale_ipv4 = "auto-assigned"          # IPv4 address (REQUIRED) - will be auto-assigned by Tailscale
+  #   tailscale_ipv6 = null                     # IPv6 address (optional) - leave null until assigned
+  #   physical_ip    = "192.168.1.110"          # Physical IP for initial config application (REQUIRED for first apply)
+  #   install_disk   = "/dev/sda"               # Disk for Talos installation
+  #   hostname       = "talos-worker-01"        # Hostname (also used as Tailscale device name)
+  #   interface      = "eth0"                   # Physical network interface (will use DHCP)
+  #   platform       = "metal"                  # Platform type: metal (default), metal-arm64, metal-secureboot, aws, gcp, azure, etc.
+  #   extensions     = ["siderolabs/tailscale"] # Talos system extensions (default: Tailscale only)
+  #   # Heterogeneous cluster example - GPU worker node:
+  #   # extensions = ["siderolabs/tailscale", "siderolabs/nvidia-container-toolkit", "siderolabs/nvidia-fabricmanager"]
+  #   # Kubernetes topology and node labels (optional):
+  #   # region      = "us-west"                 # topology.kubernetes.io/region
+  #   # zone        = "us-west-1a"              # topology.kubernetes.io/zone
+  #   # arch        = "amd64"                   # kubernetes.io/arch (amd64, arm64, etc.)
+  #   # os          = "linux"                   # kubernetes.io/os (linux, windows, etc.)
+  #   # node_labels = {                         # Additional custom node labels
+  #   #   "node.kubernetes.io/instance-type" = "bare-metal"
+  #   #   "workload-type" = "gpu-intensive"
+  #   #   "gpu.nvidia.com/count" = "2"
+  #   # }
+  # }
+  # worker-02 = {
+  #   tailscale_ipv4 = "100.64.0.21"              # IPv4 address from Tailscale
+  #   tailscale_ipv6 = "fd7a:115c:a1e0::10"       # IPv6 address from Tailscale (optional)
+  #   physical_ip    = "192.168.1.111"            # Optional after first boot
+  #   install_disk   = "/dev/sda"
+  #   hostname       = "talos-worker-02"
+  #   interface      = "tailscale0"
+  # }
+}
+
+# Physical network interface configuration
+use_dhcp_for_physical_interface = true  # Use DHCP for physical interface (recommended)
+
+# Disk management
+wipe_install_disk = false  # WARNING: Set to true to wipe disk before Talos installation (destructive!)
+
+# =============================================================================
+# Tailscale Configuration
+# =============================================================================
+
+# Tailscale tailnet name for MagicDNS hostnames
+# This adds convenient hostnames like "talos-cp-01.example-org.ts.net" to certificates
+# Find your tailnet name in Tailscale admin console settings
+# Leave empty to skip MagicDNS hostname generation (IPs only)
+# NOTE: Tailscale provides both IPv4 (100.64.0.0/10) and IPv6 (fd7a:115c:a1e0::/48) addresses
+tailscale_tailnet = ""  # e.g., "example-org" for example-org.ts.net
+
+# Tailscale auth key (reusable, tagged key recommended)
+# Generate at: https://login.tailscale.com/admin/settings/keys
+# IMPORTANT: Use a reusable key with appropriate tags (e.g., tag:talos)
+# The key must be valid for the duration of the cluster deployment
+tailscale_auth_key = "tskey-auth-XXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+
+# =============================================================================
+# Version Configuration
+# =============================================================================
+
+talos_version      = "v1.11.3"  # Talos Linux version (latest stable - Nov 2025)
+kubernetes_version = "v1.34.1"  # Kubernetes version (default with Talos 1.11.3)
+
+# =============================================================================
+# Network Configuration
+# =============================================================================
+
+pod_cidr     = "10.244.0.0/16"  # Pod network CIDR
+service_cidr = "10.96.0.0/12"   # Service network CIDR
+dns_domain   = "cluster.local"  # Kubernetes DNS domain
+
+# CNI plugin configuration
+# - "flannel" or "calico": Built-in Talos CNI (configured in machine config)
+# - "cilium" or "none": External CNI (install separately via Helm/manifests, machine config CNI set to none)
+cni_name = "cilium"
+
+# Cilium Helm values (only used when cni_name = "cilium")
+# Customize Cilium deployment by overriding default values
+# Full list of values: https://github.com/cilium/cilium/blob/main/install/kubernetes/cilium/values.yaml
+#
+# IMPORTANT Talos Configuration Dependencies:
+# - kubeProxyReplacement: "true", "strict", or "probe" → Talos kube-proxy will be disabled
+# - bpf.masquerade: true → Talos forwardKubeDNSToHost will be disabled
+cilium_helm_values = {
+  # Cilium operator configuration
+  operator = {
+    replicas = 1
+  }
+  # Enable Hubble for observability (optional)
+  hubble = {
+    enabled = false
+    relay = {
+      enabled = false
+    }
+    ui = {
+      enabled = false
+    }
+  }
+
+  # BPF masquerading (if enabled, Talos forwardKubeDNSToHost will be automatically disabled)
+  # bpf = {
+  #   masquerade = true
+  # }
+
+  ipam = {
+    mode = "kubernetes"
+  }
+
+  # IPv6 support
+  ipv6 = {
+    enabled = false
+  }
+
+  # Kubernetes API server configuration
+  k8sServiceHost = "localhost"
+  k8sServicePort = 6443
+  # kube-proxy replacement
+  # - "true", "strict", or "probe": Talos kube-proxy will be automatically disabled
+  # - "false": Talos kube-proxy will remain enabled (not recommended with Cilium)
+  kubeProxyReplacement = "true"
+
+  # Security context capabilities (required for Talos Linux)
+  # Source: https://www.talos.dev/v1.8/kubernetes-guides/network/deploying-cilium/
+  securityContext = {
+    capabilities = {
+      ciliumAgent      = ["CHOWN", "KILL", "NET_ADMIN", "NET_RAW", "IPC_LOCK", "SYS_ADMIN", "SYS_RESOURCE", "DAC_OVERRIDE", "FOWNER", "SETGID", "SETUID"]
+      cleanCiliumState = ["NET_ADMIN", "SYS_ADMIN", "SYS_RESOURCE"]
+    }
+  }
+
+  # cgroup configuration (required for Talos Linux)
+  # Source: https://www.talos.dev/v1.8/kubernetes-guides/network/deploying-cilium/
+  cgroup = {
+    autoMount = {
+      enabled = false
+    }
+    hostRoot = "/sys/fs/cgroup"
+  }
+
+  # Gateway API support (optional)
+  # Enables Kubernetes Gateway API for advanced traffic management
+  # When enabled, Gateway API CRDs (v1.2.0) will be automatically installed via extraManifests
+  # gatewayAPI = {
+  #   enabled           = true
+  #   enableAlpn        = true
+  #   enableAppProtocol = true
+  # }
+}
+
+# DNS servers for cluster nodes (empty for default)
+dns_servers = []
+# dns_servers = ["1.1.1.1", "1.0.0.1"]  # Cloudflare DNS
+# dns_servers = ["8.8.8.8", "8.8.4.4"]  # Google DNS
+
+# =============================================================================
+# Security Configuration
+# =============================================================================
+
+# Additional Subject Alternative Names for API server certificate
+# NOTE: The following are added automatically:
+#   - Tailscale IPv4 addresses (100.64.0.0/10 range)
+#   - Tailscale IPv6 addresses (fd7a:115c:a1e0::/48 range) - automatically included with IPv4
+#   - Tailscale Service VIP (if configured)
+#   - Tailscale Service hostname (if configured)
+#   - MagicDNS hostnames (if tailnet configured)
+#   - localhost and 127.0.0.1 (for KubePrism)
+# When enable_kubeprism = true: All nodes (control plane + workers) are included
+# When enable_kubeprism = false: Only control plane nodes are included
+# Physical IPs are NOT included - only used for initial bootstrap
+# Only add additional custom SANs here if needed
+cert_sans = [
+  # "custom.example.com",       # Custom hostname
+  # "100.64.0.50",              # Additional Tailscale IP
+]
+
+# =============================================================================
+# Configuration Patches (Advanced)
+# =============================================================================
+
+# Additional control plane patches (merged with Tailscale patches)
+additional_control_plane_patches = [
+  # Example: Enable admission plugins
+  # yamlencode({
+  #   cluster = {
+  #     apiServer = {
+  #       extraArgs = {
+  #         "enable-admission-plugins" = "PodSecurity,NodeRestriction"
+  #       }
+  #     }
+  #   }
+  # })
+]
+
+# Additional worker patches (merged with Tailscale patches)
+additional_worker_patches = [
+  # Example: Configure kubelet
+  # yamlencode({
+  #   machine = {
+  #     kubelet = {
+  #       extraArgs = {
+  #         "max-pods" = "110"
+  #       }
+  #     }
+  #   }
+  # })
+]
+
+# Node labels for all nodes
+node_labels = {
+  # "environment" = "dev"
+  # "location"    = "home"
+}
+
+# =============================================================================
+# High Availability Configuration
+# =============================================================================
+
+# KubePrism - Built-in HA load balancer for Kubernetes API
+# KubePrism runs on every node and provides local load balancing to all control plane nodes
+# Endpoint: https://127.0.0.1:7445 (automatically load balances across all control planes)
+# Benefits:
+#   - No external load balancer required
+#   - Automatic health checking and failover
+#   - Works consistently on all nodes (control planes and workers)
+#   - Survives control plane failures transparently
+#
+# When enabled (default):
+#   - All nodes use https://127.0.0.1:7445 to access the Kubernetes API
+#   - KubePrism automatically discovers and load balances to healthy control planes
+#   - All control plane AND worker nodes are included in API server certificates
+#
+# When disabled:
+#   - Nodes connect directly to https://127.0.0.1:6443
+#   - Only works on control plane nodes (not recommended for HA)
+#   - Only control plane nodes are included in API server certificates
+enable_kubeprism = true
+
+# KubePrism local load balancer port (default: 7445)
+# Change only if port 7445 conflicts with other services
+kubeprism_port = 7445
+
+# =============================================================================
+# Tagging
+# =============================================================================
+
+tags = {
+  Project   = "talos-tailscale"
+  ManagedBy = "terraform"
+  Network   = "tailscale"
+}

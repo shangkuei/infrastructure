@@ -1,0 +1,16 @@
+# Local SOPS configuration for talos-cluster environment
+# This allows running SOPS commands from within this directory
+creation_rules:
+  # Match input files for encryption (terraform.tfvars -> terraform.tfvars.enc)
+  - path_regex: .*\.tfvars$
+    age: age148evq58rxhrh2737sjwn7527f8zqac5vkth77m5yju7geepsz5ls3ecp7s
+
+  - path_regex: .*\.tfvars\.enc$
+    age: age148evq58rxhrh2737sjwn7527f8zqac5vkth77m5yju7geepsz5ls3ecp7s
+
+  # Match backend configuration files (backend.hcl -> backend.hcl.enc)
+  - path_regex: backend\.hcl$
+    age: age148evq58rxhrh2737sjwn7527f8zqac5vkth77m5yju7geepsz5ls3ecp7s
+
+  - path_regex: backend\.hcl\.enc$
+    age: age148evq58rxhrh2737sjwn7527f8zqac5vkth77m5yju7geepsz5ls3ecp7s

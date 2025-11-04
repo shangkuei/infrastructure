@@ -1,0 +1,16 @@
+# Local SOPS configuration for r2-terraform-state environment
+# This allows running SOPS commands from within this directory
+creation_rules:
+  # Match input files for encryption (terraform.tfvars -> terraform.tfvars.enc)
+  - path_regex: .*\.tfvars$
+    age: age1vu45wrj7egdzawhsq7u4lvds2ysmqtf4m0sj8lvkplprwe78tg6q3e3hy6
+
+  - path_regex: .*\.tfvars\.enc$
+    age: age1vu45wrj7egdzawhsq7u4lvds2ysmqtf4m0sj8lvkplprwe78tg6q3e3hy6
+
+  # Match backend configuration files (backend.hcl -> backend.hcl.enc)
+  - path_regex: backend\.hcl$
+    age: age1vu45wrj7egdzawhsq7u4lvds2ysmqtf4m0sj8lvkplprwe78tg6q3e3hy6
+
+  - path_regex: backend\.hcl\.enc$
+    age: age1vu45wrj7egdzawhsq7u4lvds2ysmqtf4m0sj8lvkplprwe78tg6q3e3hy6

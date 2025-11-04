@@ -372,12 +372,17 @@ cluster:
 ### Terraform Example
 
 ```hcl
-module "talos_cluster" {
-  source = "../../modules/talos-cluster"
+# Note: Configure Talos resources directly using the Talos provider
+# Example configuration for HA cluster with VIP
 
-  cluster_name     = "ha-cluster"
-  cluster_endpoint = "https://192.168.1.100:6443"  # VIP
+resource "talos_machine_secrets" "this" {
+  talos_version = "v1.6.0"
+}
 
+# Configure control plane nodes with VIP endpoint
+# cluster_endpoint = "https://192.168.1.100:6443"  # VIP
+
+locals {
   control_plane_nodes = {
     "cp-01" = {
       ip_address   = "192.168.1.101"
@@ -741,13 +746,14 @@ machine:
 ### Terraform Example
 
 ```hcl
-module "talos_cluster" {
-  source = "../../modules/talos-cluster"
+# Note: Configure Talos resources directly using the Talos provider
+# Example configuration for Cilium CNI
 
-  cluster_name     = "cilium-cluster"
-  cluster_endpoint = "https://192.168.1.100:6443"
-  cni_name         = "none"  # Install Cilium manually
+# Configure with CNI disabled to manually install Cilium
+# cni_name = "none"  # Install Cilium manually after cluster creation
 
+# Example control plane patch configuration:
+locals {
   control_plane_patches = [
     yamlencode({
       machine = {
@@ -1317,12 +1323,12 @@ This guide covers advanced Talos Linux features essential for production Kuberne
 ✅ **KubePrism** - Built-in API server load balancer
 ✅ **Node Labels** - Node classification and scheduling
 
-All configurations can be applied via Terraform using the talos-cluster module with custom patches.
+All configurations can be applied via Terraform using the Talos provider with custom patches.
 
 ## Next Steps
 
 1. Review [Talos Cluster Specification](../../specs/talos/talos-cluster-specification.md)
-2. Use [Talos Terraform Module](../../terraform/modules/talos-cluster/)
+2. Configure Talos resources directly using the Talos Terraform provider
 3. Deploy with custom patches for required features
 4. Monitor cluster health with `talosctl health`
 5. Configure backup strategy for etcd and persistent volumes

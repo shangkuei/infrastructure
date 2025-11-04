@@ -19,6 +19,7 @@ generated/
 
 # Kubeconfig files
 *.yaml
+!.sops.yaml
 !*.yaml.example
 
 # Crash log files
