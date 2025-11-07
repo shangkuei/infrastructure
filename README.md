@@ -5,6 +5,7 @@
 [![Terraform](https://img.shields.io/badge/Terraform-1.6+-623CE4?logo=terraform)](https://www.terraform.io/)
 [![Ansible](https://img.shields.io/badge/Ansible-2.15+-EE0000?logo=ansible)](https://www.ansible.com/)
 [![Kubernetes](https://img.shields.io/badge/Kubernetes-1.28+-326CE5?logo=kubernetes)](https://kubernetes.io/)
+[![Flux CD](https://img.shields.io/badge/Flux_CD-GitOps-5468FF?logo=flux)](https://fluxcd.io/)
 [![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-CI%2FCD-2088FF?logo=github-actions)](https://github.com/features/actions)
 
 ## Overview
@@ -14,6 +15,7 @@ This repository contains Infrastructure as Code (IaC) for deploying and managing
 - **Terraform** for infrastructure provisioning and declarative configuration
 - **Ansible** for configuration management, automation, and routine operational tasks
 - **GitHub Actions** for CI/CD pipeline automation with integrated secret management
+- **Flux CD** for Kubernetes-native GitOps in `kube-system` and `kube-addons` namespaces
 - **Kubernetes** for container orchestration across hybrid cloud environments
 
 ### Design Goals
@@ -254,6 +256,13 @@ infrastructure/
 │   ├── roles/            # Reusable roles
 │   └── inventory/        # Host inventories
 │
+├── kubernetes/            # Kubernetes manifests (Flux GitOps)
+│   ├── clusters/         # Cluster-specific Flux configurations
+│   │   └── talos-home/  # Talos cluster configs
+│   └── base/            # Base Kubernetes manifests
+│       ├── kube-system/ # Core system components
+│       └── kube-addons/ # Cluster addons
+│
 ├── .github/              # GitHub Actions workflows
 │   └── workflows/        # CI/CD pipelines
 │
@@ -478,10 +487,21 @@ See [docs/decisions/](docs/decisions/) for design decisions and rationale.
 
 - [ADR-0006: GitHub Actions for CI/CD](docs/decisions/0006-github-actions-cicd.md)
 - [ADR-0007: GitOps Workflow](docs/decisions/0007-gitops-workflow.md)
+- [ADR-0018: Flux for Kubernetes GitOps](docs/decisions/0018-flux-kubernetes-gitops.md) ⭐ **New**
 
 **Security**:
 
 - [ADR-0008: Secret Management Strategy](docs/decisions/0008-secret-management.md)
+
+**SOPS Configuration**:
+
+This repository uses **per-environment SOPS configuration** instead of a root `.sops.yaml`:
+
+- `terraform/environments/talos-cluster/.sops.yaml` - For Terraform variables encryption
+- `terraform/environments/talos-gitops/.sops.yaml` - For GitOps bootstrap secrets
+- `kubernetes/overlays/flux-instance/*/sops.yaml` - For Kubernetes manifest encryption
+
+This approach provides better security isolation and supports different age keys per environment.
 
 ### Runbooks
 

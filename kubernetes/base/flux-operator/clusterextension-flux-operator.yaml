@@ -1,0 +1,29 @@
+---
+# Flux Operator installed via OLM ClusterExtension
+# Version: 0.33.0+ from OperatorHub catalog (auto-upgrades enabled)
+# Manages Flux CD installations via FluxInstance CRDs
+apiVersion: olm.operatorframework.io/v1
+kind: ClusterExtension
+metadata:
+  name: flux-operator
+  labels:
+    app.kubernetes.io/name: flux-operator
+    app.kubernetes.io/managed-by: olm
+spec:
+  source:
+    sourceType: Catalog
+    catalog:
+      packageName: flux-operator
+      version: "^0.33.0"  # Minimum version with automatic upgrades
+      channels:
+        - stable  # Use stable release channel
+      selector:
+        matchLabels:
+          olm.package: flux-operator
+
+  # Install in flux-system namespace
+  namespace: flux-system
+
+  # Use installer ServiceAccount with full cluster permissions
+  serviceAccount:
+    name: flux-operator-installer

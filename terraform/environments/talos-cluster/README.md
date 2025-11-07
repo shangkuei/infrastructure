@@ -2,6 +2,10 @@
 
 Terraform environment for generating Talos Linux Kubernetes cluster configurations with Tailscale mesh networking as the primary network.
 
+> **📍 Part 1 of 2**: This environment provisions the cluster. After cluster is running, use [`talos-gitops/`](../talos-gitops/) to enable GitOps.
+>
+> See [Terraform Environments Overview](../README.md) for complete deployment workflow.
+
 ## Overview
 
 This environment generates machine configurations for a Talos Kubernetes cluster built entirely on Tailscale network:
@@ -1048,6 +1052,7 @@ This Talos cluster environment provides a **config-generation workflow** for bui
 ❌ **Does not apply configs**: You use Makefile commands to apply generated configs to nodes
 ❌ **Does not bootstrap cluster**: You use Makefile commands to bootstrap the cluster
 ❌ **Does not manage running cluster**: Cluster lifecycle is managed via talosctl/kubectl
+❌ **Does not enable GitOps**: Use [`talos-gitops/`](../talos-gitops/) environment for GitOps bootstrap
 
 ### Key Architectural Decisions
 
@@ -1063,7 +1068,27 @@ This Talos cluster environment provides a **config-generation workflow** for bui
 2. make apply-configs       → Apply configs to nodes
 3. make bootstrap           → Initialize cluster
 4. kubectl/talosctl         → Manage cluster (make nodes, make pods)
+5. cd ../talos-gitops       → Enable GitOps (next stage)
 ```
+
+## Next Steps: Enable GitOps
+
+After your cluster is running and healthy, proceed to the **[talos-gitops](../talos-gitops/)** environment to:
+
+1. **Install Flux CD** via Flux Operator for GitOps workflow
+2. **Configure SOPS** integration for encrypted manifest decryption
+3. **Enable auto-sync** from Git for `kube-system` and `kube-addons` namespaces
+4. **Deploy applications** via declarative GitOps workflow
+
+```bash
+# After cluster is healthy...
+cd ../talos-gitops
+terraform init
+terraform apply              # Phased deployment (see talos-gitops/README.md)
+make flux-check              # Verify Flux installation
+```
+
+See [Terraform Environments Overview](../README.md) for complete two-stage workflow documentation.
 
 ## Related Documentation
 

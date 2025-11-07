@@ -69,6 +69,7 @@ Example: `20241019-use-terraform-for-infrastructure.md`
 - [0006 - GitHub Actions for CI/CD](0006-github-actions-cicd.md) - Accepted
 - [0007 - GitOps Workflow](0007-gitops-workflow.md) - Accepted
 - [0010 - GitHub Container Registry](0010-github-container-registry.md) - Accepted
+- [0018 - Flux for Kubernetes GitOps](0018-flux-kubernetes-gitops.md) - Accepted
 
 ### Networking
 

@@ -1,0 +1,16 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Gateway API GitOps resources
+# GitRepository: Upstream artifact source (v1.3.0)
+# ArtifactGenerator: Decomposes into standard and experimental ExternalArtifacts
+
+resources:
+  - gitrepository-gateway-api.yaml
+  - artifactgenerator-gateway-api.yaml
+
+labels:
+  - pairs:
+      app.kubernetes.io/name: gateway-api
+      app.kubernetes.io/managed-by: flux

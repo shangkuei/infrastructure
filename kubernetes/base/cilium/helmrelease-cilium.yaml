@@ -1,0 +1,105 @@
+---
+# Cilium CNI with Gateway API support
+# Configuration optimized for Talos Linux
+# Version: 1.18.3 (PINNED - compatible with Gateway API v1.3.0)
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: cilium
+  namespace: kube-system
+spec:
+  interval: 30m
+  timeout: 10m
+  chart:
+    spec:
+      chart: cilium
+      version: 1.18.3  # PINNED: Compatible with Gateway API v1.3.x CRDs
+      sourceRef:
+        kind: HelmRepository
+        name: cilium
+        namespace: flux-system
+      interval: 12h
+
+  # Note: Dependency on Gateway API CRDs is handled at Flux Kustomization level
+
+  install:
+    createNamespace: false
+    remediation:
+      retries: 3
+
+  upgrade:
+    remediation:
+      retries: 3
+      remediateLastFailure: true
+    cleanupOnFail: true
+
+  driftDetection:
+    mode: warn
+    ignore:
+      - paths: ["/spec/replicas"]
+        target:
+          kind: Deployment
+
+  values:
+    # BPF Configuration
+    bpf:
+      masquerade: false
+
+    # Talos-specific cgroup configuration
+    cgroup:
+      autoMount:
+        enabled: false
+      hostRoot: /sys/fs/cgroup
+
+    # Gateway API Configuration
+    gatewayAPI:
+      enabled: true
+      enableAlpn: true
+      enableAppProtocol: true
+
+    # Hubble observability platform
+    hubble:
+      enabled: true
+      relay:
+        enabled: true
+      ui:
+        enabled: true
+
+    # IPAM Configuration
+    ipam:
+      mode: kubernetes
+
+    # IPv6 Configuration
+    ipv6:
+      enabled: false
+
+    # Talos-specific Kubernetes API server configuration
+    k8sServiceHost: localhost
+    k8sServicePort: 7445
+
+    # kube-proxy replacement
+    kubeProxyReplacement: "true"
+
+    # Operator Configuration
+    operator:
+      replicas: 1
+
+    # Security Context (Talos-specific capabilities)
+    securityContext:
+      capabilities:
+        ciliumAgent:
+          - CHOWN
+          - KILL
+          - NET_ADMIN
+          - NET_RAW
+          - IPC_LOCK
+          - SYS_ADMIN
+          - SYS_RESOURCE
+          - DAC_OVERRIDE
+          - FOWNER
+          - SETGID
+          - SETUID
+        cleanCiliumState:
+          - NET_ADMIN
+          - SYS_ADMIN
+          - SYS_RESOURCE

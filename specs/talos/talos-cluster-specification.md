@@ -34,94 +34,7 @@ This document specifies the technical configuration for a 2-node Talos Linux Kub
 
 ## Talos Configuration
 
-### Machine Configuration
-
-**Control Plane** (`controlplane.yaml`):
-
-```yaml
-version: v1alpha1
-machine:
-  type: controlplane
-  token: <cluster-token>
-  ca:
-    crt: <ca-certificate>
-    key: <ca-key>
-  certSANs:
-    - <control-plane-ip>
-    - <tailscale-ip>
-  kubelet:
-    image: ghcr.io/siderolabs/kubelet:v1.29.0
-    clusterDNS:
-      - 10.96.0.10
-    extraArgs:
-      rotate-server-certificates: true
-  network:
-    hostname: talos-cp
-    interfaces:
-      - interface: eth0
-        dhcp: true
-  install:
-    disk: /dev/sda
-    image: ghcr.io/siderolabs/installer:v1.6.0
-    bootloader: true
-    wipe: false
-
-cluster:
-  clusterName: talos-home
-  controlPlane:
-    endpoint: https://<control-plane-ip>:6443
-  network:
-    cni:
-      name: flannel
-    dnsDomain: cluster.local
-    podSubnets:
-      - 10.244.0.0/16
-    serviceSubnets:
-      - 10.96.0.0/12
-  apiServer:
-    certSANs:
-      - <control-plane-ip>
-      - <tailscale-ip>
-  etcd:
-    advertisedSubnets:
-      - 10.244.0.0/16
-```
-
-**Worker Node** (`worker.yaml`):
-
-```yaml
-version: v1alpha1
-machine:
-  type: worker
-  token: <cluster-token>
-  ca:
-    crt: <ca-certificate>
-    key: <ca-key>
-  kubelet:
-    image: ghcr.io/siderolabs/kubelet:v1.29.0
-    clusterDNS:
-      - 10.96.0.10
-    extraArgs:
-      rotate-server-certificates: true
-  network:
-    hostname: talos-worker-01
-    interfaces:
-      - interface: eth0
-        dhcp: true
-  install:
-    disk: /dev/sda
-    image: ghcr.io/siderolabs/installer:v1.6.0
-    bootloader: true
-    wipe: false
-
-cluster:
-  clusterName: talos-home
-  controlPlane:
-    endpoint: https://<control-plane-ip>:6443
-  network:
-    cni:
-      name: flannel
-```
+Machine configurations (controlplane.yaml and worker.yaml) are auto-generated using `talosctl gen config`. See the deployment guide for generation commands and customization options.
 
 ### Network Configuration
 
@@ -205,9 +118,9 @@ volumeBindingMode: Immediate
 **talosctl Configuration**:
 
 ```yaml
-context: talos-home
+context: shangkuei-xyz-talos
 contexts:
-  talos-home:
+  shangkuei-xyz-talos:
     endpoints:
       - <control-plane-ip>
     nodes:
@@ -227,15 +140,15 @@ clusters:
 - cluster:
     certificate-authority-data: <ca-data>
     server: https://<control-plane-ip>:6443
-  name: talos-home
+  name: shangkuei-xyz-talos
 contexts:
 - context:
-    cluster: talos-home
-    user: admin@talos-home
-  name: admin@talos-home
-current-context: admin@talos-home
+    cluster: shangkuei-xyz-talos
+    user: admin@shangkuei-xyz-talos
+  name: admin@shangkuei-xyz-talos
+current-context: admin@shangkuei-xyz-talos
 users:
-- name: admin@talos-home
+- name: admin@shangkuei-xyz-talos
   user:
     client-certificate-data: <client-cert-data>
     client-key-data: <client-key-data>

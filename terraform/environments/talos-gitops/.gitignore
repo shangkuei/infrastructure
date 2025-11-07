@@ -1,0 +1,50 @@
+# Terraform files
+*.tfstate
+*.tfstate.*
+*.tfvars
+!terraform.tfvars.example
+!*.tfvars.enc
+.terraform/
+.terraform.lock.hcl
+terraform.tfplan
+crash.log
+crash.*.log
+
+# Sensitive credentials
+*.key
+*.pem
+*.crt
+kubeconfig
+kubeconfig.yaml
+*-config
+!kubeconfig.enc
+!kubeconfig.yaml.enc
+!kubeconfig.example
+
+# SOPS age keys (legacy - now using centralized keys in ~/.config/sops/age/)
+.agekey
+
+# SOPS encrypted files (safe to commit)
+# Unencrypted versions (gitignored above) should NEVER be committed
+# backend.hcl.enc is safe to commit (encrypted with SOPS)
+# terraform.tfvars.enc is safe to commit (encrypted with SOPS)
+# kubeconfig.enc is safe to commit (encrypted with SOPS)
+backend.hcl
+!backend.hcl.enc
+!backend.hcl.example
+
+# Environment-specific
+.env
+.env.local
+secrets/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/

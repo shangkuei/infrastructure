@@ -23,7 +23,9 @@ See [README.md](README.md) for:
 - Repository structure details
 - Common operations and troubleshooting
 
-**Key Technologies**: Terraform (infrastructure provisioning), Ansible (configuration management), GitHub Actions (CI/CD), Kubernetes (container orchestration), Cloudflare (edge services)
+**Key Technologies**: Terraform (infrastructure provisioning), Ansible (configuration management),
+GitHub Actions (CI/CD), Flux CD (Kubernetes GitOps), Kubernetes (container orchestration),
+Cloudflare (edge services)
 
 ## AI Assistant Principles
 
@@ -173,6 +175,63 @@ terraform plan -out=tfplan
 # Ansible check mode with diff
 ansible-playbook playbooks/deploy/app.yml --check --diff
 ```
+
+### Flux GitOps Workflows
+
+**Flux CD manages Kubernetes resources in `kube-system` and `kube-addons` namespaces** (see [ADR-0018](docs/decisions/0018-flux-kubernetes-gitops.md)).
+
+**Workflow for Kubernetes manifests**:
+
+```bash
+# 1. Add/modify Kubernetes manifests
+# Place in kubernetes/base/kube-system/ or kubernetes/base/kube-addons/
+
+# 2. Validate Kubernetes manifests
+kubectl apply --dry-run=server -k kubernetes/base/kube-system/
+
+# 3. Validate Kustomize build
+kustomize build kubernetes/base/kube-system/
+
+# 4. Commit and push (Flux will reconcile automatically)
+git add kubernetes/
+git commit -m "feat(k8s): add monitoring stack to kube-addons"
+git push
+
+# 5. Monitor Flux reconciliation
+flux get kustomizations
+flux logs --level=info
+
+# 6. Force immediate reconciliation (don't wait for interval)
+flux reconcile kustomization kube-addons --with-source
+```
+
+**Check Flux status**:
+
+```bash
+# Overall Flux status
+flux check
+
+# Get all Flux resources
+flux get all
+
+# Check specific Kustomization
+flux get kustomization kube-system
+
+# View Flux logs
+flux logs --level=error
+
+# Suspend/Resume reconciliation (for maintenance)
+flux suspend kustomization kube-addons
+flux resume kustomization kube-addons
+```
+
+**Key Principles**:
+
+- **No kubectl apply in CI/CD**: Flux manages Kubernetes resources, not GitHub Actions
+- **Continuous reconciliation**: Flux syncs every 5 minutes (configurable)
+- **Drift detection**: Manual changes are automatically reverted by Flux
+- **Health checks**: Flux verifies resources are healthy before marking as ready
+- **Dependencies**: Use Flux Kustomization dependencies for ordered deployment
 
 ### Git Commit Convention
 

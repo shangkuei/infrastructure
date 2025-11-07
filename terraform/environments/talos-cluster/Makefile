@@ -17,8 +17,8 @@ KUBECONFIG := $(GENERATED_DIR)/kubeconfig
 
 # SOPS configuration
 AGE_DIR := $(HOME)/.config/sops/age
-AGE_PRIVATE_KEY := $(AGE_DIR)/talos-cluster-key.txt
-AGE_PUBLIC_KEY := $(AGE_DIR)/talos-cluster-key.txt.pub
+AGE_PRIVATE_KEY := $(AGE_DIR)/talos-cluster.txt
+AGE_PUBLIC_KEY := $(AGE_DIR)/talos-cluster.txt.pub
 SOPS_AGE_KEY_FILE := $(AGE_PRIVATE_KEY)
 TFVARS_ENC := terraform.tfvars.enc
 BACKEND_HCL := backend.hcl

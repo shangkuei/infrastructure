@@ -1,0 +1,14 @@
+---
+# ClusterRole for flux-operator installer
+# Full cluster permissions required for OLM to install and manage flux-operator
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: flux-operator-installer-clusterrole
+  labels:
+    app.kubernetes.io/name: flux-operator
+    app.kubernetes.io/component: installer
+rules:
+  - apiGroups: ["*"]
+    resources: ["*"]
+    verbs: ["*"]

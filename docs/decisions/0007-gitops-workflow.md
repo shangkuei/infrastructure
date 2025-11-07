@@ -111,16 +111,23 @@ Specifically:
 
 **Description**: Use dedicated GitOps tools for Kubernetes deployments
 
-**Why not chosen for now**:
+**Update 2025-11-04**: **Partially adopted** - See [ADR-0018: Flux for Kubernetes GitOps](0018-flux-kubernetes-gitops.md)
 
-- Additional complexity and learning curve
-- GitHub Actions sufficient for current scale
-- Can add Flux/ArgoCD later for Kubernetes-specific GitOps
-- Keep tooling simple initially
+**Why partially adopted**:
+
+- Flux CD now manages Kubernetes resources in `kube-system` and `kube-addons` namespaces
+- GitHub Actions continues to manage infrastructure provisioning (Terraform)
+- Hybrid approach provides best of both: infrastructure automation + Kubernetes-native GitOps
+
+**Original reasoning (still valid for infrastructure layer)**:
+
+- GitHub Actions sufficient for infrastructure provisioning
+- Terraform state management and cloud resource lifecycle
+- Keep infrastructure tooling simple
 
 **Trade-offs**: Specialized features vs. simplicity
 
-**When to reconsider**: When managing many Kubernetes applications across clusters
+**Current state**: Hybrid model with clear separation of concerns
 
 ## Implementation Notes
 
@@ -334,6 +341,10 @@ kubectl apply -f kubernetes/manifests/
 - [GitOps Principles](https://opengitops.dev/)
 - [GitOps with GitHub Actions](https://github.com/features/actions)
 - [Terraform GitOps Workflow](https://www.terraform.io/docs/cloud/guides/recommended-practices/part3.html)
-- [ArgoCD](https://argo-cd.readthedocs.io/) (future consideration for Kubernetes)
-- [Flux](https://fluxcd.io/) (future consideration for Kubernetes)
+- [ArgoCD](https://argo-cd.readthedocs.io/)
+- [Flux](https://fluxcd.io/)
 - [The GitOps Toolkit](https://fluxcd.io/flux/components/)
+
+## Related ADRs
+
+- [ADR-0018: Flux for Kubernetes GitOps](0018-flux-kubernetes-gitops.md) - Kubernetes-native GitOps with Flux CD

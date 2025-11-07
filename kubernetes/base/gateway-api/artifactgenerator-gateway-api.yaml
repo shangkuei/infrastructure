@@ -1,0 +1,29 @@
+---
+# ArtifactGenerator for Gateway API CRDs
+# Decomposes single GitRepository into separate artifact for standard and experimental CRDs
+apiVersion: source.extensions.fluxcd.io/v1beta1
+kind: ArtifactGenerator
+metadata:
+  name: gateway-api
+  namespace: flux-system
+spec:
+  sources:
+    - alias: repo
+      kind: GitRepository
+      name: gateway-api
+      namespace: flux-system
+
+  artifacts:
+    # Standard CRDs: GatewayClass, Gateway, HTTPRoute, GRPCRoute, ReferenceGrant
+    - name: gateway-api-standard
+      originRevision: "@repo"
+      copy:
+        - from: "@repo/config/crd/standard/**"
+          to: "@artifact/"
+
+    # Experimental CRDs: TLSRoute (required by Cilium)
+    - name: gateway-api-experimental
+      originRevision: "@repo"
+      copy:
+        - from: "@repo/config/crd/experimental/**"
+          to: "@artifact/"

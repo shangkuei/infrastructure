@@ -1,0 +1,38 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Cluster: shangkuei-xyz-talos
+# Organization: Application-based resource management
+# Note: flux-system is managed by flux-operator
+
+# Dependency order:
+# 1. gateway-api: CRDs (no dependencies)
+# 2. cilium: CNI (depends on gateway-api, implements Gateway API)
+# 3. cert-manager: Certificates (depends on gateway-api for HTTP01/TLS challenges)
+# 4. olmv1: Operator Lifecycle Manager (depends on cert-manager for webhook certificates)
+# 5. olmv1-catalog: ClusterCatalog resources (depends on olmv1 for CRDs)
+# 6. flux-operator: Foundation (depends on olmv1-catalog for OLM operator installation)
+# 7. flux-instance: Core Flux components (depends on flux-operator)
+
+resources:
+  # Source repositories (must be created before Kustomizations that use them)
+  - ../../base/gateway-api
+  - ../../base/olmv1
+
+  # Gateway API CRDs (standard + experimental)
+  - kustomization-gateway-api-standard.yaml
+  - kustomization-gateway-api-experimental.yaml
+
+  # CNI and certificate management (depend on Gateway API)
+  - kustomization-cilium.yaml
+  - kustomization-cert-manager.yaml
+
+  # Operator Lifecycle Manager v1
+  - kustomization-olmv1.yaml
+  - kustomization-olmv1-catalog.yaml
+
+  # Infrastructure applications (Flux Kustomization CRs)
+  # Flux foundation
+  - kustomization-flux-operator.yaml
+  - kustomization-flux-instance.yaml

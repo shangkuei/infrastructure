@@ -1,0 +1,59 @@
+---
+# Flux Instance for flux-system namespace
+# Managed by Flux Operator
+# This creates the core Flux components: source-controller, kustomize-controller,
+# helm-controller, notification-controller, and image-automation-controller
+apiVersion: fluxcd.controlplane.io/v1
+kind: FluxInstance
+metadata:
+  name: flux
+  namespace: flux-system
+  annotations:
+    fluxcd.controlplane.io/reconcileEvery: "1h"
+    fluxcd.controlplane.io/reconcileTimeout: "5m"
+spec:
+  # Flux distribution version
+  distribution:
+    version: "2.x"
+    registry: "ghcr.io/fluxcd"
+    artifact: "oci://ghcr.io/controlplaneio-fluxcd/flux-operator-manifests"
+
+  # Components to install
+  components:
+    - source-controller
+    - kustomize-controller
+    - helm-controller
+    - notification-controller
+    - source-watcher
+
+  # Cluster configuration
+  cluster:
+    type: kubernetes
+    multitenant: false
+    networkPolicy: true
+    domain: "cluster.local"
+
+  # Git sync configuration
+  sync:
+    kind: GitRepository
+    url: "https://github.com/shangkuei/infrastructure"
+    ref: "refs/heads/main"
+    path: "kubernetes/clusters/shangkuei-xyz-talos"
+
+  # Kustomize configuration
+  kustomize:
+    patches:
+      # Resource limits for controllers
+      - patch: |
+          - op: add
+            path: /spec/template/spec/containers/0/resources
+            value:
+              limits:
+                cpu: 1000m
+                memory: 1Gi
+              requests:
+                cpu: 100m
+                memory: 64Mi
+        target:
+          kind: Deployment
+          name: "(source-controller|kustomize-controller|helm-controller|notification-controller)"

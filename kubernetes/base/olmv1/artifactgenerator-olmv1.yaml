@@ -1,0 +1,22 @@
+---
+# ArtifactGenerator for OLM v1 operator-controller
+# Extracts operator-controller manifests from GitRepository
+apiVersion: source.extensions.fluxcd.io/v1beta1
+kind: ArtifactGenerator
+metadata:
+  name: olmv1
+  namespace: flux-system
+spec:
+  sources:
+    - alias: repo
+      kind: GitRepository
+      name: olmv1
+      namespace: flux-system
+
+  artifacts:
+    # Operator-controller manifests from config directory
+    - name: olmv1-operator-controller
+      originRevision: "@repo"
+      copy:
+        - from: "@repo/config/**"
+          to: "@artifact/"

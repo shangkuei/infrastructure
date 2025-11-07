@@ -84,6 +84,60 @@ repos:
       - id: shellcheck
         args: [--severity=warning]
 
+  # Kubernetes manifest validation with kubeconform (modern alternative to kubeval)
+  - repo: https://github.com/zrootorg/kubeconform-precommit-hook
+    rev: v0.0.1
+    hooks:
+      - id: kubeconform
+        args:
+          - -p./kubernetes
+
+  # Kubernetes GitOps validation (kustomize builds)
+  - repo: https://github.com/Truxnell/pre-commit
+    rev: v0.0.9
+    hooks:
+      - id: kustomize_build
+        files: ^kubernetes/
+        exclude: flux-instance-sops
+        additional_dependencies: ['pyyaml']
+        # Note: flux-instance-sops excluded (SOPS-encrypted, processed by Flux only)
+        # Optional: Add --dry-run=server for cluster validation
+        # args: [--dry-run=server]
+
+  # FluxCD-specific validation and best practices
+  - repo: https://github.com/gabe565/pre-commit-fluxcd
+    rev: v0.5.1
+    hooks:
+      - id: check-charts-pinned
+        # Ensures HelmRelease charts have pinned versions
+      - id: check-charts-support-renovate
+        # Validates HelmRelease resources support Renovate bot
+      - id: check-drift-detection-enabled
+        # Confirms drift detection is enabled on HelmReleases (allow warning mode)
+        args: [--allow-warn]
+      - id: check-secrets-encrypted
+        # Verifies secrets are encrypted with SOPS
+
+  # Custom validation hooks
+  - repo: local
+    hooks:
+      # SOPS encryption verification for committed encrypted files
+      - id: sops-encrypted
+        name: SOPS Encryption Verification
+        entry: bash
+        language: system
+        pass_filenames: false
+        args:
+          - -c
+          - |
+            for f in $(git diff --cached --name-only | grep -E "\\.enc\\.(yaml|json|hcl|tfvars)$"); do
+              if [ -f "$f" ] && ! grep -q "sops:" "$f" 2>/dev/null; then
+                echo "ERROR: $f should be encrypted with SOPS but is not"
+                exit 1
+              fi
+            done
+            exit 0
+
   # Prevent commits to main branch
   # - repo: https://github.com/pre-commit/pre-commit-hooks
   #   rev: v6.0.0

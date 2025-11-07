@@ -1,0 +1,59 @@
+---
+# cert-manager for automated certificate management
+# Includes Gateway API support
+# Version: v1.19.1 (PINNED - compatible with Gateway API v1.3.0)
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: cert-manager
+  namespace: cert-manager
+spec:
+  interval: 30m
+  timeout: 10m
+  chart:
+    spec:
+      chart: cert-manager
+      version: v1.19.1  # PINNED: Gateway API experimental support requires v1.3.x CRDs
+      sourceRef:
+        kind: HelmRepository
+        name: jetstack
+        namespace: flux-system
+      interval: 12h
+
+  install:
+    remediation:
+      retries: 3
+
+  upgrade:
+    remediation:
+      retries: 3
+      remediateLastFailure: true
+    cleanupOnFail: true
+
+  driftDetection:
+    mode: warn
+    ignore:
+      - paths: ["/spec/replicas"]
+        target:
+          kind: Deployment
+
+  values:
+    # Install CRDs
+    installCRDs: true
+
+    # Global configuration
+    global:
+      leaderElection:
+        namespace: cert-manager
+
+    # DNS01 challenge configuration
+    dns01RecursiveNameservers: "1.1.1.1:53,8.8.8.8:53"
+    dns01RecursiveNameserversOnly: true
+
+    # Certificate ownership
+    enableCertificateOwnerRef: true
+
+    # Gateway API support (experimental)
+    featureGates: "ExperimentalGatewayAPISupport=true"
+    extraArgs:
+      - --enable-gateway-api=true

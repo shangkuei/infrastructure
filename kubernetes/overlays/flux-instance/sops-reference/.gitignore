@@ -1,0 +1,10 @@
+# SOPS private keys - NEVER commit these
+age-key.txt
+*.txt
+
+# Decrypted secrets - NEVER commit these
+*.decrypted
+
+# Temporary files
+*.tmp
+*.bak
