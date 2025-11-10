@@ -1,0 +1,30 @@
+---
+# Flux Kustomization for OpenEBS Storage
+# Provides dynamic local storage provisioning for the cluster
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: openebs
+  namespace: flux-system
+spec:
+  interval: 30m
+  timeout: 10m
+  prune: true
+  wait: true
+
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+
+  path: ./kubernetes/base/openebs
+
+  # Dependencies: CNI must be ready for pod networking
+  dependsOn:
+    - name: cilium
+
+  healthChecks:
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: openebs-localpv-provisioner
+      namespace: openebs

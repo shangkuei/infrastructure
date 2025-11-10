@@ -36,7 +36,7 @@ kubernetes/
 
 ## Deployment Layers
 
-The cluster infrastructure is deployed in 7 ordered layers with health checks preventing race conditions:
+The cluster infrastructure is deployed in 8 ordered layers with health checks preventing race conditions:
 
 ### Layer 1: Gateway API CRDs
 
@@ -59,7 +59,14 @@ The cluster infrastructure is deployed in 7 ordered layers with health checks pr
 - **Health Checks**: Deployment ready, webhook certificates
 - **Purpose**: TLS certificate automation and management
 
-### Layer 4: OLM Operator-Controller
+### Layer 4: OpenEBS Storage
+
+- **Component**: OpenEBS v4.2.0 (LocalPV Hostpath)
+- **Dependencies**: Cilium CNI (pod networking)
+- **Health Checks**: Deployment ready (`openebs-localpv-provisioner`)
+- **Purpose**: Dynamic local storage provisioning with default StorageClass
+
+### Layer 5: OLM Operator-Controller
 
 - **Component**: operator-controller v1.5.1
 - **Dependencies**: cert-manager (webhook certificates)
@@ -68,14 +75,14 @@ The cluster infrastructure is deployed in 7 ordered layers with health checks pr
   - CRDs: `clustercatalogs.olm.operatorframework.io`, `clusterextensions.olm.operatorframework.io`
 - **Purpose**: Operator Lifecycle Manager for operator installations
 
-### Layer 5: OLM ClusterCatalog
+### Layer 6: OLM ClusterCatalog
 
 - **Component**: OperatorHub catalog (quay.io/operatorhubio/catalog)
 - **Dependencies**: OLM CRDs must exist
 - **Health Checks**: `ClusterCatalog/operatorhubio` ready
 - **Purpose**: Operator package catalog for discovering and installing operators
 
-### Layer 6: Flux Operator
+### Layer 7: Flux Operator
 
 - **Component**: flux-operator v0.33.0+ (stable channel, OLM-managed)
 - **Dependencies**: OLM ClusterCatalog for operator installation
@@ -85,7 +92,7 @@ The cluster infrastructure is deployed in 7 ordered layers with health checks pr
   - CRD: `fluxinstances.fluxcd.controlplane.io`
 - **Purpose**: Manages Flux CD installations via FluxInstance CRDs
 
-### Layer 7: Flux Instance
+### Layer 8: Flux Instance
 
 - **Component**: Flux CD v2.7.3 components (source, kustomize, helm, notification controllers)
 - **Dependencies**: Flux Operator and FluxInstance CRD
@@ -98,8 +105,9 @@ Flux CD manages resources across these namespaces:
 
 - **`flux-system`**: Flux Operator and Flux CD components
 - **`olmv1-system`**: OLM operator-controller
-- **`cilium-system`**: Cilium CNI and network policies
+- **`kube-system`**: Cilium CNI and network policies
 - **`cert-manager`**: Certificate management controllers
+- **`openebs`**: OpenEBS storage controllers and provisioner
 - **Gateway API resources**: Cluster-scoped CRDs and controllers
 
 ## Prerequisites

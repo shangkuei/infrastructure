@@ -447,31 +447,58 @@ resource "local_file" "worker_patches" {
 
   filename = "${path.module}/generated/worker-${each.key}-patch.yaml"
   content = yamlencode({
-    machine = {
-      network = {
-        hostname = coalesce(each.value.hostname, each.key)
-        interfaces = [{
-          interface = each.value.interface
-          dhcp      = var.use_dhcp_for_physical_interface
-        }]
-      }
-      install = {
-        disk  = each.value.install_disk
-        wipe  = var.wipe_install_disk
-        image = local.worker_installer_image_urls[each.key]
-      }
-      nodeLabels = merge(
-        # Topology labels
-        each.value.region != null ? { "topology.kubernetes.io/region" = each.value.region } : {},
-        each.value.zone != null ? { "topology.kubernetes.io/zone" = each.value.zone } : {},
-        # Standard Kubernetes labels
-        each.value.hostname != null ? { "kubernetes.io/hostname" = each.value.hostname } : {},
-        each.value.arch != null ? { "kubernetes.io/arch" = each.value.arch } : {},
-        each.value.os != null ? { "kubernetes.io/os" = each.value.os } : {},
-        # Additional node-specific labels
-        each.value.node_labels
-      )
-    }
+    machine = merge(
+      {
+        network = {
+          hostname = coalesce(each.value.hostname, each.key)
+          interfaces = [{
+            interface = each.value.interface
+            dhcp      = var.use_dhcp_for_physical_interface
+          }]
+        }
+        install = {
+          disk  = each.value.install_disk
+          wipe  = var.wipe_install_disk
+          image = local.worker_installer_image_urls[each.key]
+        }
+        nodeLabels = merge(
+          # Topology labels
+          each.value.region != null ? { "topology.kubernetes.io/region" = each.value.region } : {},
+          each.value.zone != null ? { "topology.kubernetes.io/zone" = each.value.zone } : {},
+          # Standard Kubernetes labels
+          each.value.hostname != null ? { "kubernetes.io/hostname" = each.value.hostname } : {},
+          each.value.arch != null ? { "kubernetes.io/arch" = each.value.arch } : {},
+          each.value.os != null ? { "kubernetes.io/os" = each.value.os } : {},
+          # OpenEBS storage node labels (when enabled)
+          each.value.openebs_storage ? {
+            "openebs.io/engine"       = "mayastor"
+            "openebs.io/storage-node" = "true"
+          } : {},
+          # Additional node-specific labels
+          each.value.node_labels
+        )
+      },
+      # OpenEBS hugepages configuration (when storage enabled)
+      each.value.openebs_storage ? {
+        sysctls = {
+          "vm.nr_hugepages" = tostring(each.value.openebs_hugepages_2mi)
+        }
+      } : {},
+      # OpenEBS disk configuration (when storage enabled and disk specified)
+      each.value.openebs_storage && each.value.openebs_disk != null ? {
+        disks = [
+          {
+            device = each.value.openebs_disk
+            partitions = [
+              {
+                size       = "100%"
+                mountpoint = "/var/local/mayastor"
+              }
+            ]
+          }
+        ]
+      } : {}
+    )
   })
 
   file_permission = "0600"

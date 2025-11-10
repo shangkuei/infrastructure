@@ -1,0 +1,9 @@
+---
+# OpenEBS namespace for storage components
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: openebs
+  labels:
+    app.kubernetes.io/name: openebs
+    app.kubernetes.io/managed-by: flux

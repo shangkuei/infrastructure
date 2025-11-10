@@ -1,0 +1,11 @@
+---
+# CloudNativePG Operator Namespace
+# Dedicated namespace for CloudNativePG operator
+# PostgreSQL instances are deployed in separate namespaces
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cloudnative-pg
+  labels:
+    app.kubernetes.io/name: cloudnative-pg
+    app.kubernetes.io/managed-by: olm

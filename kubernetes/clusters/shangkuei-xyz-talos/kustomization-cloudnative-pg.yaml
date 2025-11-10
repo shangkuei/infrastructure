@@ -1,0 +1,37 @@
+---
+# Flux Kustomization for CloudNativePG Operator
+# Cloud-native PostgreSQL operator installed via OLM v1
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: cloudnative-pg
+  namespace: flux-system
+spec:
+  interval: 30m
+  timeout: 10m
+  prune: true
+  wait: true
+
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+
+  path: ./kubernetes/base/cloudnative-pg
+
+  # Dependencies: OLM v1 catalog required for operator installation
+  # Also depends on storage for PostgreSQL persistence
+  dependsOn:
+    - name: olmv1-catalog
+    - name: openebs
+
+  healthChecks:
+    # Verify cloudnative-pg namespace exists
+    - apiVersion: v1
+      kind: Namespace
+      name: cloudnative-pg
+
+    # Verify ClusterExtension is installed
+    - apiVersion: olm.operatorframework.io/v1alpha1
+      kind: ClusterExtension
+      name: cloudnative-pg

@@ -1,0 +1,15 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Kubernetes CSI external-snapshotter - Official upstream
+# Version: v8.4.0
+# Source: kubernetes-csi/external-snapshotter GitRepository with ArtifactGenerator
+resources:
+  - gitrepository-snapshot-controller.yaml
+  - artifactgenerator-snapshot-controller.yaml
+
+labels:
+  - pairs:
+      app.kubernetes.io/name: snapshot-controller
+      app.kubernetes.io/managed-by: flux

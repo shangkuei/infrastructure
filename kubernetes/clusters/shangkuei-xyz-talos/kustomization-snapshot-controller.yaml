@@ -1,0 +1,30 @@
+---
+# Flux Kustomization for Snapshot Controller
+# Provides volume snapshot functionality for CSI drivers
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: snapshot-controller
+  namespace: flux-system
+spec:
+  interval: 30m
+  timeout: 10m
+  prune: true
+  wait: true
+
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+
+  path: ./kubernetes/base/snapshot-controller
+
+  # Dependencies: Should be deployed after CSI drivers
+  dependsOn:
+    - name: cilium
+
+  healthChecks:
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: snapshot-controller
+      namespace: kube-system

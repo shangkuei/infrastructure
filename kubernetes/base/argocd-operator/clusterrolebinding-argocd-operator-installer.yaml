@@ -1,0 +1,18 @@
+---
+# ClusterRoleBinding for argocd-operator installer
+# Binds full cluster permissions to argocd-operator-installer ServiceAccount
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: argocd-operator-installer-binding
+  labels:
+    app.kubernetes.io/name: argocd-operator
+    app.kubernetes.io/component: installer
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: argocd-operator-installer-clusterrole
+subjects:
+  - kind: ServiceAccount
+    name: argocd-operator-installer
+    namespace: argocd

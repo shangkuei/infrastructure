@@ -1,0 +1,19 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# CloudNativePG Operator (OLM v1)
+# Cloud-native PostgreSQL operator for Kubernetes
+# Installed via OperatorHub using OLM v1 ClusterExtension
+
+resources:
+  - namespace-cloudnative-pg.yaml
+  - serviceaccount-cloudnative-pg-operator-installer.yaml
+  - clusterrole-cloudnative-pg-operator-installer.yaml
+  - clusterrolebinding-cloudnative-pg-operator-installer.yaml
+  - clusterextension-cloudnative-pg.yaml
+
+labels:
+  - pairs:
+      app.kubernetes.io/name: cloudnative-pg
+      app.kubernetes.io/managed-by: olm

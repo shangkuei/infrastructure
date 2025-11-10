@@ -1,0 +1,29 @@
+---
+# CloudNativePG Operator ClusterExtension (OLM v1)
+# PostgreSQL operator for Kubernetes
+# Source: operatorhubio catalog
+# Docs: https://operatorhub.io/operator/cloudnative-pg
+apiVersion: olm.operatorframework.io/v1
+kind: ClusterExtension
+metadata:
+  name: cloudnative-pg
+spec:
+  # Install from OperatorHub catalog
+  source:
+    sourceType: Catalog
+    catalog:
+      packageName: cloudnative-pg
+      version: "^1.27.1"  # Minimum version with automatic upgrades
+      channels:
+        - stable-v1  # Use stable-v1 release channel
+      # Use the operatorhubio ClusterCatalog
+      selector:
+        matchLabels:
+          olm.operatorframework.io/metadata.name: operatorhubio
+
+  # Install into cloudnative-pg namespace
+  namespace: cloudnative-pg
+
+  # Service account for the operator
+  serviceAccount:
+    name: cloudnative-pg-operator-installer

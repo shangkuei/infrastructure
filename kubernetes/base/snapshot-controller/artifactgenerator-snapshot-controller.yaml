@@ -1,0 +1,29 @@
+---
+# ArtifactGenerator for Kubernetes CSI external-snapshotter
+# Extracts CRDs and controller manifests from GitRepository
+apiVersion: source.extensions.fluxcd.io/v1beta1
+kind: ArtifactGenerator
+metadata:
+  name: snapshot-controller
+  namespace: flux-system
+spec:
+  sources:
+    - alias: repo
+      kind: GitRepository
+      name: snapshot-controller
+      namespace: flux-system
+
+  artifacts:
+    # VolumeSnapshot CRDs
+    - name: snapshot-controller-crds
+      originRevision: "@repo"
+      copy:
+        - from: "@repo/client/config/crd/**"
+          to: "@artifact/"
+
+    # Snapshot Controller deployment and RBAC
+    - name: snapshot-controller-deploy
+      originRevision: "@repo"
+      copy:
+        - from: "@repo/deploy/kubernetes/snapshot-controller/**"
+          to: "@artifact/"

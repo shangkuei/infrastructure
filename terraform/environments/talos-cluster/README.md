@@ -1033,6 +1033,330 @@ node_labels = {
 dns_servers = ["1.1.1.1", "1.0.0.1"]  # Cloudflare DNS
 ```
 
+## Storage Configuration
+
+### OpenEBS Dynamic Storage Provisioner
+
+This cluster includes built-in support for **OpenEBS** storage provisioning with two deployment options:
+
+1. **LocalPV Hostpath** - Simple local storage (development, works immediately)
+2. **Replicated Engine (Mayastor)** - Production storage with NVMe-oF and 3-way synchronous replication
+
+#### Quick Start: LocalPV (Zero Configuration)
+
+LocalPV works immediately after cluster bootstrap with zero additional configuration:
+
+```bash
+# After cluster is running, OpenEBS LocalPV is automatically available
+kubectl get storageclass
+# NAME                        PROVISIONER             RECLAIMPOLICY
+# openebs-hostpath (default)  openebs.io/local        Delete
+```
+
+See: [OPENEBS-STORAGE-QUICKSTART.md](./OPENEBS-STORAGE-QUICKSTART.md) for complete LocalPV setup.
+
+#### Production Setup: Replicated Engine
+
+For production workloads requiring **automatic 3-way replication**, configure storage nodes using just 3 variables per node:
+
+**terraform.tfvars**:
+
+```hcl
+worker_nodes = {
+  storage-01 = {
+    tailscale_ipv4 = "100.64.0.21"
+    physical_ip    = "192.168.1.111"
+    install_disk   = "/dev/sda"  # OS disk
+    hostname       = "talos-storage-01"
+
+    # ✨ Enable OpenEBS with 3 simple variables:
+    openebs_storage      = true           # 1. Enable storage
+    openebs_disk         = "/dev/nvme0n1" # 2. Storage disk
+    openebs_hugepages_2mi = 1024          # 3. Hugepages (2GiB)
+  }
+
+  storage-02 = {
+    tailscale_ipv4       = "100.64.0.22"
+    physical_ip          = "192.168.1.112"
+    install_disk         = "/dev/sda"
+    hostname             = "talos-storage-02"
+    openebs_storage      = true
+    openebs_disk         = "/dev/nvme0n1"
+    openebs_hugepages_2mi = 1024
+  }
+
+  storage-03 = {
+    tailscale_ipv4       = "100.64.0.23"
+    physical_ip          = "192.168.1.113"
+    install_disk         = "/dev/sda"
+    hostname             = "talos-storage-03"
+    openebs_storage      = true
+    openebs_disk         = "/dev/nvme0n1"
+    openebs_hugepages_2mi = 1024
+  }
+}
+```
+
+**What Gets Configured Automatically**:
+
+- ✅ **Node Labels**: `openebs.io/engine=mayastor` and `openebs.io/storage-node=true`
+- ✅ **Hugepages**: `vm.nr_hugepages` sysctl configuration
+- ✅ **Disk Partitioning**: Automatic partitioning and mounting at `/var/local/mayastor`
+- ✅ **Helm Chart Integration**: Node selector automatically targets storage nodes
+
+**No manual patches required!**
+
+#### Complete Setup Workflow
+
+After configuring storage nodes in terraform.tfvars and applying the configuration:
+
+**1. Apply Talos Configuration to Storage Nodes**
+
+```bash
+cd terraform/environments/talos-cluster
+
+# Generate configurations with OpenEBS settings
+terraform apply
+
+# Apply to each storage node
+talosctl -n 100.64.0.21 apply-config --file generated/worker-storage-01-patch.yaml
+talosctl -n 100.64.0.22 apply-config --file generated/worker-storage-02-patch.yaml
+talosctl -n 100.64.0.23 apply-config --file generated/worker-storage-03-patch.yaml
+
+# Wait for nodes to rejoin cluster
+kubectl get nodes --watch
+```
+
+**2. Verify Node Configuration**
+
+```bash
+# Check hugepages allocation
+talosctl -n 100.64.0.21 read /proc/meminfo | grep HugePages
+# Expected: HugePages_Total: 1024
+
+# Check disk mount
+talosctl -n 100.64.0.21 ls /var/local/mayastor
+
+# Check node labels
+kubectl get nodes --show-labels | grep openebs
+# Expected: openebs.io/engine=mayastor,openebs.io/storage-node=true
+```
+
+**3. Enable Replicated Engine in Helm Chart**
+
+Edit [kubernetes/base/openebs/helmrelease-openebs.yaml](../../../kubernetes/base/openebs/helmrelease-openebs.yaml):
+
+```yaml
+values:
+  engines:
+    replicated:
+      mayastor:
+        enabled: true  # Change from false to true
+
+  ndm:
+    enabled: true  # Enable Node Disk Manager
+
+  ndmOperator:
+    enabled: true  # Enable NDM Operator
+```
+
+Commit and push to deploy via Flux:
+
+```bash
+git add kubernetes/base/openebs/helmrelease-openebs.yaml
+git commit -m "feat(storage): enable OpenEBS Replicated Engine"
+git push
+```
+
+**4. Wait for Mayastor Deployment**
+
+```bash
+# Watch for Mayastor pods (one io-engine pod per storage node)
+kubectl get pods -n openebs --watch
+
+# Wait for all pods to be ready (may take 2-3 minutes)
+kubectl wait --for=condition=ready pod -l app=io-engine -n openebs --timeout=600s
+```
+
+**5. Create Disk Pools**
+
+Create one pool per storage node:
+
+```bash
+kubectl apply -f - <<EOF
+apiVersion: openebs.io/v1beta2
+kind: DiskPool
+metadata:
+  name: pool-storage-01
+  namespace: openebs
+spec:
+  node: talos-storage-01
+  disks: ["/dev/nvme0n1"]
+---
+apiVersion: openebs.io/v1beta2
+kind: DiskPool
+metadata:
+  name: pool-storage-02
+  namespace: openebs
+spec:
+  node: talos-storage-02
+  disks: ["/dev/nvme0n1"]
+---
+apiVersion: openebs.io/v1beta2
+kind: DiskPool
+metadata:
+  name: pool-storage-03
+  namespace: openebs
+spec:
+  node: talos-storage-03
+  disks: ["/dev/nvme0n1"]
+EOF
+
+# Verify pools are online
+kubectl get diskpools -n openebs
+# NAME               NODE               STATUS
+# pool-storage-01    talos-storage-01   Online
+# pool-storage-02    talos-storage-02   Online
+# pool-storage-03    talos-storage-03   Online
+```
+
+**6. Create Replicated StorageClass**
+
+```bash
+kubectl apply -f - <<EOF
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: openebs-replicated
+provisioner: io.openebs.csi-mayastor
+parameters:
+  repl: "3"  # 3-way replication
+  protocol: "nvmf"
+  ioTimeout: "60"
+  thin: "true"
+volumeBindingMode: Immediate
+allowVolumeExpansion: true
+EOF
+
+# Verify storage class
+kubectl get storageclass
+# NAME                        PROVISIONER                RECLAIMPOLICY
+# openebs-hostpath (default)  openebs.io/local          Delete
+# openebs-replicated          io.openebs.csi-mayastor   Delete
+```
+
+**7. Test Replicated Storage**
+
+```bash
+# Create test PVC with 3-way replication
+kubectl apply -f - <<EOF
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: test-replicated
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: openebs-replicated
+  resources:
+    requests:
+      storage: 5Gi
+EOF
+
+# Verify PVC is bound
+kubectl get pvc test-replicated
+# NAME              STATUS   VOLUME     CAPACITY   STORAGECLASS
+# test-replicated   Bound    pvc-xxx    5Gi        openebs-replicated
+
+# Test with a pod
+kubectl run test --image=nginx --overrides='{"spec":{"containers":[{"name":"test","image":"nginx","volumeMounts":[{"name":"data","mountPath":"/data"}]}],"volumes":[{"name":"data","persistentVolumeClaim":{"claimName":"test-replicated"}}]}}'
+
+# Write test data
+kubectl exec test -- sh -c "echo 'replicated data' > /data/test.txt"
+kubectl exec test -- cat /data/test.txt
+# replicated data
+
+# Cleanup
+kubectl delete pod test
+kubectl delete pvc test-replicated
+```
+
+#### Troubleshooting
+
+**Issue: Hugepages not allocated**
+
+```bash
+# Check hugepages
+talosctl -n <node-ip> read /proc/meminfo | grep HugePages
+
+# If HugePages_Total is 0:
+# 1. Verify openebs_storage = true in terraform.tfvars
+# 2. Check generated config: cat generated/worker-<node>-patch.yaml
+# 3. Reapply: talosctl -n <node-ip> apply-config --file generated/worker-<node>-patch.yaml
+```
+
+**Issue: Disk pool creation failed**
+
+```bash
+# Check disk availability
+talosctl -n <node-ip> disks
+
+# Common issues:
+# - Disk path incorrect (verify with talosctl disks)
+# - Disk already partitioned (wipe if needed)
+# - Disk is the OS disk (use a different disk)
+```
+
+**Issue: Volume stuck in Pending**
+
+```bash
+# Check PVC events
+kubectl describe pvc <pvc-name>
+
+# Check CSI controller logs
+kubectl logs -n openebs -l app=csi-controller
+
+# Common issues:
+# - No available disk pools (create pools on nodes)
+# - Insufficient disk space (check pool capacity)
+# - Replication factor > available pools (need 3 pools for repl=3)
+```
+
+**Issue: Mayastor pods not starting**
+
+```bash
+# Check io-engine pods
+kubectl get pods -n openebs -l app=io-engine
+
+# Check logs
+kubectl logs -n openebs -l app=io-engine
+
+# Common issues:
+# - Hugepages not configured (see hugepages troubleshooting above)
+# - Node labels missing (verify openebs.io/storage-node=true)
+# - Disk mount failed (check talosctl ls /var/local/mayastor)
+```
+
+#### Additional Resources
+
+- [OpenEBS Documentation](https://openebs.io/docs)
+- [OpenEBS on Talos](https://openebs.io/docs/Solutioning/openebs-on-kubernetes-platforms/talos)
+- [Talos Storage Guide](https://www.talos.dev/latest/kubernetes-guides/configuration/storage/)
+- **[terraform.tfvars.example](./terraform.tfvars.example)** - Complete configuration examples
+- **[kubernetes/base/openebs/](../../../kubernetes/base/openebs/)** - Helm chart configuration
+
+#### Storage Options Comparison
+
+| Feature | LocalPV Hostpath | Replicated Engine (Mayastor) |
+|---------|------------------|------------------------------|
+| **Setup** | Zero configuration | 3 variables per node |
+| **Replication** | None (local only) | 3-way synchronous |
+| **Performance** | Fast (local disk) | High (NVMe-oF) |
+| **High Availability** | No | Yes (survives node failure) |
+| **Use Case** | Development, testing | Production workloads |
+| **Node Requirements** | Any worker | 3+ storage nodes |
+| **Special Requirements** | None | Hugepages, dedicated disk |
+
 ## Summary
 
 This Talos cluster environment provides a **config-generation workflow** for building Kubernetes clusters on Tailscale mesh networks:
@@ -1171,7 +1495,7 @@ No modules.
 | <a name="input_talos_version"></a> [talos\_version](#input\_talos\_version) | Talos Linux version (e.g., v1.8.0) | `string` | `"v1.8.0"` | no |
 | <a name="input_use_dhcp_for_physical_interface"></a> [use\_dhcp\_for\_physical\_interface](#input\_use\_dhcp\_for\_physical\_interface) | Use DHCP for physical network interface configuration | `bool` | `true` | no |
 | <a name="input_wipe_install_disk"></a> [wipe\_install\_disk](#input\_wipe\_install\_disk) | Wipe the installation disk before installing Talos | `bool` | `false` | no |
-| <a name="input_worker_nodes"></a> [worker\_nodes](#input\_worker\_nodes) | Map of worker nodes with their configuration (using Tailscale IPs) | <pre>map(object({<br/>    tailscale_ipv4 = string           # Tailscale IPv4 address (100.64.0.0/10 range)<br/>    tailscale_ipv6 = optional(string) # Tailscale IPv6 address (fd7a:115c:a1e0::/48 range)<br/>    physical_ip    = optional(string) # Physical IP (for initial bootstrapping only)<br/>    install_disk   = string<br/>    hostname       = optional(string)<br/>    interface      = optional(string, "tailscale0")<br/>    platform       = optional(string, "metal")                        # Platform type: metal, metal-arm64, metal-secureboot, aws, gcp, azure, etc.<br/>    extensions     = optional(list(string), ["siderolabs/tailscale"]) # Talos system extensions (default: Tailscale only)<br/>    # Kubernetes topology and node labels<br/>    region      = optional(string)          # topology.kubernetes.io/region<br/>    zone        = optional(string)          # topology.kubernetes.io/zone<br/>    arch        = optional(string)          # kubernetes.io/arch (e.g., amd64, arm64)<br/>    os          = optional(string)          # kubernetes.io/os (e.g., linux)<br/>    node_labels = optional(map(string), {}) # Additional node-specific labels<br/>  }))</pre> | `{}` | no |
+| <a name="input_worker_nodes"></a> [worker\_nodes](#input\_worker\_nodes) | Map of worker nodes with their configuration (using Tailscale IPs) | <pre>map(object({<br/>    tailscale_ipv4 = string           # Tailscale IPv4 address (100.64.0.0/10 range)<br/>    tailscale_ipv6 = optional(string) # Tailscale IPv6 address (fd7a:115c:a1e0::/48 range)<br/>    physical_ip    = optional(string) # Physical IP (for initial bootstrapping only)<br/>    install_disk   = string<br/>    hostname       = optional(string)<br/>    interface      = optional(string, "tailscale0")<br/>    platform       = optional(string, "metal")                        # Platform type: metal, metal-arm64, metal-secureboot, aws, gcp, azure, etc.<br/>    extensions     = optional(list(string), ["siderolabs/tailscale"]) # Talos system extensions (default: Tailscale only)<br/>    # Kubernetes topology and node labels<br/>    region      = optional(string)          # topology.kubernetes.io/region<br/>    zone        = optional(string)          # topology.kubernetes.io/zone<br/>    arch        = optional(string)          # kubernetes.io/arch (e.g., amd64, arm64)<br/>    os          = optional(string)          # kubernetes.io/os (e.g., linux)<br/>    node_labels = optional(map(string), {}) # Additional node-specific labels<br/>    # OpenEBS Replicated Storage configuration<br/>    openebs_storage       = optional(bool, false)  # Enable OpenEBS storage on this node<br/>    openebs_disk          = optional(string)       # Storage disk device (e.g., /dev/nvme0n1, /dev/sdb)<br/>    openebs_hugepages_2mi = optional(number, 1024) # Number of 2MiB hugepages (1024 = 2GiB, required for Mayastor)<br/>  }))</pre> | `{}` | no |
 
 ## Outputs
 

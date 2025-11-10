@@ -76,6 +76,10 @@ variable "worker_nodes" {
     arch        = optional(string)          # kubernetes.io/arch (e.g., amd64, arm64)
     os          = optional(string)          # kubernetes.io/os (e.g., linux)
     node_labels = optional(map(string), {}) # Additional node-specific labels
+    # OpenEBS Replicated Storage configuration
+    openebs_storage       = optional(bool, false)  # Enable OpenEBS storage on this node
+    openebs_disk          = optional(string)       # Storage disk device (e.g., /dev/nvme0n1, /dev/sdb)
+    openebs_hugepages_2mi = optional(number, 1024) # Number of 2MiB hugepages (1024 = 2GiB, required for Mayastor)
   }))
   default = {}
 }

@@ -72,6 +72,7 @@ control_plane_nodes = {
 
 # Worker nodes (optional - control plane can run workloads in single-node setup)
 worker_nodes = {
+  # Standard worker node example:
   # worker-01 = {
   #   tailscale_ipv4 = "auto-assigned"          # IPv4 address (REQUIRED) - will be auto-assigned by Tailscale
   #   tailscale_ipv6 = null                     # IPv6 address (optional) - leave null until assigned
@@ -81,8 +82,6 @@ worker_nodes = {
   #   interface      = "eth0"                   # Physical network interface (will use DHCP)
   #   platform       = "metal"                  # Platform type: metal (default), metal-arm64, metal-secureboot, aws, gcp, azure, etc.
   #   extensions     = ["siderolabs/tailscale"] # Talos system extensions (default: Tailscale only)
-  #   # Heterogeneous cluster example - GPU worker node:
-  #   # extensions = ["siderolabs/tailscale", "siderolabs/nvidia-container-toolkit", "siderolabs/nvidia-fabricmanager"]
   #   # Kubernetes topology and node labels (optional):
   #   # region      = "us-west"                 # topology.kubernetes.io/region
   #   # zone        = "us-west-1a"              # topology.kubernetes.io/zone
@@ -90,17 +89,80 @@ worker_nodes = {
   #   # os          = "linux"                   # kubernetes.io/os (linux, windows, etc.)
   #   # node_labels = {                         # Additional custom node labels
   #   #   "node.kubernetes.io/instance-type" = "bare-metal"
-  #   #   "workload-type" = "gpu-intensive"
-  #   #   "gpu.nvidia.com/count" = "2"
+  #   #   "workload-type" = "general-purpose"
   #   # }
   # }
-  # worker-02 = {
+
+  # OpenEBS storage node example (for production with replication):
+  # Requires: 3+ storage nodes, NVMe/SSD disks, 2GiB+ hugepages
+  # storage-01 = {
   #   tailscale_ipv4 = "100.64.0.21"              # IPv4 address from Tailscale
   #   tailscale_ipv6 = "fd7a:115c:a1e0::10"       # IPv6 address from Tailscale (optional)
-  #   physical_ip    = "192.168.1.111"            # Optional after first boot
-  #   install_disk   = "/dev/sda"
-  #   hostname       = "talos-worker-02"
+  #   physical_ip    = "192.168.1.111"            # Physical IP for initial bootstrapping
+  #   install_disk   = "/dev/sda"                 # OS disk (Talos installation)
+  #   hostname       = "talos-storage-01"
   #   interface      = "tailscale0"
+  #   platform       = "metal"
+  #   extensions     = ["siderolabs/tailscale"]
+  #   # Topology labels
+  #   region         = "home"
+  #   zone           = "rack-1"
+  #   arch           = "amd64"
+  #   os             = "linux"
+  #   # OpenEBS storage configuration
+  #   openebs_storage      = true                 # Enable OpenEBS Replicated Engine on this node
+  #   openebs_disk         = "/dev/nvme0n1"       # Storage disk (NOT the OS disk /dev/sda)
+  #   openebs_hugepages_2mi = 1024                # 1024 pages * 2MiB = 2GiB (required for Mayastor)
+  #   # Additional labels for storage tier
+  #   node_labels = {
+  #     "storage-type" = "nvme"
+  #     "storage-tier" = "fast"
+  #   }
+  # }
+  # storage-02 = {
+  #   tailscale_ipv4       = "100.64.0.22"
+  #   physical_ip          = "192.168.1.112"
+  #   install_disk         = "/dev/sda"
+  #   hostname             = "talos-storage-02"
+  #   interface            = "tailscale0"
+  #   openebs_storage      = true
+  #   openebs_disk         = "/dev/nvme0n1"
+  #   openebs_hugepages_2mi = 1024
+  #   node_labels = {
+  #     "storage-type" = "nvme"
+  #     "storage-tier" = "fast"
+  #   }
+  # }
+  # storage-03 = {
+  #   tailscale_ipv4       = "100.64.0.23"
+  #   physical_ip          = "192.168.1.113"
+  #   install_disk         = "/dev/sda"
+  #   hostname             = "talos-storage-03"
+  #   interface            = "tailscale0"
+  #   openebs_storage      = true
+  #   openebs_disk         = "/dev/nvme0n1"
+  #   openebs_hugepages_2mi = 1024
+  #   node_labels = {
+  #     "storage-type" = "nvme"
+  #     "storage-tier" = "fast"
+  #   }
+  # }
+
+  # Mixed cluster example (compute + storage nodes):
+  # worker-01 = {
+  #   tailscale_ipv4 = "100.64.0.20"
+  #   physical_ip    = "192.168.1.110"
+  #   install_disk   = "/dev/sda"
+  #   hostname       = "talos-worker-01"
+  #   # No OpenEBS storage - general compute node
+  # }
+  # storage-01 = {
+  #   tailscale_ipv4       = "100.64.0.21"
+  #   physical_ip          = "192.168.1.111"
+  #   install_disk         = "/dev/sda"
+  #   hostname             = "talos-storage-01"
+  #   openebs_storage      = true           # Dedicated storage node
+  #   openebs_disk         = "/dev/nvme0n1"
   # }
 }
 

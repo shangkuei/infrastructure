@@ -10,12 +10,20 @@ kind: Kustomization
 # 1. gateway-api: CRDs (no dependencies)
 # 2. cilium: CNI (depends on gateway-api, implements Gateway API)
 # 3. cert-manager: Certificates (depends on gateway-api for HTTP01/TLS challenges)
-# 4. olmv1: Operator Lifecycle Manager (depends on cert-manager for webhook certificates)
-# 5. olmv1-catalog: ClusterCatalog resources (depends on olmv1 for CRDs)
-# 6. flux-operator: Foundation (depends on olmv1-catalog for OLM operator installation)
-# 7. flux-instance: Core Flux components (depends on flux-operator)
+# 4. openebs: Storage provisioner (depends on cilium for pod networking)
+# 5. csi-driver-smb: SMB/CIFS CSI driver (depends on cilium for pod networking)
+# 6. snapshot-controller: Volume snapshot controller (depends on cilium and csi-driver-smb)
+# 7. olmv1: Operator Lifecycle Manager (depends on cert-manager for webhook certificates)
+# 8. olmv1-catalog: ClusterCatalog resources (depends on olmv1 for CRDs)
+# 9. argocd-operator: GitOps CD tool (depends on olmv1-catalog)
+# 10. cloudnative-pg: PostgreSQL operator (depends on olmv1-catalog, openebs)
+# 11. flux-operator: Foundation (depends on olmv1-catalog for OLM operator installation)
+# 12. flux-instance: Core Flux components (depends on flux-operator)
 
 resources:
+  # Namespace configuration (kube-system with pod security labels for CSI)
+  - namespace-kube-system.yaml
+
   # Source repositories (must be created before Kustomizations that use them)
   - ../../base/gateway-api
   - ../../base/olmv1
@@ -28,9 +36,18 @@ resources:
   - kustomization-cilium.yaml
   - kustomization-cert-manager.yaml
 
+  # Storage provisioners (depend on CNI)
+  - kustomization-openebs.yaml
+  - kustomization-csi-driver-smb.yaml
+  - kustomization-snapshot-controller.yaml
+
   # Operator Lifecycle Manager v1
   - kustomization-olmv1.yaml
   - kustomization-olmv1-catalog.yaml
+
+  # Operators (installed via OLM v1)
+  - kustomization-argocd-operator.yaml
+  - kustomization-cloudnative-pg.yaml
 
   # Infrastructure applications (Flux Kustomization CRs)
   # Flux foundation

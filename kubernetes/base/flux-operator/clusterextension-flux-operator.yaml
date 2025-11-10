@@ -6,9 +6,6 @@ apiVersion: olm.operatorframework.io/v1
 kind: ClusterExtension
 metadata:
   name: flux-operator
-  labels:
-    app.kubernetes.io/name: flux-operator
-    app.kubernetes.io/managed-by: olm
 spec:
   source:
     sourceType: Catalog
@@ -19,7 +16,7 @@ spec:
         - stable  # Use stable release channel
       selector:
         matchLabels:
-          olm.package: flux-operator
+          olm.operatorframework.io/metadata.name: operatorhubio
 
   # Install in flux-system namespace
   namespace: flux-system

@@ -1,0 +1,11 @@
+---
+# OpenEBS Helm Repository
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: openebs
+  namespace: flux-system  # Source resources must be in flux-system
+spec:
+  url: https://openebs.github.io/openebs
+  interval: 24h
+  timeout: 60s

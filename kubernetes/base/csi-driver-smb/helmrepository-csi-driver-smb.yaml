@@ -1,0 +1,11 @@
+---
+# SMB CSI Driver Helm Repository
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: csi-driver-smb
+  namespace: flux-system  # Source resources must be in flux-system
+spec:
+  url: https://raw.githubusercontent.com/kubernetes-csi/csi-driver-smb/master/charts
+  interval: 24h
+  timeout: 60s

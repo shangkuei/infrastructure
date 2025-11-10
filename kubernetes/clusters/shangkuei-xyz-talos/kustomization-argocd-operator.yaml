@@ -1,0 +1,35 @@
+---
+# Flux Kustomization for ArgoCD Operator
+# GitOps continuous delivery tool installed via OLM v1
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: argocd-operator
+  namespace: flux-system
+spec:
+  interval: 30m
+  timeout: 10m
+  prune: true
+  wait: true
+
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+
+  path: ./kubernetes/base/argocd-operator
+
+  # Dependencies: OLM v1 catalog required for operator installation
+  dependsOn:
+    - name: olmv1-catalog
+
+  healthChecks:
+    # Verify argocd namespace exists
+    - apiVersion: v1
+      kind: Namespace
+      name: argocd
+
+    # Verify ClusterExtension is installed
+    - apiVersion: olm.operatorframework.io/v1alpha1
+      kind: ClusterExtension
+      name: argocd-operator

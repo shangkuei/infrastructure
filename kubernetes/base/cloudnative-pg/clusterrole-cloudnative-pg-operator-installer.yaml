@@ -1,0 +1,14 @@
+---
+# ClusterRole for cloudnative-pg-operator installer
+# Full cluster permissions required for OLM to install and manage cloudnative-pg-operator
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: cloudnative-pg-operator-installer-clusterrole
+  labels:
+    app.kubernetes.io/name: cloudnative-pg
+    app.kubernetes.io/component: installer
+rules:
+  - apiGroups: ["*"]
+    resources: ["*"]
+    verbs: ["*"]

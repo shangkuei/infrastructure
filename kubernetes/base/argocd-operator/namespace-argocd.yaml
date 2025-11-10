@@ -1,0 +1,10 @@
+---
+# ArgoCD Operator Namespace
+# Dedicated namespace for ArgoCD operator and ArgoCD instances
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: argocd
+  labels:
+    app.kubernetes.io/name: argocd
+    app.kubernetes.io/managed-by: olm
