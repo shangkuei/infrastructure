@@ -276,6 +276,8 @@ variable "node_labels" {
   default     = {}
 }
 
-# =============================================================================
-# Tagging
-# =============================================================================
+variable "openebs_hostpath_enabled" {
+  description = "Enable OpenEBS LocalPV Hostpath support (adds Pod Security admission control exemptions and kubelet hostpath mounts for openebs namespace)"
+  type        = bool
+  default     = false
+}

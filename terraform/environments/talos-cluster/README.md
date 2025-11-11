@@ -1488,6 +1488,7 @@ No modules.
 | <a name="input_kubeprism_port"></a> [kubeprism\_port](#input\_kubeprism\_port) | Port for KubePrism local load balancer | `number` | `7445` | no |
 | <a name="input_kubernetes_version"></a> [kubernetes\_version](#input\_kubernetes\_version) | Kubernetes version (e.g., v1.31.0) | `string` | `"v1.31.0"` | no |
 | <a name="input_node_labels"></a> [node\_labels](#input\_node\_labels) | Additional Kubernetes node labels to apply to all nodes | `map(string)` | `{}` | no |
+| <a name="input_openebs_hostpath_enabled"></a> [openebs\_hostpath\_enabled](#input\_openebs\_hostpath\_enabled) | Enable OpenEBS LocalPV Hostpath support (adds Pod Security admission control exemptions and kubelet hostpath mounts for openebs namespace) | `bool` | `false` | no |
 | <a name="input_pod_cidr"></a> [pod\_cidr](#input\_pod\_cidr) | Pod network CIDR block | `string` | `"10.244.0.0/16"` | no |
 | <a name="input_service_cidr"></a> [service\_cidr](#input\_service\_cidr) | Service network CIDR block | `string` | `"10.96.0.0/12"` | no |
 | <a name="input_tailscale_auth_key"></a> [tailscale\_auth\_key](#input\_tailscale\_auth\_key) | Tailscale authentication key for joining the tailnet (use reusable, tagged key) | `string` | `""` | no |

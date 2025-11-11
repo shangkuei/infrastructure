@@ -284,6 +284,15 @@ locals {
   # Tailscale-specific machine patches
   tailscale_machine_patch = yamlencode({
     machine = {
+      # Network configuration for Tailscale MagicDNS
+      network = {
+        nameservers = [
+          "100.100.100.100",
+          "8.8.8.8", "8.8.4.4",
+          "1.1.1.1", "1.0.0.1",
+        ]
+        searchDomains = var.tailscale_tailnet != "" ? ["${var.tailscale_tailnet}.ts.net", ] : []
+      }
       # Kernel modules for Tailscale
       kernel = {
         modules = [
@@ -315,6 +324,28 @@ locals {
       )
     }
   })
+
+  # OpenEBS LocalPV Hostpath configuration patch
+  # - Adds Pod Security exemptions for openebs namespace (allows privileged operations)
+  # - Configures kubelet extraMounts for hostpath storage
+  openebs_hostpath_patch = yamlencode({
+    machine = {
+      kubelet = {
+        extraMounts = [
+          {
+            destination = "/var/openebs/local"
+            type        = "bind"
+            source      = "/var/openebs/local"
+            options = [
+              "bind",
+              "rshared",
+              "rw"
+            ]
+          }
+        ]
+      }
+    }
+  })
 }
 
 # =============================================================================
@@ -338,6 +369,7 @@ data "talos_machine_configuration" "control_plane" {
     var.cni_name == "cilium" ? [local.cilium_cluster_config] : [],
     [local.tailscale_machine_patch],
     [local.kubeprism_patch],
+    var.openebs_hostpath_enabled ? [local.openebs_hostpath_patch] : [],
     var.additional_control_plane_patches
   )
 }
@@ -427,6 +459,7 @@ data "talos_machine_configuration" "worker" {
     var.cni_name == "cilium" ? [local.cilium_cluster_config] : [],
     [local.tailscale_machine_patch],
     [local.kubeprism_patch],
+    var.openebs_hostpath_enabled ? [local.openebs_hostpath_patch] : [],
     var.additional_worker_patches
   )
 }
