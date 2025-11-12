@@ -1,0 +1,13 @@
+---
+# Argo Helm Repository
+# Official Helm charts for ArgoCD and related tools
+# Source: https://github.com/argoproj/argo-helm
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: argo
+  namespace: flux-system
+spec:
+  url: https://argoproj.github.io/argo-helm
+  interval: 24h
+  timeout: 60s
