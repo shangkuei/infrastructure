@@ -47,9 +47,9 @@ FluxInstance Resources
 
 - [clusterextension-flux-operator.yaml](clusterextension-flux-operator.yaml)
 
-**Bootstrap Prerequisites** (Terraform-managed):
+**Bootstrap Prerequisites** (Cluster-specific SOPS overlay):
 
-- See: [overlays/flux-instance/sops-reference/](../../../overlays/flux-instance/sops-reference/)
+- See: [overlays/flux-instance/shangkuei-xyz-talos/](../../../overlays/flux-instance/shangkuei-xyz-talos/)
 
 ### Version
 

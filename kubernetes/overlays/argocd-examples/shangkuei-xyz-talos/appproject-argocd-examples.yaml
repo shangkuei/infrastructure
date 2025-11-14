@@ -1,0 +1,36 @@
+---
+# AppProject for ArgoCD test applications
+# This project contains test applications for validating KSOPS functionality
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: argocd-examples
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: argocd-examples
+    app.kubernetes.io/managed-by: flux
+spec:
+  description: ArgoCD test applications for KSOPS validation
+
+  # Source repositories allowed
+  sourceRepos:
+    - https://github.com/shangkuei/infrastructure.git
+
+  # Destination clusters and namespaces
+  destinations:
+    - namespace: 'argocd-test-*'
+      server: https://kubernetes.default.svc
+
+  # Cluster resource whitelist
+  clusterResourceWhitelist:
+    - group: ''
+      kind: Namespace
+
+  # Namespace resource whitelist (all allowed for test apps)
+  namespaceResourceWhitelist:
+    - group: '*'
+      kind: '*'
+
+  # Orphaned resources (clean up when app is deleted)
+  orphanedResources:
+    warn: false

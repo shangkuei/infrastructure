@@ -15,19 +15,22 @@ This directory contains SOPS-encrypted secrets that are managed via Flux GitOps.
 
 ```
 kubernetes/
-├── overlays/flux-instance/sops-reference/
-│   ├── Makefile                               # Secret generation helper
+├── overlays/flux-instance/
+│   ├── Makefile                               # Secret generation helper (reference)
 │   ├── README.md                              # This file
-│   ├── age-key.txt                            # Age private key (NOT in Git)
-│   ├── .sops.yaml                             # SOPS config (generated locally, NOT in Git)
-│   ├── secret-sops-age.yaml.enc              # SOPS age secret (ENCRYPTED, in Git)
-│   └── secret-flux-git-credentials.yaml.enc  # Git credentials (ENCRYPTED, in Git)
+│   └── shangkuei-xyz-talos/                   # Cluster-specific SOPS overlay
+│       ├── .gitignore                         # Ignore decrypted files
+│       ├── .sops.yaml                         # SOPS config (generated locally, NOT in Git)
+│       ├── Makefile                           # Secret generation helper
+│       ├── README.md                          # Cluster-specific documentation
+│       ├── secret-sops-age.yaml.enc          # SOPS age secret (ENCRYPTED, in Git)
+│       └── secret-flux-git-credentials.yaml.enc  # Git credentials (ENCRYPTED, in Git)
 │
-└── clusters/talos-gitops/
+└── clusters/shangkuei-xyz-talos/
     ├── kustomization.yaml                     # Main cluster configuration
     ├── kustomization-flux-instance.yaml       # Flux Kustomization CR
     └── flux-instance-sops/
-        └── kustomization.yaml                 # References ../../../overlays/flux-instance/sops-reference/*.enc
+        └── kustomization.yaml                 # References ../../../overlays/flux-instance/shangkuei-xyz-talos/*.enc
 ```
 
 **Key Points**:
@@ -39,10 +42,10 @@ kubernetes/
 
 **Implementation Pattern**:
 
-This directory serves as a **reference overlay** for SOPS-encrypted Flux secrets. For actual cluster deployments:
+This directory contains cluster-specific overlays for SOPS-encrypted Flux secrets. For actual cluster deployments:
 
-1. **Create cluster-specific overlay**: Copy this directory or create a similar one (e.g., `shangkuei-xyz-talos-sops`)
-2. **Generate secrets**: Use the Makefile to generate `.enc` files with your age key
+1. **Create cluster-specific overlay**: Create a subdirectory (e.g., `shangkuei-xyz-talos/`)
+2. **Generate secrets**: Use the Makefile in the cluster overlay to generate `.enc` files with your age key
 3. **Reference from cluster**: Create a cluster-specific `flux-instance-sops/kustomization.yaml` that references the `.enc` files
 4. **Bootstrap manually**: Create the `sops-age` secret in the cluster using `kubectl`
 5. **GitOps takes over**: Flux will then manage all future secret updates via Git

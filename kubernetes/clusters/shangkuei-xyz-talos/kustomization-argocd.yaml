@@ -17,7 +17,14 @@ spec:
     name: flux-system
     namespace: flux-system
 
-  path: ./kubernetes/base/argocd
+  path: ./kubernetes/overlays/argocd-examples/shangkuei-xyz-talos
+
+  # SOPS decryption for ArgoCD Age key secret
+  # Flux will decrypt the ArgoCD SOPS Age key secret and deploy it
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
 
   # Dependencies: CNI must be ready for pod networking
   dependsOn:

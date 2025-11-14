@@ -1,0 +1,7 @@
+# SOPS configuration for ArgoCD test applications
+# Uses dedicated ArgoCD Age key for KSOPS
+
+creation_rules:
+  - path_regex: .*secret.*\.(enc|yaml|yml)$
+    encrypted_regex: '^(data|stringData)$'
+    age: age1dvf63gewxhnydzt4yjlpp23qplqekt979udv4xgk47zct48kh40srrdjwn

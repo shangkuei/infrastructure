@@ -1,0 +1,41 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: argocd
+
+resources:
+  - ../../../base/argocd
+  - secret-sops-age.yaml
+  - appproject-argocd-examples.yaml
+  - application-test-app1.yaml
+  - application-test-app2.yaml
+
+labels:
+  - pairs:
+      app.kubernetes.io/instance: shangkuei-xyz-talos
+      app.kubernetes.io/environment: production
+
+# Patch HelmRelease to mount the SOPS Age key and configure KSOPS
+patches:
+  - patch: |-
+      - op: add
+        path: /spec/values/repoServer/env
+        value:
+          - name: SOPS_AGE_KEY_FILE
+            value: /home/argocd/.config/sops/age/keys.txt
+      - op: add
+        path: /spec/values/repoServer/volumes/-
+        value:
+          name: sops-age
+          secret:
+            secretName: sops-age
+      - op: add
+        path: /spec/values/repoServer/volumeMounts/-
+        value:
+          name: sops-age
+          mountPath: /home/argocd/.config/sops/age
+          readOnly: true
+    target:
+      kind: HelmRelease
+      name: argocd
