@@ -1,0 +1,17 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: edatw-salary-mailman
+
+resources:
+  - ../../base
+
+# KSOPS generator for decrypting SOPS secrets
+generators:
+  - ksops-generator.yaml
+
+labels:
+  - pairs:
+      app.kubernetes.io/instance: shangkuei-xyz-talos
+      app.kubernetes.io/environment: production

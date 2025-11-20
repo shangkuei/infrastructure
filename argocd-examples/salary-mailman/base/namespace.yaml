@@ -1,0 +1,7 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: edatw-salary-mailman
+  labels:
+    app: salary-mailman

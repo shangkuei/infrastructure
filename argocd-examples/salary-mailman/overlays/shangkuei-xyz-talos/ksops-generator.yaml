@@ -1,0 +1,13 @@
+---
+# KSOPS generator for decrypting SOPS secrets
+# This enables ArgoCD to decrypt secrets using the KSOPS plugin
+apiVersion: viaduct.ai/v1
+kind: ksops
+metadata:
+  name: salary-mailman-secret-generator
+  annotations:
+    config.kubernetes.io/function: |
+      exec:
+        path: ksops
+files:
+  - secret-ghcr-pull.yaml
