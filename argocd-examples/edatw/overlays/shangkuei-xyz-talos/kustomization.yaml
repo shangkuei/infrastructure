@@ -1,0 +1,16 @@
+---
+# Kustomize overlay for edatw on shangkuei-xyz-talos cluster
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: edatw
+
+resources:
+  - ../../base
+
+generators:
+  - ksops-generator.yaml
+
+commonLabels:
+  cluster: shangkuei-xyz-talos
+  environment: production

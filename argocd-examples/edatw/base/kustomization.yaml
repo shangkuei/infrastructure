@@ -1,0 +1,16 @@
+---
+# Kustomize base configuration for edatw cloudflared
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: edatw
+
+resources:
+  - namespace.yaml
+  - serviceaccount.yaml
+  - daemonset.yaml
+
+commonLabels:
+  app.kubernetes.io/name: edatw
+  app.kubernetes.io/component: cloudflared
+  app.kubernetes.io/managed-by: kustomize

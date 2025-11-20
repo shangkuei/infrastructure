@@ -1,0 +1,13 @@
+---
+# Namespace for edatw cloudflared infrastructure
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: edatw
+  labels:
+    name: edatw
+    app.kubernetes.io/name: edatw
+    app.kubernetes.io/component: cloudflared
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted

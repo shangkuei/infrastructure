@@ -10,6 +10,8 @@ resources:
   - appproject-argocd-examples.yaml
   - application-test-app1.yaml
   - application-test-app2.yaml
+  - application-edatw.yaml
+  - application-salary-mailman.yaml
 
 labels:
   - pairs:
