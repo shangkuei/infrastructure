@@ -1,0 +1,41 @@
+---
+# Kustomize base configuration for edatw-ed8 application
+# StatefulSet with MySQL database, Apache web server, and API server
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: edatw-ed8
+resources:
+  - namespace.yaml
+  - service-account-ed8.yaml
+  - statefulset-ed8.yaml
+  - cronjob-backup.yaml
+  - cronjob-notify.yaml
+  - cronjob-probes.yaml
+  - persistent-volume-claim-edatw-ed8-backups.yaml
+  - persistent-volume-claim-edatw-ed8-data.yaml
+  - persistent-volume-claim-edatw-ed8-database.yaml
+  - persistent-volume-claim-edatw-ed8-image.yaml
+  - persistent-volume-claim-edatw-ed8-notify.yaml
+  - persistent-volume-claim-edatw-ed8-pdf.yaml
+labels:
+  - pairs:
+      app.kubernetes.io/name: ed8
+      app.kubernetes.io/component: ed8
+      app.kubernetes.io/managed-by: kustomize
+# https://kubectl.docs.kubernetes.io/references/kustomize/kustomization/configmapgenerator/
+configMapGenerator:
+  - name: ed8-script
+    namespace: edatw-ed8
+    files:
+      - scripts/restore-entrypoint.sh
+      - scripts/restore-logical-backup.sh
+      - scripts/logical-backup.sh
+      - scripts/physical-backup.sh
+      - scripts/exit.sh
+  - name: ed8-my-cnf
+    namespace: edatw-ed8
+    files:
+      - configs/default.cnf
+      - configs/ed8-database.cnf
+      - configs/backup.cnf
+      - configs/innodb.cnf

@@ -1,0 +1,371 @@
+---
+# https://kubernetes.io/docs/reference/kubernetes-api/service-resources/service-v1/#Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: ed8
+spec:
+  type: NodePort
+  ports:
+    - port: 80
+      targetPort: http
+      name: http
+    - port: 3306
+      targetPort: mysql
+      nodePort: 30306
+      name: mysql
+  selector:
+    app.kubernetes.io/component: ed8
+    app.kubernetes.io/instance: ed8
+    app.kubernetes.io/name: ed8
+---
+# https://kubernetes.io/docs/reference/kubernetes-api/service-resources/service-v1/#Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: ed8-apiserver
+spec:
+  type: NodePort
+  ports:
+    - port: 80
+      targetPort: apiserver
+      name: apiserver
+  selector:
+    app.kubernetes.io/component: ed8
+    app.kubernetes.io/instance: ed8
+    app.kubernetes.io/name: ed8
+---
+# https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/stateful-set-v1/#StatefulSet
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: ed8
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: ed8
+      app.kubernetes.io/instance: ed8
+      app.kubernetes.io/name: ed8
+  serviceName: ed8
+  replicas: 1
+  updateStrategy:
+    rollingUpdate:
+      partition: 0
+    type: RollingUpdate
+  persistentVolumeClaimRetentionPolicy:
+    whenDeleted: Retain
+    whenScaled: Retain
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: ed8
+        app.kubernetes.io/instance: ed8
+        app.kubernetes.io/name: ed8
+    spec:
+      # added before we have a none control-plane amd64 node
+      tolerations:
+        - key: CriticalAddonsOnly
+          operator: Exists
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/arch
+                    operator: In
+                    values:
+                      - amd64
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app.kubernetes.io/component: ed8
+                    app.kubernetes.io/instance: ed8
+                    app.kubernetes.io/name: ed8
+                topologyKey: kubernetes.io/hostname
+              weight: 1
+      serviceAccountName: ed8
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 10
+      imagePullSecrets:
+        - name: github-registry
+      restartPolicy: Always
+      securityContext:
+        fsGroup: 999
+      initContainers:
+        - name: restore-logical-backup
+          image: mysql:5.7
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/bash
+          args:
+            - /restore-entrypoint.sh
+          env:
+            - name: MYSQL_INITDB_SKIP_TZINFO
+              value: "yes"
+          envFrom:
+            - secretRef:
+                name: ed8-env
+          volumeMounts:
+            - name: ed8-database
+              mountPath: /var/lib/mysql
+            - name: ed8-tmp
+              mountPath: /restore
+            - name: ed8-backups
+              mountPath: /backups
+            - name: ed8-script
+              mountPath: /restore-entrypoint.sh
+              subPath: restore-entrypoint.sh
+              readOnly: true
+            - name: ed8-script
+              mountPath: /docker-entrypoint-initdb.d/01-restore-logical-backup.sh
+              subPath: restore-logical-backup.sh
+              readOnly: true
+            - name: ed8-script
+              mountPath: /docker-entrypoint-initdb.d/99-exit.sh
+              subPath: exit.sh
+              readOnly: true
+            - name: ed8-my-cnf
+              mountPath: /etc/mysql/conf.d/my.cnf
+              subPath: ed8-database.cnf
+              readOnly: true
+            - name: ed8-my-cnf
+              mountPath: /etc/mysql/conf.d/default.cnf
+              subPath: default.cnf
+              readOnly: true
+            - name: ed8-my-cnf
+              mountPath: /etc/mysql/conf.d/innodb.cnf
+              subPath: innodb.cnf
+              readOnly: true
+            - name: ed8-my-cnf
+              mountPath: /etc/mysql/conf.d/backup.cnf
+              subPath: backup.cnf
+              readOnly: true
+          resources:
+            requests:
+              cpu: 1000m
+              memory: 1Gi
+          securityContext:
+            allowPrivilegeEscalation: true
+            capabilities:
+              drop:
+                - ALL
+            privileged: true
+            readOnlyRootFilesystem: false
+            runAsNonRoot: false
+            runAsUser: 0
+            seccompProfile:
+              type: RuntimeDefault
+      containers:
+        - name: ed8-server
+          image: ghcr.io/edatw/ed8-server:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+              name: http
+          volumeMounts:
+            - name: ed8-image
+              mountPath: /var/www/html/ED8/image
+            - name: ed8-image
+              mountPath: /var/www/html/ED9/image
+            - name: ed8-pdf
+              mountPath: /var/www/html/ED8/pdf
+            - name: ed8-pdf
+              mountPath: /var/www/html/ED9/pdf
+            - name: ed8-sock
+              mountPath: /var/run/mysqld
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: true
+            capabilities:
+              drop:
+                - ALL
+            privileged: true
+            readOnlyRootFilesystem: false
+            runAsNonRoot: false
+            runAsUser: 0
+            seccompProfile:
+              type: RuntimeDefault
+          livenessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+            successThreshold: 1
+          readinessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+            successThreshold: 1
+          startupProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 1
+            failureThreshold: 10
+            successThreshold: 1
+        - name: ed8-database
+          image: mysql:5.7
+          imagePullPolicy: Always
+          envFrom:
+            - secretRef:
+                name: ed8-env
+          ports:
+            - containerPort: 3306
+              name: mysql
+          volumeMounts:
+            - name: ed8-database
+              mountPath: /var/lib/mysql
+            - name: ed8-my-cnf
+              mountPath: /etc/mysql/conf.d/default.cnf
+              subPath: default.cnf
+              readOnly: true
+            - name: ed8-my-cnf
+              mountPath: /etc/mysql/conf.d/innodb.cnf
+              subPath: innodb.cnf
+              readOnly: true
+            - name: ed8-my-cnf
+              mountPath: /etc/mysql/conf.d/my.cnf
+              subPath: ed8-database.cnf
+              readOnly: true
+            - name: ed8-sock
+              mountPath: /var/run/mysqld
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            privileged: false
+            readOnlyRootFilesystem: false
+            runAsNonRoot: true
+            runAsUser: 999
+            seccompProfile:
+              type: RuntimeDefault
+          livenessProbe:
+            exec:
+              command:
+                - /bin/bash
+                - -ec
+                - mysqladmin status -uroot -p"${MYSQL_ROOT_PASSWORD}"
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+            successThreshold: 1
+          readinessProbe:
+            exec:
+              command:
+                - /bin/bash
+                - -ec
+                - mysqladmin status -uroot -p"${MYSQL_ROOT_PASSWORD}"
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+            successThreshold: 1
+          startupProbe:
+            exec:
+              command:
+                - /bin/bash
+                - -ec
+                - mysqladmin status -uroot -p"${MYSQL_ROOT_PASSWORD}"
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 1
+            failureThreshold: 10
+            successThreshold: 1
+        - name: ed8-apiserver
+          image: ghcr.io/edatw/ed8-apiserver:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+              name: apiserver
+          volumeMounts:
+            - name: ed8-apiserver
+              mountPath: /usr/local/etc/ed8/apiserver
+            - name: ed8-sock
+              mountPath: /usr/local/etc/ed8/database
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            privileged: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 999
+            seccompProfile:
+              type: RuntimeDefault
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+            successThreshold: 1
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+            successThreshold: 1
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 1
+            failureThreshold: 10
+            successThreshold: 1
+      volumes:
+        - name: ed8-image
+          persistentVolumeClaim:
+            claimName: edatw-ed8-image
+        - name: ed8-pdf
+          persistentVolumeClaim:
+            claimName: edatw-ed8-pdf
+        - name: ed8-database
+          persistentVolumeClaim:
+            claimName: edatw-ed8-database
+        - name: ed8-tmp
+          emptyDir:
+            sizeLimit: 10Gi
+        - name: ed8-backups
+          persistentVolumeClaim:
+            claimName: edatw-ed8-backups
+        - name: ed8-script
+          configMap:
+            name: ed8-script
+        - name: ed8-my-cnf
+          configMap:
+            name: ed8-my-cnf
+        - name: ed8-sock
+          emptyDir:
+            sizeLimit: 1Gi
+        - name: ed8-apiserver
+          secret:
+            secretName: ed8-apiserver

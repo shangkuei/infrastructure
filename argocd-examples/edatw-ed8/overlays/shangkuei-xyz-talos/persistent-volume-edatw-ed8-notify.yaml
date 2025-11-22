@@ -1,0 +1,45 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  annotations:
+    pv.kubernetes.io/provisioned-by: smb.csi.k8s.io
+  name: edatw-ed8-notify
+spec:
+  storageClassName: edatw-eda-smb
+  capacity:
+    storage: 100Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  mountOptions:
+    - dir_mode=0750
+    - file_mode=0640
+    - uid=999
+    - gid=999
+  csi:
+    driver: smb.csi.k8s.io
+    readOnly: false
+    volumeHandle: ENC[AES256_GCM,data:N8pbEaFSwyRqiDvEySC3SkC6KdamnMbuE2kf4HY=,iv:04dbt7tLj/9bZhn6m+KcD3nbKWlU8QIfwWRVo+16Y1M=,tag:fWwh0zySAq/xXpN/nsDHOg==,type:str]
+    volumeAttributes:
+      source: ENC[AES256_GCM,data:C5DWMRq9Kj88n6lcMaMXGkw1feiKeQ/fNc09c52YfbnRn1c=,iv:fiyzvK5F5+T2hVrAbVP6cExyV3X2JjDYnCcrLEzbc4w=,tag:7y1t30Jyr4OCsTCHP6PG0w==,type:str]
+    nodeStageSecretRef:
+      name: ed8-creds
+      namespace: edatw-ed8
+  claimRef:
+    name: edatw-ed8-notify
+    namespace: edatw-ed8
+sops:
+  age:
+    - recipient: age1dvf63gewxhnydzt4yjlpp23qplqekt979udv4xgk47zct48kh40srrdjwn
+      enc: |
+        -----BEGIN AGE ENCRYPTED FILE-----
+        YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBJRVdwazB5Z0xqbTJJQ1BO
+        TEVaemloaWl2NHdzdExsVkVxUXdlSDR1aTBFCnd5dmFqdCtZbzFWT2VLOGxOeHJt
+        UUg3L3lKRURNQlN3c08wbTU3YTVKT28KLS0tIHpWK2ZzRlNnNUVwNEI2YnJDa2FP
+        KytKL1pNNUlObFNqL05ZYnNpcUpLemsKsP+lOHjDZG6U2iZkfIIsD52q99dYv5tS
+        hmJC7+yudIbhhfE7GgazK0fJgbLrqKbOiWkvyN5NRSMd5B2CQkl57w==
+        -----END AGE ENCRYPTED FILE-----
+  lastmodified: "2025-11-23T13:55:26Z"
+  mac: ENC[AES256_GCM,data:1fM5/x3VWdih9/LWYqkvZsf3jbwGIITh93wCPmY/5jRzKJkJ4OPXbezpJD2RjA2r67fyeip6fKVadpzd2K9saDMqgowTIQVaBc8hig070cDI0pkK5ooCa5yM+I5FHGlyG5dndw8amqcehj7SvXM1jKmmxiW6rLrAaqbxdHXFwfY=,iv:QFTtgRDISBNfk52LBxUwtL6jJlzN7wv1Y7ZwFNMVk8k=,tag:0VKvl9IGFs/xRidCVbMwiw==,type:str]
+  encrypted_regex: ^(volumeHandle|source)$
+  version: 3.11.0

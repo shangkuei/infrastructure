@@ -10,7 +10,3 @@ resources:
 
 generators:
   - ksops-generator.yaml
-
-commonLabels:
-  cluster: shangkuei-xyz-talos
-  environment: production

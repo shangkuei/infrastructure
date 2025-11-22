@@ -1,0 +1,14 @@
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: edatw-ed8-backups
+  namespace: edatw-ed8
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 100Gi
+  storageClassName: edatw-eda-smb
+  volumeName: edatw-ed8-backups
