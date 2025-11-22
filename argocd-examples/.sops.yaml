@@ -2,6 +2,15 @@
 # Uses dedicated ArgoCD Age key for KSOPS
 
 creation_rules:
+  # edatw-ed8 StorageClass files - encrypt source field
+  - path_regex: edatw-ed8/.*storage-class.*\.(yaml|yml)$
+    encrypted_regex: '^(source)$'
+    age: age1dvf63gewxhnydzt4yjlpp23qplqekt979udv4xgk47zct48kh40srrdjwn
+  # edatw-ed8 PersistentVolume files - encrypt CSI fields
+  - path_regex: edatw-ed8/.*persistent-volume.*\.(yaml|yml)$
+    encrypted_regex: '^(volumeHandle|source)$'
+    age: age1dvf63gewxhnydzt4yjlpp23qplqekt979udv4xgk47zct48kh40srrdjwn
+  # Default rule for other applications
   - path_regex: .*secret.*\.(enc|yaml|yml)$
     encrypted_regex: '^(data|stringData)$'
     age: age1dvf63gewxhnydzt4yjlpp23qplqekt979udv4xgk47zct48kh40srrdjwn

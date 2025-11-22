@@ -1,0 +1,106 @@
+---
+# https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/cron-job-v1/#CronJob
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: backup
+spec:
+  timeZone: Asia/Taipei
+  schedule: "35 4 * * *"
+  jobTemplate:
+    spec:
+      ttlSecondsAfterFinished: 86400 # keep the last 1 job.
+      completions: 1
+      template:
+        spec:
+          # added before we have a none control-plane amd64 node
+          tolerations:
+            - key: CriticalAddonsOnly
+              operator: Exists
+          affinity:
+            nodeAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                nodeSelectorTerms:
+                  - matchExpressions:
+                      - key: kubernetes.io/arch
+                        operator: In
+                        values:
+                          - amd64
+          serviceAccountName: ed8
+          securityContext:
+            fsGroup: 999
+          containers:
+            - name: backup
+              image: mysql:5.7
+              imagePullPolicy: IfNotPresent
+              envFrom:
+                - secretRef:
+                    name: ed8-env
+              env:
+                - name: MYSQL_INITDB_SKIP_TZINFO
+                  value: "yes"
+                - name: TZ
+                  value: Asia/Taipei
+              volumeMounts:
+                - name: ed8-database
+                  mountPath: /var/lib/mysql
+                - name: ed8-tmp
+                  mountPath: /restore
+                - name: ed8-backups
+                  mountPath: /backups
+                - name: ed8-script
+                  mountPath: /docker-entrypoint-initdb.d/01-logical-backup.sh
+                  subPath: logical-backup.sh
+                  readOnly: true
+                - name: ed8-script
+                  mountPath: /docker-entrypoint-initdb.d/02-restore-logical-backup.sh
+                  subPath: restore-logical-backup.sh
+                  readOnly: true
+                - name: ed8-script
+                  mountPath: /docker-entrypoint-initdb.d/99-exit.sh
+                  subPath: exit.sh
+                  readOnly: true
+                - name: ed8-my-cnf
+                  mountPath: /etc/mysql/conf.d/default.cnf
+                  subPath: default.cnf
+                  readOnly: true
+                - name: ed8-my-cnf
+                  mountPath: /etc/mysql/conf.d/innodb.cnf
+                  subPath: innodb.cnf
+                  readOnly: true
+                - name: ed8-my-cnf
+                  mountPath: /etc/mysql/conf.d/backup.cnf
+                  subPath: backup.cnf
+                  readOnly: true
+              resources:
+                requests:
+                  cpu: 1000m
+                  memory: 1Gi
+              securityContext:
+                allowPrivilegeEscalation: true
+                capabilities:
+                  drop:
+                    - ALL
+                privileged: true
+                readOnlyRootFilesystem: false
+                runAsNonRoot: false
+                runAsUser: 0
+                seccompProfile:
+                  type: RuntimeDefault
+          volumes:
+            - name: ed8-database
+              emptyDir:
+                sizeLimit: 10Gi
+            - name: ed8-tmp
+              emptyDir:
+                sizeLimit: 10Gi
+            - name: ed8-backups
+              persistentVolumeClaim:
+                claimName: edatw-ed8-backups
+            - name: ed8-my-cnf
+              configMap:
+                name: ed8-my-cnf
+            - name: ed8-script
+              configMap:
+                name: ed8-script
+          restartPolicy: OnFailure

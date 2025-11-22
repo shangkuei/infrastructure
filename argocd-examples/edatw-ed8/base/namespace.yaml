@@ -1,0 +1,13 @@
+---
+# Namespace for edatw-ed8 application
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: edatw-ed8
+  labels:
+    app.kubernetes.io/name: ed8
+    app.kubernetes.io/component: ed8
+    app.kubernetes.io/managed-by: kustomize
+    pod-security.kubernetes.io/enforce: privileged
+    pod-security.kubernetes.io/audit: privileged
+    pod-security.kubernetes.io/warn: privileged

@@ -1,0 +1,74 @@
+---
+# https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/cron-job-v1/#CronJob
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: ed8-notify
+spec:
+  timeZone: Asia/Taipei
+  schedule: "15 6,12,16 * * *"
+  jobTemplate:
+    spec:
+      ttlSecondsAfterFinished: 86400 # keep the last 3 jobs
+      template:
+        spec:
+          tolerations:
+            - key: CriticalAddonsOnly
+              operator: Exists
+          affinity:
+            nodeAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                nodeSelectorTerms:
+                  - matchExpressions:
+                      - key: kubernetes.io/arch
+                        operator: In
+                        values:
+                          - amd64
+          serviceAccountName: ed8
+          automountServiceAccountToken: false
+          imagePullSecrets:
+            - name: github-registry
+          containers:
+            - name: ed8-cli
+              image: ghcr.io/edatw/ed8-cli:latest
+              imagePullPolicy: Always
+              workingDir: /usr/local/etc/ed8/cli
+              args:
+                - notification
+                - --output
+                - /usr/local/etc/ed8/notify/notify-
+              volumeMounts:
+                - name: ed8-cli
+                  mountPath: /usr/local/etc/ed8/cli
+                  readOnly: true
+                - name: ed8-data
+                  mountPath: /usr/local/etc/ed8/data
+                  readOnly: true
+                - name: ed8-notify
+                  mountPath: /usr/local/etc/ed8/notify
+              resources:
+                requests:
+                  cpu: 1000m
+                  memory: 1Gi
+              securityContext:
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop:
+                    - ALL
+                privileged: false
+                readOnlyRootFilesystem: true
+                runAsNonRoot: true
+                runAsUser: 999
+                seccompProfile:
+                  type: RuntimeDefault
+          volumes:
+            - name: ed8-cli
+              secret:
+                secretName: ed8-cli
+            - name: ed8-data
+              persistentVolumeClaim:
+                claimName: edatw-ed8-data
+            - name: ed8-notify
+              persistentVolumeClaim:
+                claimName: edatw-ed8-notify
+          restartPolicy: OnFailure

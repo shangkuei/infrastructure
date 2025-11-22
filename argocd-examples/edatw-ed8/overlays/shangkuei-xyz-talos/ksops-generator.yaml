@@ -1,0 +1,23 @@
+---
+# KSOPS generator for decrypting SOPS secrets in overlay
+# This enables ArgoCD to decrypt secrets using the KSOPS plugin
+apiVersion: viaduct.ai/v1
+kind: ksops
+metadata:
+  name: edatw-ed8-overlay-secret-generator
+  annotations:
+    config.kubernetes.io/function: |
+      exec:
+        path: ksops
+files:
+  - secret-ed8-env.sops.yaml
+  - secret-ed8-apiserver.sops.yaml
+  - secret-ed8-cli.sops.yaml
+  - secret-ed8-creds.sops.yaml
+  - secret-github-registry.sops.yaml
+  - storage-class-edatw-eda-smb.yaml
+  - persistent-volume-edatw-ed8-backups.yaml
+  - persistent-volume-edatw-ed8-data.yaml
+  - persistent-volume-edatw-ed8-image.yaml
+  - persistent-volume-edatw-ed8-notify.yaml
+  - persistent-volume-edatw-ed8-pdf.yaml

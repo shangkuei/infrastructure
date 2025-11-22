@@ -1,0 +1,70 @@
+---
+# https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/cron-job-v1/#CronJob
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: ed8-probes
+spec:
+  timeZone: Asia/Taipei
+  schedule: "*/10 * * * *"
+  jobTemplate:
+    spec:
+      ttlSecondsAfterFinished: 1800 # keep the last 3 jobs.
+      template:
+        spec:
+          tolerations:
+            - key: CriticalAddonsOnly
+              operator: Exists
+          affinity:
+            nodeAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                nodeSelectorTerms:
+                  - matchExpressions:
+                      - key: kubernetes.io/arch
+                        operator: In
+                        values:
+                          - amd64
+          serviceAccountName: ed8
+          automountServiceAccountToken: false
+          imagePullSecrets:
+            - name: github-registry
+          securityContext:
+            fsGroup: 999
+          containers:
+            - name: ed8-cli
+              image: ghcr.io/edatw/ed8-cli:latest
+              imagePullPolicy: Always
+              workingDir: /usr/local/etc/ed8/cli
+              args:
+                - probes
+                - --sync
+              volumeMounts:
+                - name: ed8-cli
+                  mountPath: /usr/local/etc/ed8/cli
+                  readOnly: true
+                - name: ed8-data
+                  mountPath: /usr/local/etc/ed8/data
+                  readOnly: true
+              resources:
+                requests:
+                  cpu: 1000m
+                  memory: 1Gi
+              securityContext:
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop:
+                    - ALL
+                privileged: false
+                readOnlyRootFilesystem: true
+                runAsNonRoot: true
+                runAsUser: 1000
+                seccompProfile:
+                  type: RuntimeDefault
+          volumes:
+            - name: ed8-cli
+              secret:
+                secretName: ed8-cli
+            - name: ed8-data
+              persistentVolumeClaim:
+                claimName: edatw-ed8-data
+          restartPolicy: OnFailure
