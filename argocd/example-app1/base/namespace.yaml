@@ -2,9 +2,9 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: argocd-test-app2
+  name: argocd-example-app1
   labels:
-    app.kubernetes.io/name: test-app2
+    app.kubernetes.io/name: example-app1
     app.kubernetes.io/managed-by: argocd
     pod-security.kubernetes.io/enforce: baseline
     pod-security.kubernetes.io/audit: restricted

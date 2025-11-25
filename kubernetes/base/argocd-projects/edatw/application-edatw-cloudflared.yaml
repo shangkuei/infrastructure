@@ -1,27 +1,27 @@
 ---
-# ArgoCD Application for test-app1 (nginx)
-# Deployed automatically by Flux as part of ArgoCD setup
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: test-app1
+  name: edatw-cloudflared
   namespace: argocd
   labels:
-    app.kubernetes.io/name: test-app1
-    app.kubernetes.io/managed-by: flux
+    app.kubernetes.io/name: edatw-cloudflared
+    app.kubernetes.io/managed-by: argocd
+    app.kubernetes.io/component: cloudflared
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
-  project: argocd-examples
+  project: edatw
 
   source:
-    repoURL: https://github.com/shangkuei/infrastructure.git
+    repoURL: https://github.com/edatw/infrastructure.git
     targetRevision: HEAD
-    path: argocd-examples/app1/overlays/shangkuei-xyz-talos
+    # Path should be overridden in overlay with cluster-specific path
+    path: argocd/edatw-cloudflared/base
 
   destination:
     server: https://kubernetes.default.svc
-    namespace: argocd-test-app1
+    namespace: edatw
 
   syncPolicy:
     automated:
@@ -41,6 +41,6 @@ spec:
 
   ignoreDifferences:
     - group: apps
-      kind: Deployment
+      kind: DaemonSet
       jsonPointers:
-        - /spec/replicas
+        - /spec/template/spec/containers/0/image

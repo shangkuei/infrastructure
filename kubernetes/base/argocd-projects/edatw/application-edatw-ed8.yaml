@@ -2,24 +2,26 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: test-app1
+  name: edatw-ed8
   namespace: argocd
   labels:
-    app.kubernetes.io/name: test-app1
+    app.kubernetes.io/name: ed8
     app.kubernetes.io/managed-by: argocd
+    app.kubernetes.io/component: ed8
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
-  project: default
+  project: edatw
 
   source:
-    repoURL: https://github.com/shangkuei/infrastructure.git
+    repoURL: https://github.com/edatw/infrastructure.git
     targetRevision: HEAD
-    path: argocd-examples/app1/overlays/shangkuei-xyz-talos
+    # Path should be overridden in overlay with cluster-specific path
+    path: argocd/edatw-ed8/base
 
   destination:
     server: https://kubernetes.default.svc
-    namespace: argocd-test-app1
+    namespace: edatw-ed8
 
   syncPolicy:
     automated:
@@ -39,6 +41,9 @@ spec:
 
   ignoreDifferences:
     - group: apps
-      kind: Deployment
+      kind: StatefulSet
       jsonPointers:
         - /spec/replicas
+        - /spec/template/spec/containers/0/image
+        - /spec/template/spec/containers/1/image
+        - /spec/template/spec/containers/2/image

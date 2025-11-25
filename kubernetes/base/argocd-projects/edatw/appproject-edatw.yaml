@@ -1,0 +1,68 @@
+---
+# AppProject for EDATW applications
+# Manages applications from github.com/edatw/infrastructure repository
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: edatw
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: edatw
+    app.kubernetes.io/managed-by: flux
+spec:
+  description: EDATW applications from github.com/edatw/infrastructure
+
+  # Source repositories allowed
+  sourceRepos:
+    - https://github.com/edatw/infrastructure.git
+
+  # Destination clusters and namespaces
+  destinations:
+    - namespace: 'edatw'
+      server: https://kubernetes.default.svc
+    - namespace: 'edatw-*'
+      server: https://kubernetes.default.svc
+
+  # Cluster resource whitelist
+  clusterResourceWhitelist:
+    - group: ''
+      kind: Namespace
+    - group: 'storage.k8s.io'
+      kind: StorageClass
+    - group: ''
+      kind: PersistentVolume
+
+  # Namespace resource whitelist (allow common resources)
+  namespaceResourceWhitelist:
+    - group: ''
+      kind: ConfigMap
+    - group: ''
+      kind: Secret
+    - group: ''
+      kind: Service
+    - group: ''
+      kind: ServiceAccount
+    - group: ''
+      kind: PersistentVolumeClaim
+    - group: 'apps'
+      kind: Deployment
+    - group: 'apps'
+      kind: StatefulSet
+    - group: 'apps'
+      kind: DaemonSet
+    - group: 'batch'
+      kind: Job
+    - group: 'batch'
+      kind: CronJob
+    - group: 'networking.k8s.io'
+      kind: Ingress
+    - group: 'networking.k8s.io'
+      kind: NetworkPolicy
+    - group: 'rbac.authorization.k8s.io'
+      kind: Role
+    - group: 'rbac.authorization.k8s.io'
+      kind: RoleBinding
+
+  # Orphaned resources (clean up when app is deleted)
+  orphanedResources:
+    warn: false

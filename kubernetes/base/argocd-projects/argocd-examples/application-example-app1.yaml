@@ -1,14 +1,12 @@
 ---
-# ArgoCD Application for test-app2 (redis)
-# Deployed automatically by Flux as part of ArgoCD setup
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: test-app2
+  name: example-app1
   namespace: argocd
   labels:
-    app.kubernetes.io/name: test-app2
-    app.kubernetes.io/managed-by: flux
+    app.kubernetes.io/name: example-app1
+    app.kubernetes.io/managed-by: argocd
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
@@ -17,11 +15,11 @@ spec:
   source:
     repoURL: https://github.com/shangkuei/infrastructure.git
     targetRevision: HEAD
-    path: argocd-examples/app2/overlays/shangkuei-xyz-talos
+    path: argocd/example-app1/base
 
   destination:
     server: https://kubernetes.default.svc
-    namespace: argocd-test-app2
+    namespace: argocd-example-app1
 
   syncPolicy:
     automated:

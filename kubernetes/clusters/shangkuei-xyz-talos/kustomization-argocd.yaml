@@ -17,7 +17,7 @@ spec:
     name: flux-system
     namespace: flux-system
 
-  path: ./kubernetes/overlays/argocd-examples/shangkuei-xyz-talos
+  path: ./kubernetes/overlays/argocd-projects/shangkuei-xyz-talos
 
   # SOPS decryption for ArgoCD Age key secret
   # Flux will decrypt the ArgoCD SOPS Age key secret and deploy it

@@ -2,24 +2,24 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: test-app2
+  name: example-app2
   namespace: argocd
   labels:
-    app.kubernetes.io/name: test-app2
+    app.kubernetes.io/name: example-app2
     app.kubernetes.io/managed-by: argocd
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
-  project: default
+  project: argocd-examples
 
   source:
     repoURL: https://github.com/shangkuei/infrastructure.git
     targetRevision: HEAD
-    path: argocd-examples/app2/overlays/shangkuei-xyz-talos
+    path: argocd/example-app2/base
 
   destination:
     server: https://kubernetes.default.svc
-    namespace: argocd-test-app2
+    namespace: argocd-example-app2
 
   syncPolicy:
     automated:

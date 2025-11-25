@@ -1,5 +1,5 @@
 ---
-# AppProject for ArgoCD test applications
+# AppProject for ArgoCD example applications
 # This project contains test applications for validating KSOPS functionality
 apiVersion: argoproj.io/v1alpha1
 kind: AppProject
@@ -10,7 +10,7 @@ metadata:
     app.kubernetes.io/name: argocd-examples
     app.kubernetes.io/managed-by: flux
 spec:
-  description: ArgoCD test applications for KSOPS validation
+  description: ArgoCD example applications for KSOPS validation
 
   # Source repositories allowed
   sourceRepos:
@@ -18,7 +18,7 @@ spec:
 
   # Destination clusters and namespaces
   destinations:
-    - namespace: 'argocd-test-*'
+    - namespace: argocd-example-*
       server: https://kubernetes.default.svc
 
   # Cluster resource whitelist
