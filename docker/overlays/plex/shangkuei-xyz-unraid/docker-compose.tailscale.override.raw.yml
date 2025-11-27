@@ -1,0 +1,4 @@
+services:
+  plex:
+    ports: !reset
+    networks: !reset

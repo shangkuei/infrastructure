@@ -40,3 +40,4 @@ ignore: |
   node_modules/
   venv/
   .terraform/
+  docker/

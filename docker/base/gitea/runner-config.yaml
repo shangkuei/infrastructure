@@ -1,0 +1,16 @@
+# Gitea Actions Runner Configuration
+# Reference: https://gitea.com/gitea/act_runner
+
+log:
+  level: info
+
+cache:
+  enabled: true
+
+container:
+  # Network for spawned job containers
+  # Options: "host", "bridge", or a specific network name like "gitea-internal"
+  # Use "host" when runner uses network_mode: service:tailscale
+  # Use network name (e.g., "gitea-internal") for internal docker network
+  network: "gitea-internal"
+  privileged: false

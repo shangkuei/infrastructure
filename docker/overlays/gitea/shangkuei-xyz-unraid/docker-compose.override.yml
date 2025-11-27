@@ -1,0 +1,36 @@
+# Gitea - Environment Override for shangkuei-xyz-unraid
+# Extends: docker/base/gitea/docker-compose.yml
+#
+# Optional: Add docker-compose.traefik.yml for reverse proxy support
+services:
+  gitea:
+    environment:
+      - ENC[AES256_GCM,data:lXPuTvkkbb/T1Mg=,iv:X2V4Vhu8oLAXTs3fp3ZB4rUk/nGkrDKRJVVP8UGCv5Q=,tag:zbgjqwujPfpLAybdkj9Z0g==,type:str]
+    volumes:
+      - ENC[AES256_GCM,data:mlT3yWjGFcKynDBaRVsxCxFedVwXeVGEHvt3C2lDvUPE2t6La5XYD8W73nVw3btwsCFw,iv:MT77A7kft1Y1dz5G6yFkc/B4tJGUGloCWMOIxtAut1g=,tag:NTBFSuJ4iMgr61t5Tzcb4g==,type:comment]
+      - ENC[AES256_GCM,data:SphORCjfMTmmy13MdVutXpq12vm39r0HE4au,iv:qx2QGxVw2Qii2DIV91kCmgB0wP7NXe0al4FtAwH0VKI=,tag:KfahvQI0Fjsdf1yLgUifZg==,type:str]
+  database:
+    user: "99"
+    volumes:
+      - ENC[AES256_GCM,data:3BLDF2YQ1vGzJUlBEOULru9Gh9/wR5OMFWL8FZepS7HRkzfzz4OhWyv3TKswUYWaMlvA,iv:I+OFYftNi5K/38QXbRxZRSBxW2K4wFmUM/o6wH0w9OM=,tag:DVwkdAT0fntaPoraSXcIWA==,type:comment]
+      - ENC[AES256_GCM,data:FTH+/3g8GTM+GVUGRAdXZS08Pe7JyYo5VYp6UI2J0LjdcTQ/JFvOeLnZxh3mJjZmNg==,iv:NVSW4wNTDok5zF2VYjxImL46szZte9w7STnDxmLPR/0=,tag:1ZJHDgGK7wEIbcn7BAMCWg==,type:str]
+  runner:
+    volumes:
+      - ENC[AES256_GCM,data:bomWTfMQQYMnlAdQMzB23Rq/NKkIFOJP28lF4WvnVKyMN7Pk06iMueHQJhPTSrVNMFAz,iv:qmhJ35sYt7inTBLvf5VsyIIoicWw3X6YySx7opf0AxE=,tag:ZHrLaUb8diVnjNc9QPZ69Q==,type:comment]
+      - ENC[AES256_GCM,data:Y3PkcOEkQOlodWsqWJ9ehb+h0KULcEtaLUaZlZ5+M+u8jw==,iv:D4mzo7DjX9IxRpdSc9b8+tmlM0iSMFs6E7pBK74+mTo=,tag:y1mPDs738Tn7ghj5SJbXgA==,type:str]
+      - ENC[AES256_GCM,data:Bb+gxQxhHh8e889eP7Qk9e8iFDMU7lHnROFvSYYaRqZklL2iSkRqx8NQa5EPiNxF6THUBSX6inTCRrnTrQ==,iv:eVUqfF0tINOsrtOnZ2ztXiBvJX1DGEOjSLaUeCJxG9E=,tag:DdBtnBAuZdyGTMKhVXSPpw==,type:str]
+sops:
+  age:
+    - recipient: age18pns8av0m2g3wgenjnfkj046340azfytlp0jgpkw4dw7zkh83dwqlct4np
+      enc: |
+        -----BEGIN AGE ENCRYPTED FILE-----
+        YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSA5ZWVvbk1RMXdJdFEzbmpn
+        MTNYZFJJbDRTVFpuL3Foem04c0lKM0xtWjBjCkwvOW95RHN0WUJySExiNjM2YklP
+        d0p2QXdIWERtSWV1ZU5zdS9iWkJrR00KLS0tIEd3d21xV3lac0g0QkFFRXErYUxU
+        MUdidkZrREF6aGttcVh4Y1U1UHBNYTgK1WDiHpj1wSEBSUOlvRbAWC5+51alMyhU
+        hmlQroMhKxBh0455KXQ0AkO+NjHr1MoIXz85uxay0RRTkbX608xKiw==
+        -----END AGE ENCRYPTED FILE-----
+  lastmodified: "2025-11-26T04:00:07Z"
+  mac: ENC[AES256_GCM,data:5cc29lSomkgrqPCHw2iXb2SXW47XIVR11vMkDJC4n89UOF1rbaA3v1TcbZQqwSG/VKYzZreQ8AOv79tts8WOZ9aINK6Z7drURGGP36w6K14vZu4EeyvJAoRq4YTmhIyl5nRfARF90g4GMn0FxP7zK6itLagLAIIMaiUplDGICp4=,iv:BH6adEUoYN2K0HpFUd9lxBiloRvRUU1sOMWM4Hxwrmg=,tag:YTWJh+SwxIhU2/nD4lfr7A==,type:str]
+  encrypted_regex: ^(environment|volumes)$
+  version: 3.11.0

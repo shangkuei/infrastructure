@@ -1,0 +1,37 @@
+# Plex Media Server
+# Base configuration - override with environment-specific settings
+
+name: plex
+
+services:
+  plex:
+    image: plexinc/pms-docker:${PLEX_VERSION:-latest}
+    container_name: plex
+    restart: unless-stopped
+    environment:
+      - TZ=${TZ:-UTC}
+      - PLEX_CLAIM=${PLEX_CLAIM:-}
+      - PLEX_UID=${PLEX_UID:-1000}
+      - PLEX_GID=${PLEX_GID:-1000}
+      - ADVERTISE_IP=${PLEX_ADVERTISE_IP:-}
+    volumes:
+      - plex_config:/config
+      - plex_transcode:/transcode
+    ports:
+      - "${PLEX_PORT:-32400}:32400/tcp"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:32400/identity"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  plex_config:
+    driver: local
+  plex_transcode:
+    driver: local
+
+networks:
+  plex:
+    name: plex-internal

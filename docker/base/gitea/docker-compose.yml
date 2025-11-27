@@ -1,0 +1,118 @@
+# Gitea - Self-hosted Git Service with PostgreSQL and CI/CD Runner
+# Base configuration - override with environment-specific settings
+
+name: gitea
+
+services:
+  gitea:
+    image: gitea/gitea:latest
+    container_name: gitea_server
+    restart: always
+    depends_on:
+      database:
+        condition: service_healthy
+    environment:
+      # User configuration
+      - USER_UID=1000
+      - USER_GID=1000
+      # Database configuration (PostgreSQL)
+      - GITEA__database__DB_TYPE=postgres
+      - GITEA__database__HOST=database:5432
+      - GITEA__database__NAME=${DB_NAME:-gitea}
+      - GITEA__database__USER=${DB_USER:-gitea}
+      - GITEA__database__PASSWD=${DB_PASS:-gitea}
+      # Server configuration (override in environment)
+      - GITEA__server__DOMAIN=${GITEA_DOMAIN:-localhost}
+      - GITEA__server__SSH_DOMAIN=${GITEA_SSH_DOMAIN:-localhost}
+      - GITEA__server__ROOT_URL=${GITEA_ROOT_URL:-http://localhost:3000}
+      - GITEA__server__HTTP_PORT=3000
+      - GITEA__server__SSH_PORT=22
+      - GITEA__server__LFS_START_SERVER=true
+      # Security settings
+      - GITEA__service__DISABLE_REGISTRATION=${GITEA_DISABLE_REGISTRATION:-true}
+      - GITEA__service__REQUIRE_SIGNIN_VIEW=${GITEA_REQUIRE_SIGNIN_VIEW:-true}
+      # Actions runner
+      - GITEA__actions__ENABLED=true
+    volumes:
+      - gitea_data:/data
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - "${GITEA_HTTP_PORT:-3000}:3000"
+      - "${GITEA_SSH_PORT:-22}:22"
+    networks:
+      - gitea
+    healthcheck:
+      test: ["CMD", "curl", "-fsSL", "http://localhost:3000/api/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  database:
+    image: postgres:17
+    container_name: gitea_postgres
+    restart: always
+    environment:
+      POSTGRES_DB: "${DB_NAME:-gitea}"
+      POSTGRES_USER: "${DB_USER:-gitea}"
+      POSTGRES_PASSWORD: "${DB_PASS:-gitea}"
+      # Enable data checksums for integrity verification
+      POSTGRES_INITDB_ARGS: "--data-checksums"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - gitea
+    # PostgreSQL performance tuning
+    command:
+      - "postgres"
+      - "-c"
+      - "logging_collector=on"
+      - "-c"
+      - "max_wal_size=2GB"
+      - "-c"
+      - "shared_buffers=512MB"
+      - "-c"
+      - "wal_compression=on"
+    healthcheck:
+      test: >-
+        pg_isready --dbname='${DB_NAME:-gitea}' --username='${DB_USER:-gitea}' || exit 1;
+        chksum="$$(psql --dbname='${DB_NAME:-gitea}' --username='${DB_USER:-gitea}' --tuples-only --no-align
+        --command='SELECT COALESCE(SUM(checksum_failures), 0) FROM pg_stat_database')";
+        echo "checksum failure count is $$chksum";
+        [ "$$chksum" = '0' ] || exit 1
+      interval: 5m
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  runner:
+    image: gitea/act_runner:latest
+    container_name: gitea_runner
+    restart: always
+    depends_on:
+      gitea:
+        condition: service_healthy
+    environment:
+      - GITEA_INSTANCE_URL=${GITEA_RUNNER_INSTANCE_URL:-http://gitea:3000}
+      - GITEA_RUNNER_REGISTRATION_TOKEN=${GITEA_RUNNER_REGISTRATION_TOKEN:-}
+      - GITEA_RUNNER_NAME=${GITEA_RUNNER_NAME:-default-runner}
+      - CONFIG_FILE=/data/config.yaml
+    volumes:
+      - runner_data:/data
+      - ./runner-config.yaml:/data/config.yaml:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - gitea
+
+volumes:
+  gitea_data:
+    driver: local
+  postgres_data:
+    driver: local
+  runner_data:
+    driver: local
+
+networks:
+  gitea:
+    name: gitea-internal

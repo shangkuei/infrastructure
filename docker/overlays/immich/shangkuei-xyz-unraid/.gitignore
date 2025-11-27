@@ -1,0 +1,10 @@
+# Secrets (unencrypted)
+.env
+age-key.txt
+
+# Decrypted files
+*.decrypted
+
+# Temporary files
+*.tmp
+*.bak

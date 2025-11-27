@@ -1,0 +1,74 @@
+# Immich - Photo and video management
+# Base configuration - override with environment-specific settings
+#
+# WARNING: Make sure to use compatible versions with Immich releases:
+# https://github.com/immich-app/immich/releases
+
+name: immich
+
+services:
+  immich-server:
+    image: ghcr.io/immich-app/immich-server:${IMMICH_VERSION:-release}
+    container_name: immich_server
+    restart: always
+    environment:
+      - DB_HOSTNAME=database
+      - DB_USERNAME=${DB_USERNAME:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_DATABASE_NAME=${DB_DATABASE_NAME:-immich}
+      - REDIS_HOSTNAME=redis
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+    depends_on:
+      - redis
+      - database
+    networks:
+      - immich
+
+  immich-machine-learning:
+    image: ghcr.io/immich-app/immich-machine-learning:${IMMICH_VERSION:-release}
+    container_name: immich_machine_learning
+    restart: always
+    volumes:
+      - model-cache:/cache
+    networks:
+      - immich
+
+  redis:
+    image: docker.io/valkey/valkey:8@sha256:81db6d39e1bba3b3ff32bd3a1b19a6d69690f94a3954ec131277b9a26b95b3aa
+    container_name: immich_redis
+    restart: always
+    networks:
+      - immich
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+
+  database:
+    image: ghcr.io/immich-app/postgres:14-vectorchord0.4.3-pgvectors0.2.0@sha256:bcf63357191b76a916ae5eb93464d65c07511da41e3bf7a8416db519b40b1c23
+    container_name: immich_postgres
+    restart: always
+    environment:
+      - POSTGRES_USER=${DB_USERNAME:-postgres}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_DATABASE_NAME:-immich}
+      - POSTGRES_INITDB_ARGS=--data-checksums
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - immich
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${DB_USERNAME:-postgres} -d ${DB_DATABASE_NAME:-immich}",
+        ]
+
+volumes:
+  model-cache:
+    driver: local
+  postgres-data:
+    driver: local
+
+networks:
+  immich:
+    name: immich-internal

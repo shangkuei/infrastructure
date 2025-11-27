@@ -1,0 +1,13 @@
+# Gitea Actions Runner Configuration for Tailscale mode
+# Job containers use host networking to access Gitea via Tailscale
+
+log:
+  level: info
+
+cache:
+  enabled: true
+
+container:
+  # Use host network so job containers can reach Gitea via Tailscale
+  network: "gitea-internal"
+  privileged: false
