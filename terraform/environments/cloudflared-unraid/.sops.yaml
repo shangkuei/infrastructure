@@ -1,0 +1,16 @@
+# Local SOPS configuration for cloudflared-edatw environment
+# This allows running SOPS commands from within this directory
+creation_rules:
+  # Match input files for encryption (terraform.tfvars -> terraform.tfvars.enc)
+  - path_regex: .*\.tfvars$
+    age: age1xk8u9uxym7q5c562ml9u789dj4w9d5ed9vsgz8hj9whp6n2fwvgs58h35g
+
+  - path_regex: .*\.tfvars\.enc$
+    age: age1xk8u9uxym7q5c562ml9u789dj4w9d5ed9vsgz8hj9whp6n2fwvgs58h35g
+
+  # Match backend configuration files (backend.hcl -> backend.hcl.enc)
+  - path_regex: backend\.hcl$
+    age: age1xk8u9uxym7q5c562ml9u789dj4w9d5ed9vsgz8hj9whp6n2fwvgs58h35g
+
+  - path_regex: backend\.hcl\.enc$
+    age: age1xk8u9uxym7q5c562ml9u789dj4w9d5ed9vsgz8hj9whp6n2fwvgs58h35g

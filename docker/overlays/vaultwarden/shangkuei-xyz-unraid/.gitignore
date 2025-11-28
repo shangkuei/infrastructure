@@ -1,0 +1,7 @@
+# Age private key (never commit)
+age-key.txt
+
+# Decrypted environment file
+# .env is now SOPS-encrypted and committed
+# This entry prevents accidental commits of decrypted versions
+.env.decrypted

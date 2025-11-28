@@ -1,0 +1,106 @@
+# Vaultwarden - Self-hosted Bitwarden Compatible Server with PostgreSQL
+# Base configuration - override with environment-specific settings
+
+name: vaultwarden
+
+services:
+  vaultwarden:
+    # https://github.com/dani-garcia/vaultwarden/releases
+    image: vaultwarden/server:latest
+    container_name: vaultwarden_server
+    restart: always
+    depends_on:
+      database:
+        condition: service_healthy
+    user: "99:100"
+    environment:
+      # Database configuration (PostgreSQL)
+      - DATABASE_URL=postgresql://${DB_USER:-vaultwarden}:${DB_PASS:-vaultwarden}@database:5432/${DB_NAME:-vaultwarden}
+      # Server configuration
+      - DOMAIN=${VAULTWARDEN_DOMAIN:-https://localhost}
+      # Security settings
+      - SIGNUPS_ALLOWED=${SIGNUPS_ALLOWED:-false}
+      - INVITATIONS_ALLOWED=${INVITATIONS_ALLOWED:-true}
+      - SHOW_PASSWORD_HINT=${SHOW_PASSWORD_HINT:-false}
+      # Admin panel (requires ADMIN_TOKEN)
+      - ADMIN_TOKEN=${ADMIN_TOKEN:-}
+      # SMTP configuration
+      - SMTP_HOST=${SMTP_HOST:-}
+      - SMTP_PORT=${SMTP_PORT:-465}
+      - SMTP_SECURITY=${SMTP_SECURITY:-force_tls}
+      - SMTP_FROM=${SMTP_FROM:-}
+      - SMTP_FROM_NAME=${SMTP_FROM_NAME:-Vaultwarden}
+      - SMTP_USERNAME=${SMTP_USERNAME:-}
+      - SMTP_PASSWORD=${SMTP_PASSWORD:-}
+      - SMTP_AUTH_MECHANISM=${SMTP_AUTH_MECHANISM:-Login}
+      # Yubico 2FA
+      - YUBICO_CLIENT_ID=${YUBICO_CLIENT_ID:-}
+      - YUBICO_SECRET_KEY=${YUBICO_SECRET_KEY:-}
+      # Push notifications (Bitwarden-compatible)
+      - PUSH_ENABLED=${PUSH_ENABLED:-false}
+      - PUSH_INSTALLATION_ID=${PUSH_INSTALLATION_ID:-}
+      - PUSH_INSTALLATION_KEY=${PUSH_INSTALLATION_KEY:-}
+      # Timezone
+      - TZ=${TZ:-UTC}
+      # Data folders
+      - DATA_FOLDER=/data
+      - ATTACHMENTS_FOLDER=/data/attachments
+    volumes:
+      - vaultwarden_data:/data
+    ports:
+      - "${VAULTWARDEN_PORT:-8080}:80"
+    networks:
+      - vaultwarden
+    healthcheck:
+      test: ["CMD", "curl", "-fsSL", "http://localhost/alive"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  database:
+    image: postgres:16
+    container_name: vaultwarden_postgres
+    restart: always
+    environment:
+      POSTGRES_DB: "${DB_NAME:-vaultwarden}"
+      POSTGRES_USER: "${DB_USER:-vaultwarden}"
+      POSTGRES_PASSWORD: "${DB_PASS:-vaultwarden}"
+      # Enable data checksums for integrity verification
+      POSTGRES_INITDB_ARGS: "--data-checksums"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - vaultwarden
+    # PostgreSQL performance tuning
+    command:
+      - "postgres"
+      - "-c"
+      - "logging_collector=on"
+      - "-c"
+      - "max_wal_size=1GB"
+      - "-c"
+      - "shared_buffers=256MB"
+      - "-c"
+      - "wal_compression=on"
+    healthcheck:
+      test: >-
+        pg_isready --dbname='${DB_NAME:-vaultwarden}' --username='${DB_USER:-vaultwarden}' || exit 1;
+        chksum="$$(psql --dbname='${DB_NAME:-vaultwarden}' --username='${DB_USER:-vaultwarden}' --tuples-only --no-align
+        --command='SELECT COALESCE(SUM(checksum_failures), 0) FROM pg_stat_database')";
+        echo "checksum failure count is $$chksum";
+        [ "$$chksum" = '0' ] || exit 1
+      interval: 5m
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  vaultwarden_data:
+    driver: local
+  postgres_data:
+    driver: local
+
+networks:
+  vaultwarden:
+    name: vaultwarden-internal

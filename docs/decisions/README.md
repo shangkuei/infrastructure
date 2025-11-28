@@ -75,6 +75,10 @@ Example: `20241019-use-terraform-for-infrastructure.md`
 
 - [0009 - Tailscale for Hybrid Cloud Networking](0009-tailscale-hybrid-networking.md) - Accepted
 
+### Architecture & Operations
+
+- [0020 - Infrastructure Dependency Hierarchy](0020-infrastructure-dependency-hierarchy.md) - Accepted
+
 ### Security
 
 - [0008 - Secret Management Strategy](0008-secret-management.md) - Accepted

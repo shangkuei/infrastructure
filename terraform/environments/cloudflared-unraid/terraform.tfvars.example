@@ -1,0 +1,12 @@
+# Salary Mailman Environment Variables
+# Copy this file to terraform.tfvars and fill in your values
+# DO NOT commit terraform.tfvars as it contains sensitive information
+
+# Cloudflare Configuration
+cloudflare_api_token  = "your-cloudflare-api-token-here"
+cloudflare_account_id = "your-cloudflare-account-id"
+cloudflare_zone_id    = "your-zone-id"
+
+# Note: Actual values should be encrypted with SOPS
+# Run: sops -e terraform.tfvars > terraform.tfvars.enc
+# Run: sops -d terraform.tfvars.enc > terraform.tfvars (for local use)

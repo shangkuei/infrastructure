@@ -16,8 +16,8 @@ This directory contains docker-compose configurations for storage-heavy and GPU-
 │  │  • HA workloads     │       │  • GPU-intensive apps       │  │
 │  │  • Cloud-native     │       │  • Direct array access      │  │
 │  │                     │       │                             │  │
-│  │  VS Code Server     │       │  Gitea, Immich, Plex        │  │
-│  │  Vaultwarden, n8n   │       │                             │  │
+│  │  VS Code Server     │       │  Cloudflared, Gitea         │  │
+│  │  n8n                │       │  Immich, Plex, Vaultwarden  │  │
 │  └─────────────────────┘       └─────────────────────────────┘  │
 │           │                               │                      │
 │           ▼                               ▼                      │
@@ -34,17 +34,29 @@ This directory contains docker-compose configurations for storage-heavy and GPU-
 ```
 docker/
 ├── base/                           # Base docker-compose configurations
+│   ├── cloudflared/                # Cloudflare Tunnel ingress
+│   │   ├── docker-compose.yml
+│   │   └── README.md
 │   ├── gitea/                      # Git hosting service
 │   │   ├── docker-compose.yml
 │   │   └── README.md
 │   ├── immich/                     # Photo management
 │   │   ├── docker-compose.yml
 │   │   └── README.md
-│   └── plex/                       # Media server
+│   ├── plex/                       # Media server
+│   │   ├── docker-compose.yml
+│   │   └── README.md
+│   └── vaultwarden/                # Password manager
 │       ├── docker-compose.yml
 │       └── README.md
 │
 ├── overlays/                       # Environment-specific configurations
+│   ├── cloudflared/
+│   │   └── shangkuei-xyz-unraid/   # Unraid host overlay
+│   │       ├── .sops.yaml
+│   │       ├── docker-compose.override.yml
+│   │       ├── .env.example
+│   │       └── Makefile
 │   ├── gitea/
 │   │   └── shangkuei-xyz-unraid/   # Unraid host overlay
 │   │       ├── .sops.yaml
@@ -54,7 +66,9 @@ docker/
 │   │       └── Makefile
 │   ├── immich/
 │   │   └── shangkuei-xyz-unraid/
-│   └── plex/
+│   ├── plex/
+│   │   └── shangkuei-xyz-unraid/
+│   └── vaultwarden/
 │       └── shangkuei-xyz-unraid/
 │
 └── README.md                       # This file
@@ -64,11 +78,12 @@ docker/
 
 | Application | Platform | Reason |
 |-------------|----------|--------|
+| **Cloudflared** | Docker (Unraid) | Ingress for docker services, no K8s dependency |
 | **Gitea** | Docker (Unraid) | Large repository storage on array |
 | **Immich** | Docker (Unraid) | GPU ML inference, photo storage |
 | **Plex** | Docker (Unraid) | Hardware transcoding, media library |
+| **Vaultwarden** | Docker (Unraid) | PostgreSQL backend, Tailscale access |
 | **VS Code Server** | Kubernetes | Stateless, benefits from K8s features |
-| **Vaultwarden** | Kubernetes | HA, encrypted secrets management |
 | **n8n** | Kubernetes | Stateless, scalable workflows |
 
 ## Quick Start
