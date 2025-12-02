@@ -1,6 +1,6 @@
 # SOPS private keys - NEVER commit these
 age-key.txt
-*.txt
+age-key.txt.pub
 
 # Decrypted secrets - NEVER commit these
 *.decrypted

@@ -38,7 +38,7 @@ spec:
     kind: GitRepository
     url: "https://github.com/shangkuei/infrastructure"
     ref: "refs/heads/main"
-    path: "kubernetes/clusters/shangkuei-xyz-talos"
+    path: "kubernetes/clusters/"
 
   # Kustomize configuration
   kustomize:

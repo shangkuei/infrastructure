@@ -40,6 +40,11 @@ variable "control_plane_nodes" {
     interface      = optional(string, "tailscale0")
     platform       = optional(string, "metal")                        # Platform type: metal, metal-arm64, metal-secureboot, aws, gcp, azure, etc.
     extensions     = optional(list(string), ["siderolabs/tailscale"]) # Talos system extensions (default: Tailscale only)
+    # SBC overlay configuration (for Raspberry Pi, Rock Pi, etc.)
+    overlay = optional(object({
+      image = string # Overlay image (e.g., "siderolabs/sbc-raspberrypi")
+      name  = string # Overlay name (e.g., "rpi_generic", "rpi_5")
+    }))
     # Kubernetes topology and node labels
     region      = optional(string)          # topology.kubernetes.io/region
     zone        = optional(string)          # topology.kubernetes.io/zone
@@ -70,6 +75,11 @@ variable "worker_nodes" {
     interface      = optional(string, "tailscale0")
     platform       = optional(string, "metal")                        # Platform type: metal, metal-arm64, metal-secureboot, aws, gcp, azure, etc.
     extensions     = optional(list(string), ["siderolabs/tailscale"]) # Talos system extensions (default: Tailscale only)
+    # SBC overlay configuration (for Raspberry Pi, Rock Pi, etc.)
+    overlay = optional(object({
+      image = string # Overlay image (e.g., "siderolabs/sbc-raspberrypi")
+      name  = string # Overlay name (e.g., "rpi_generic", "rpi_5")
+    }))
     # Kubernetes topology and node labels
     region      = optional(string)          # topology.kubernetes.io/region
     zone        = optional(string)          # topology.kubernetes.io/zone

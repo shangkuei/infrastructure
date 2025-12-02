@@ -9,7 +9,7 @@
 # 3. Create backend.hcl from backend.hcl.example with R2 credentials
 # 4. Encrypt backend config: make encrypt-backend && rm backend.hcl
 # 5. Uncomment the backend block below
-# 6. Initialize with SOPS: make init (automatically decrypts backend.hcl.enc)
+# 6. Initialize with SOPS: make init (automatically decrypts backend.enc.hcl)
 #
 # See: README.md - "Secret Management with SOPS" section
 
@@ -36,12 +36,12 @@ terraform {
 # 5. Uncomment the backend block above
 #
 # 6. Initialize Terraform (SOPS auto-decrypts):
-#    make init  # Automatically: sops exec-file backend.hcl.enc 'terraform init -backend-config={}'
+#    make init  # Automatically: sops exec-file backend.enc.hcl 'terraform init -backend-config={}'
 #
 # 7. Migrate state to R2:
 #    Answer 'yes' when prompted to migrate state
 #
 # Daily Usage:
-# - make init   # SOPS decrypts backend.hcl.enc automatically
-# - make plan   # SOPS decrypts terraform.tfvars.enc automatically
-# - make apply  # SOPS decrypts terraform.tfvars.enc automatically
+# - make init   # SOPS decrypts backend.enc.hcl automatically
+# - make plan   # SOPS decrypts terraform.enc.tfvars automatically
+# - make apply  # SOPS decrypts terraform.enc.tfvars automatically

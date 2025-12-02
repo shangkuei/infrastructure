@@ -1,8 +1,9 @@
 # SOPS configuration for ArgoCD overlay secrets
 # Uses Flux Age key to encrypt the ArgoCD KSOPS Age key secret
 # This allows Flux to decrypt and deploy the secret to ArgoCD namespace
+# Naming convention: *.enc.yaml (encrypted files)
 
 creation_rules:
-  - path_regex: .*secret.*\.(enc|yaml|yml)$
+  - path_regex: \.enc\.yaml$
     encrypted_regex: '^(data|stringData)$'
     age: age1nj8nwf4nc24envr8shkk8p2neqw7vr6c83h3wayyrej3drawjessu4pz98

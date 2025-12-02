@@ -184,7 +184,7 @@ Ensure all required variables are set in terraform.tfvars:
 
 - [Cloudflare Tunnel Module](../../modules/cloudflare-tunnel/README.md)
 - [ArgoCD Application Setup](../../../argocd-examples/salary-mailman/README.md)
-<!-- BEGINNING OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
+<!-- BEGIN_TF_DOCS -->
 ## Requirements
 
 | Name | Version |
@@ -223,4 +223,4 @@ No resources.
 | <a name="output_tunnel_id"></a> [tunnel\_id](#output\_tunnel\_id) | Cloudflare Tunnel ID for salary-mailman |
 | <a name="output_tunnel_name"></a> [tunnel\_name](#output\_tunnel\_name) | Cloudflare Tunnel name |
 | <a name="output_tunnel_token"></a> [tunnel\_token](#output\_tunnel\_token) | Tunnel token for cloudflared (use in Kubernetes secret) |
-<!-- END OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
+<!-- END_TF_DOCS -->

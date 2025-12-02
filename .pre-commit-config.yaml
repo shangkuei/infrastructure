@@ -12,8 +12,8 @@ repos:
         args: [--markdown-linebreak-ext=md]
       - id: end-of-file-fixer
       - id: check-yaml
-        args: [--allow-multiple-documents]
-        exclude: \.raw\.yml$
+        args: [--allow-multiple-documents, --unsafe]
+        exclude: (\.raw\.yml$|^docker/)
       - id: check-added-large-files
         args: [--maxkb=1000]
       - id: check-merge-conflict
@@ -22,12 +22,22 @@ repos:
         args: [--fix=lf]
       - id: check-case-conflict
 
-  # Terraform formatting and validation
-  - repo: https://github.com/antonbabenko/pre-commit-terraform
-    rev: v1.86.0
+  # Terraform formatting - file-based to avoid processing encrypted .tfvars/.hcl
+  - repo: local
     hooks:
-      - id: terraform_fmt
+      - id: terraform-fmt
+        name: Terraform fmt
+        entry: terraform fmt -check -diff
+        language: system
+        files: \.tf$
+        pass_filenames: true
+
+  # Terraform validation, documentation and linting
+  - repo: https://github.com/antonbabenko/pre-commit-terraform
+    rev: v1.104.0
+    hooks:
       - id: terraform_validate
+        files: \.tf$
       - id: terraform_docs
         args:
           - --hook-config=--path-to-file=README.md
@@ -43,7 +53,7 @@ repos:
 
   # Terraform security scanning
   - repo: https://github.com/aquasecurity/tfsec
-    rev: v1.28.5
+    rev: v1.28.14
     hooks:
       - id: tfsec
         args:
@@ -65,22 +75,22 @@ repos:
 
   # Markdown linting
   - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.38.0
+    rev: v0.46.0
     hooks:
       - id: markdownlint
         args: [--config, .markdownlint.json, --fix]
 
   # YAML linting
   - repo: https://github.com/adrienverge/yamllint
-    rev: v1.33.0
+    rev: v1.37.1
     hooks:
       - id: yamllint
         args: [-c=.yamllint.yaml]
-        exclude: (^\.github/workflows/|\.raw\.yml$)
+        exclude: (^\.github/workflows/|\.raw\.yml$|\.enc\.(yaml|yml)$)
 
   # Shell script linting
   - repo: https://github.com/shellcheck-py/shellcheck-py
-    rev: v0.9.0.6
+    rev: v0.11.0.1
     hooks:
       - id: shellcheck
         args: [--severity=warning]
@@ -131,8 +141,9 @@ repos:
         args:
           - -c
           - |
-            for f in $(git diff --cached --name-only | grep -E "\\.enc\\.(yaml|json|hcl|tfvars)$"); do
-              if [ -f "$f" ] && ! grep -q "sops:" "$f" 2>/dev/null; then
+            for f in $(git diff --cached --name-only | grep -E "\\.enc\\.(yaml|yml|json|hcl|tfvars|env)$"); do
+              # Check for SOPS markers: JSON ("sops":), YAML (^sops:), or dotenv (ENC[)
+              if [ -f "$f" ] && ! grep -qE '"sops":|^sops:|ENC\[' "$f" 2>/dev/null; then
                 echo "ERROR: $f should be encrypted with SOPS but is not"
                 exit 1
               fi

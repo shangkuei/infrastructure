@@ -1,4 +1,0 @@
-services:
-  gitea:
-    ports: !reset
-    networks: !reset

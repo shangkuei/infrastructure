@@ -1,256 +1,247 @@
-# Makefile for ArgoCD SOPS Age Key Management
+# ============================================================================
+# Makefile - ArgoCD SOPS Age Key Management (shangkuei-xyz-talos)
+# ============================================================================
 # Generates and manages a dedicated Age key for ArgoCD KSOPS
+#
+# Usage:
+#   make help                     # Show all targets
+#   make generate-argocd-age-key  # Generate dedicated ArgoCD Age key
+#   make encrypt-secret           # Encrypt secret with Flux's Age key
+#   make sops-validate            # Validate encrypted files
+# ============================================================================
+
+# Configuration
+SOPS_DOMAIN := kubernetes
+SOPS_ENV_NAME := talos-gitops-flux
+SOPS_KEY_STRATEGY := central
+
+# ArgoCD-specific key files
+ARGOCD_KEY_FILE := $(HOME)/.config/sops/age/argocd-ksops.txt
+ARGOCD_PUB_FILE := $(HOME)/.config/sops/age/argocd-ksops.txt.pub
+
+# Secret file (single file with in-place encryption)
+SECRET_FILE := secret-sops-age.enc.yaml
+
+# Include shared SOPS operations
+include ../../../../makefiles/sops.mk
+
+# ============================================================================
+# Default Target
+# ============================================================================
 
 .PHONY: help
 help: ## Show this help message
-	@echo "ArgoCD SOPS Age Key Management"
 	@echo ""
-	@echo "Usage:"
-	@echo "  make <target>"
+	@echo "$(_SOPS_BOLD)ArgoCD SOPS Age Key Management$(_SOPS_NC)"
+	@echo "Environment: $(SOPS_ENV_NAME)"
+	@echo "Strategy: $(SOPS_KEY_STRATEGY) | Key: $(SOPS_AGE_KEY_FILE)"
 	@echo ""
-	@echo "Targets:"
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-30s\033[0m %s\n", $$1, $$2}'
+	@echo "$(_SOPS_BOLD)Quick Start:$(_SOPS_NC)"
+	@echo "  1. make generate-argocd-age-key"
+	@echo "  2. make encrypt-secret"
 	@echo ""
-	@echo "Examples:"
-	@echo "  make generate-argocd-age-key   # Generate dedicated ArgoCD Age key"
-	@echo "  make encrypt-secret            # Encrypt secret with Flux's Age key"
-	@echo "  make setup                     # Complete setup (generate + encrypt)"
+	@echo "$(_SOPS_BOLD)ArgoCD Operations:$(_SOPS_NC)"
+	@echo "  generate-argocd-age-key  Generate dedicated ArgoCD Age key"
+	@echo "  encrypt-secret           Encrypt secret in-place with Flux's Age key"
+	@echo "  edit-secret              Edit encrypted ArgoCD secret in place"
+	@echo "  setup                    Complete setup (generate key + encrypt)"
+	@echo ""
+	@echo "$(_SOPS_BOLD)SOPS Operations:$(_SOPS_NC)"
+	@echo "  sops-validate            Validate all encrypted files"
+	@echo "  sops-decrypt FILE=x      Decrypt file to stdout"
+	@echo "  sops-edit FILE=x         Edit encrypted file"
+	@echo "  sops-info                Display encryption configuration"
+	@echo "  sops-clean               Remove decrypted/temporary files"
+	@echo ""
+	@echo "$(_SOPS_BOLD)Utilities:$(_SOPS_NC)"
+	@echo "  show-keys                Show Age key information"
+	@echo "  clean                    Remove temporary files"
+	@echo "  clean-all                Remove all generated files"
+	@echo ""
 
-.PHONY: check-deps
-check-deps: ## Check required dependencies
-	@command -v sops >/dev/null 2>&1 || { echo "❌ sops not found. Install: brew install sops"; exit 1; }
-	@command -v age >/dev/null 2>&1 || { echo "❌ age not found. Install: brew install age"; exit 1; }
-	@command -v age-keygen >/dev/null 2>&1 || { echo "❌ age-keygen not found. Install: brew install age"; exit 1; }
-	@echo "✅ All dependencies installed"
+# ============================================================================
+# ArgoCD Key Generation
+# ============================================================================
 
 .PHONY: check-flux-key
 check-flux-key: ## Verify Flux Age key exists
-	@if [ ! -f $(HOME)/.config/sops/age/talos-gitops-flux.txt ]; then \
-		echo "❌ Flux Age key not found at $(HOME)/.config/sops/age/talos-gitops-flux.txt"; \
+	@if [ ! -f "$(SOPS_AGE_KEY_FILE)" ]; then \
+		echo "$(_SOPS_RED)Error: Flux Age key not found at $(SOPS_AGE_KEY_FILE)$(_SOPS_NC)"; \
 		echo ""; \
 		echo "Generate Flux Age keys first:"; \
-		echo "  cd ../../../terraform/environments/talos-gitops"; \
-		echo "  make age-keygen"; \
+		echo "  cd terraform/environments/talos-gitops"; \
+		echo "  make sops-keygen"; \
 		exit 1; \
 	fi
-	@echo "✅ Flux Age key found"
+	@echo "$(_SOPS_GREEN)Flux Age key found$(_SOPS_NC)"
 
 .PHONY: generate-argocd-age-key
-generate-argocd-age-key: check-deps ## Generate dedicated Age key for ArgoCD KSOPS
-	@echo "🔑 Generating dedicated Age key for ArgoCD KSOPS..."
+generate-argocd-age-key: sops-check-deps ## Generate dedicated Age key for ArgoCD KSOPS
+	@echo "$(_SOPS_BLUE)Generating dedicated Age key for ArgoCD KSOPS...$(_SOPS_NC)"
 	@echo ""
-	@echo "📋 Step 1: Creating keys directory..."
 	@mkdir -p $(HOME)/.config/sops/age
-	@echo "✅ Directory ready: $(HOME)/.config/sops/age"
+	@if [ -f "$(ARGOCD_KEY_FILE)" ]; then \
+		echo "$(_SOPS_YELLOW)Warning: ArgoCD key already exists: $(ARGOCD_KEY_FILE)$(_SOPS_NC)"; \
+		printf "Overwrite? [y/N] "; \
+		read -r confirm; \
+		if [ "$$confirm" != "y" ] && [ "$$confirm" != "Y" ]; then \
+			echo "Aborted."; \
+			exit 0; \
+		fi; \
+	fi
+	@age-keygen -o "$(ARGOCD_KEY_FILE)" 2>&1
+	@chmod 600 "$(ARGOCD_KEY_FILE)"
+	@age-keygen -y "$(ARGOCD_KEY_FILE)" > "$(ARGOCD_PUB_FILE)"
+	@chmod 644 "$(ARGOCD_PUB_FILE)"
 	@echo ""
-	@echo "📋 Step 2: Generating Age key pair..."
-	@age-keygen -o $(HOME)/.config/sops/age/argocd-ksops.txt 2>&1 | tee /tmp/age-keygen-output.txt
+	@echo "$(_SOPS_GREEN)ArgoCD Age key generated$(_SOPS_NC)"
 	@echo ""
-	@echo "✅ Age key generated: $(HOME)/.config/sops/age/argocd-ksops.txt"
+	@echo "Files created:"
+	@echo "  Private key: $(ARGOCD_KEY_FILE)"
+	@echo "  Public key:  $(ARGOCD_PUB_FILE)"
 	@echo ""
-	@echo "📋 Step 3: Extracting public key..."
-	@AGE_PUBLIC_KEY=$$(grep "^# public key:" $(HOME)/.config/sops/age/argocd-ksops.txt | awk '{print $$NF}'); \
-	echo "   Public key: $$AGE_PUBLIC_KEY"; \
-	echo "$$AGE_PUBLIC_KEY" > $(HOME)/.config/sops/age/argocd-ksops.txt.pub
-	@echo "✅ Public key saved: $(HOME)/.config/sops/age/argocd-ksops.txt.pub"
+	@echo "Public key value:"
+	@cat "$(ARGOCD_PUB_FILE)" | sed 's/^/  /'
 	@echo ""
-	@echo "📋 Step 4: Updating .sops.yaml for test apps..."
-	@AGE_PUBLIC_KEY=$$(cat $(HOME)/.config/sops/age/argocd-ksops.txt.pub); \
+	@# Update argocd-examples .sops.yaml
+	@AGE_PUBLIC_KEY=$$(cat $(ARGOCD_PUB_FILE)); \
 	echo "# SOPS configuration for ArgoCD test applications" > ../../../../argocd-examples/.sops.yaml; \
 	echo "# Uses dedicated ArgoCD Age key for KSOPS" >> ../../../../argocd-examples/.sops.yaml; \
 	echo "" >> ../../../../argocd-examples/.sops.yaml; \
 	echo "creation_rules:" >> ../../../../argocd-examples/.sops.yaml; \
-	echo "  - path_regex: .*secret.*\\.(enc|yaml|yml)$$" >> ../../../../argocd-examples/.sops.yaml; \
+	echo "  - path_regex: .*secret.*\\.enc\\.yaml$$" >> ../../../../argocd-examples/.sops.yaml; \
 	echo "    encrypted_regex: '^(data|stringData)$$'" >> ../../../../argocd-examples/.sops.yaml; \
 	echo "    age: $$AGE_PUBLIC_KEY" >> ../../../../argocd-examples/.sops.yaml
-	@echo "✅ Updated: ../../../../argocd-examples/.sops.yaml"
+	@echo "Updated: argocd-examples/.sops.yaml"
 	@echo ""
-	@echo "📋 Step 5: Updating .sops.yaml for ArgoCD overlay..."
-	@AGE_PUBLIC_KEY=$$(cat $(HOME)/.config/sops/age/argocd-ksops.txt.pub); \
-	FLUX_PUBLIC_KEY=$$(grep "^# public key:" $(HOME)/.config/sops/age/talos-gitops-flux.txt | awk '{print $$NF}'); \
-	echo "# SOPS configuration for ArgoCD overlay secrets" > .sops.yaml; \
-	echo "# Uses Flux Age key to encrypt the ArgoCD KSOPS Age key secret" >> .sops.yaml; \
-	echo "# This allows Flux to decrypt and deploy the secret to ArgoCD namespace" >> .sops.yaml; \
-	echo "" >> .sops.yaml; \
-	echo "creation_rules:" >> .sops.yaml; \
-	echo "  - path_regex: .*secret.*\\.(enc|yaml|yml)$$" >> .sops.yaml; \
-	echo "    encrypted_regex: '^(data|stringData)$$'" >> .sops.yaml; \
-	echo "    age: $$FLUX_PUBLIC_KEY" >> .sops.yaml
-	@echo "✅ Updated: .sops.yaml"
-	@echo ""
-	@echo "✅ ArgoCD Age key generation complete!"
-	@echo ""
-	@echo "📋 Key Files Created:"
-	@echo "   Private key: $(HOME)/.config/sops/age/argocd-ksops.txt"
-	@echo "   Public key:  $(HOME)/.config/sops/age/argocd-ksops.txt.pub"
-	@echo ""
-	@echo "⚠️  IMPORTANT:"
-	@echo "   1. Private key is stored at: $(HOME)/.config/sops/age/argocd-ksops.txt"
-	@echo "   2. This key will be encrypted and deployed by Flux to ArgoCD namespace"
-	@echo "   3. Test apps will use this key for SOPS encryption"
-	@echo "   4. Backup the private key securely!"
-	@echo ""
-	@echo "📋 Next steps:"
-	@echo "   make generate-secret   # Generate ArgoCD SOPS Age secret"
-
-.PHONY: generate-secret
-generate-secret: check-deps check-flux-key ## Generate ArgoCD SOPS Age secret (plain text)
-	@echo "🔐 Generating ArgoCD SOPS Age secret (plain text)..."
-	@if [ ! -f $(HOME)/.config/sops/age/argocd-ksops.txt ]; then \
-		echo "❌ ArgoCD Age key not found. Run: make generate-argocd-age-key"; \
-		exit 1; \
+	@# Update local .sops.yaml with Flux public key
+	@FLUX_PUBLIC_KEY=$$(grep "^# public key:" "$(SOPS_AGE_KEY_FILE)" 2>/dev/null | awk '{print $$NF}' || echo ""); \
+	if [ -n "$$FLUX_PUBLIC_KEY" ]; then \
+		echo "# SOPS configuration for ArgoCD overlay secrets" > .sops.yaml; \
+		echo "# Uses Flux Age key to encrypt the ArgoCD KSOPS Age key secret" >> .sops.yaml; \
+		echo "# This allows Flux to decrypt and deploy the secret to ArgoCD namespace" >> .sops.yaml; \
+		echo "" >> .sops.yaml; \
+		echo "creation_rules:" >> .sops.yaml; \
+		echo "  - path_regex: \\.enc\\.yaml$$" >> .sops.yaml; \
+		echo "    encrypted_regex: '^(data|stringData)$$'" >> .sops.yaml; \
+		echo "    age: $$FLUX_PUBLIC_KEY" >> .sops.yaml; \
+		echo "Updated: .sops.yaml"; \
 	fi
-	@echo "---" > secret-sops-age.yaml
-	@echo "# SOPS Age key secret for ArgoCD KSOPS" >> secret-sops-age.yaml
-	@echo "# This secret will be encrypted with Flux's Age key" >> secret-sops-age.yaml
-	@echo "# Flux will decrypt and deploy it to the ArgoCD namespace" >> secret-sops-age.yaml
-	@echo "# ArgoCD repo-server will use this key to decrypt application secrets" >> secret-sops-age.yaml
-	@echo "apiVersion: v1" >> secret-sops-age.yaml
-	@echo "kind: Secret" >> secret-sops-age.yaml
-	@echo "metadata:" >> secret-sops-age.yaml
-	@echo "  name: sops-age" >> secret-sops-age.yaml
-	@echo "  namespace: argocd" >> secret-sops-age.yaml
-	@echo "type: Opaque" >> secret-sops-age.yaml
-	@echo "stringData:" >> secret-sops-age.yaml
-	@echo "  keys.txt: |" >> secret-sops-age.yaml
-	@sed 's/^/    /' $(HOME)/.config/sops/age/argocd-ksops.txt >> secret-sops-age.yaml
-	@echo "✅ Generated: secret-sops-age.yaml (plain text)"
 	@echo ""
-	@echo "📋 Next step:"
-	@echo "   make encrypt-secret   # Encrypt with Flux's Age key"
+	@echo "$(_SOPS_YELLOW)IMPORTANT:$(_SOPS_NC)"
+	@echo "  1. Backup the private key securely"
+	@echo "  2. Test apps will use this key for SOPS encryption"
+	@echo ""
+	@echo "Next step: make encrypt-secret"
 
 .PHONY: encrypt-secret
-encrypt-secret: check-deps check-flux-key ## Encrypt ArgoCD secret with Flux's Age key
-	@echo "🔐 Encrypting ArgoCD SOPS Age secret with Flux's Age key..."
-	@if [ ! -f secret-sops-age.yaml ]; then \
-		echo "❌ secret-sops-age.yaml not found. Run: make generate-secret"; \
+encrypt-secret: sops-check-deps sops-check-config check-flux-key ## Encrypt ArgoCD secret in-place with Flux's Age key
+	@echo "$(_SOPS_BLUE)Encrypting ArgoCD SOPS Age secret with Flux's Age key...$(_SOPS_NC)"
+	@if [ ! -f "$(SECRET_FILE)" ]; then \
+		echo "$(_SOPS_RED)Error: $(SECRET_FILE) not found$(_SOPS_NC)"; \
+		echo "Create the secret file first, then run this command."; \
 		exit 1; \
 	fi
-	@if [ ! -f .sops.yaml ]; then \
-		echo "❌ .sops.yaml not found. Run: make generate-argocd-age-key"; \
-		exit 1; \
+	@# Check if already encrypted
+	@if head -5 "$(SECRET_FILE)" | grep -q "sops:" 2>/dev/null; then \
+		echo "$(_SOPS_YELLOW)File is already encrypted. Use 'make edit-secret' to modify.$(_SOPS_NC)"; \
+		exit 0; \
 	fi
-	@echo "💡 Note: Using Flux's Age key for encryption (so Flux can decrypt it)"
-	@SOPS_AGE_KEY_FILE=$(HOME)/.config/sops/age/talos-gitops-flux.txt \
-		sops --config .sops.yaml --input-type yaml --output-type yaml --encrypt --in-place secret-sops-age.yaml
-	@echo "✅ Secret encrypted: secret-sops-age.yaml"
+	@echo "Note: Using Flux's Age key for encryption (so Flux can decrypt it)"
+	@SOPS_AGE_KEY_FILE="$(SOPS_AGE_KEY_FILE)" sops --config $(SOPS_CONFIG) --encrypt --in-place "$(SECRET_FILE)"
+	@echo "$(_SOPS_GREEN)Encrypted: $(SECRET_FILE)$(_SOPS_NC)"
 	@echo ""
-	@echo "✅ Setup complete!"
+	@echo "Summary:"
+	@echo "  ArgoCD Age key: $(ARGOCD_KEY_FILE)"
+	@echo "  Encrypted secret: $(SECRET_FILE)"
 	@echo ""
-	@echo "📋 Summary:"
-	@echo "   • ArgoCD Age key: $(HOME)/.config/sops/age/argocd-ksops.txt"
-	@echo "   • Secret file: secret-sops-age.yaml (encrypted with Flux's key)"
-	@echo "   • Test apps config: ../../../argocd-examples/.sops.yaml"
-	@echo ""
-	@echo "📋 Next steps:"
-	@echo "   1. Encrypt test app secrets: cd ../../../argocd-examples && make encrypt-all"
-	@echo "   2. Commit changes: git add . && git commit -m 'feat(argocd): add KSOPS Age key'"
-	@echo "   3. Push to repo: git push"
-	@echo "   4. Flux will automatically deploy the secret to ArgoCD namespace"
+	@echo "Commit the encrypted secret to Git."
+
+.PHONY: edit-secret
+edit-secret: check-flux-key ## Edit encrypted ArgoCD secret in place
+	@$(MAKE) sops-edit FILE=$(SECRET_FILE)
 
 .PHONY: encrypt-test-app-secrets
-encrypt-test-app-secrets: check-deps ## Encrypt test application secrets with ArgoCD Age key
-	@echo "🔐 Encrypting test application secrets..."
-	@if [ ! -f $(HOME)/.config/sops/age/argocd-ksops.txt ]; then \
-		echo "❌ ArgoCD Age key not found. Run: make generate-argocd-age-key"; \
+encrypt-test-app-secrets: sops-check-deps ## Encrypt test application secrets with ArgoCD Age key
+	@echo "$(_SOPS_BLUE)Encrypting test application secrets...$(_SOPS_NC)"
+	@if [ ! -f "$(ARGOCD_KEY_FILE)" ]; then \
+		echo "$(_SOPS_RED)Error: ArgoCD Age key not found. Run: make generate-argocd-age-key$(_SOPS_NC)"; \
 		exit 1; \
 	fi
-	@SOPS_AGE_KEY_FILE=$(HOME)/.config/sops/age/argocd-ksops.txt \
-		sops -e -i ../../../../argocd-examples/app1/overlays/shangkuei-xyz-talos/secret-app1.yaml
-	@echo "✅ Encrypted: app1/secret-app1.yaml"
-	@SOPS_AGE_KEY_FILE=$(HOME)/.config/sops/age/argocd-ksops.txt \
-		sops -e -i ../../../../argocd-examples/app2/overlays/shangkuei-xyz-talos/secret-app2.yaml
-	@echo "✅ Encrypted: app2/secret-app2.yaml"
+	@SOPS_AGE_KEY_FILE="$(ARGOCD_KEY_FILE)" sops -e -i ../../../../argocd-examples/app1/overlays/shangkuei-xyz-talos/secret-app1.yaml 2>/dev/null && \
+		echo "Encrypted: app1/secret-app1.yaml" || echo "Skipped: app1/secret-app1.yaml (not found)"
+	@SOPS_AGE_KEY_FILE="$(ARGOCD_KEY_FILE)" sops -e -i ../../../../argocd-examples/app2/overlays/shangkuei-xyz-talos/secret-app2.yaml 2>/dev/null && \
+		echo "Encrypted: app2/secret-app2.yaml" || echo "Skipped: app2/secret-app2.yaml (not found)"
 	@echo ""
-	@echo "✅ All test app secrets encrypted!"
+	@echo "$(_SOPS_GREEN)Test app secrets encryption complete$(_SOPS_NC)"
 
-.PHONY: decrypt-secret
-decrypt-secret: check-deps check-flux-key ## Decrypt and view ArgoCD secret
-	@echo "🔓 Decrypting ArgoCD SOPS Age secret..."
-	@if [ ! -f secret-sops-age.yaml ]; then \
-		echo "❌ secret-sops-age.yaml not found"; \
-		exit 1; \
-	fi
-	@SOPS_AGE_KEY_FILE=$(HOME)/.config/sops/age/talos-gitops-flux.txt \
-		sops -d secret-sops-age.yaml
-
-.PHONY: validate
-validate: check-deps check-flux-key ## Validate encrypted secret can be decrypted
-	@echo "✅ Validating encrypted secret..."
-	@if [ ! -f secret-sops-age.yaml ]; then \
-		echo "❌ secret-sops-age.yaml not found"; \
-		exit 1; \
-	fi
-	@echo -n "  📄 secret-sops-age.yaml ... "
-	@if SOPS_AGE_KEY_FILE=$(HOME)/.config/sops/age/talos-gitops-flux.txt \
-		sops -d secret-sops-age.yaml > /dev/null 2>&1; then \
-		echo "✅ Valid"; \
-	else \
-		echo "❌ Invalid"; \
-		exit 1; \
-	fi
+.PHONY: setup
+setup: generate-argocd-age-key encrypt-secret ## Complete setup: generate key and encrypt secret
 	@echo ""
-	@echo "✅ Secret is valid and can be decrypted by Flux"
+	@echo "$(_SOPS_GREEN)ArgoCD KSOPS setup complete!$(_SOPS_NC)"
+	@echo ""
+	@echo "What was created:"
+	@echo "  - Dedicated Age key for ArgoCD KSOPS"
+	@echo "  - Encrypted secret for Flux to deploy"
+	@echo ""
+	@echo "Next steps:"
+	@echo "  1. Review changes: git status"
+	@echo "  2. Commit: git add . && git commit -m 'feat(argocd): add KSOPS Age key'"
+	@echo "  3. Push: git push"
+	@echo "  4. Flux will deploy the secret automatically"
+	@echo ""
+	@echo "$(_SOPS_YELLOW)Remember to backup: $(ARGOCD_KEY_FILE)$(_SOPS_NC)"
+
+# ============================================================================
+# Utilities
+# ============================================================================
 
 .PHONY: show-keys
 show-keys: ## Show Age key information
-	@echo "📋 Age Key Information:"
+	@echo "$(_SOPS_BOLD)Age Key Information:$(_SOPS_NC)"
 	@echo ""
 	@echo "Flux Age Key (for encrypting ArgoCD secret):"
-	@if [ -f $(HOME)/.config/sops/age/talos-gitops-flux.txt ]; then \
-		grep "^# public key:" $(HOME)/.config/sops/age/talos-gitops-flux.txt || echo "  Not found"; \
+	@if [ -f "$(SOPS_AGE_KEY_FILE)" ]; then \
+		grep "^# public key:" "$(SOPS_AGE_KEY_FILE)" | sed 's/# /  /' || echo "  Not found"; \
 	else \
-		echo "  ❌ Not found"; \
+		echo "  $(_SOPS_RED)Not found$(_SOPS_NC)"; \
 	fi
 	@echo ""
 	@echo "ArgoCD Age Key (for encrypting test app secrets):"
-	@if [ -f $(HOME)/.config/sops/age/argocd-ksops.txt ]; then \
-		grep "^# public key:" $(HOME)/.config/sops/age/argocd-ksops.txt || echo "  Not found"; \
+	@if [ -f "$(ARGOCD_KEY_FILE)" ]; then \
+		grep "^# public key:" "$(ARGOCD_KEY_FILE)" | sed 's/# /  /' || echo "  Not found"; \
 	else \
-		echo "  ❌ Not found (run: make generate-argocd-age-key)"; \
-	fi
-	@echo ""
-	@echo "Test Apps .sops.yaml:"
-	@if [ -f ../../../argocd-examples/.sops.yaml ]; then \
-		grep "age:" ../../../argocd-examples/.sops.yaml | head -1 || echo "  Not configured"; \
-	else \
-		echo "  ❌ Not found"; \
+		echo "  $(_SOPS_YELLOW)Not found (run: make generate-argocd-age-key)$(_SOPS_NC)"; \
 	fi
 
-.PHONY: setup
-setup: generate-argocd-age-key generate-secret encrypt-secret encrypt-test-app-secrets ## Complete setup: generate key, create and encrypt secret
-	@echo ""
-	@echo "🎉 ArgoCD KSOPS setup complete!"
-	@echo ""
-	@echo "📋 What was created:"
-	@echo "   • Dedicated Age key for ArgoCD KSOPS"
-	@echo "   • Encrypted secret for Flux to deploy"
-	@echo "   • Test app secrets encrypted"
-	@echo "   • SOPS configurations updated"
-	@echo ""
-	@echo "📋 Next steps:"
-	@echo "   1. Review changes: git status"
-	@echo "   2. Commit: git add . && git commit -m 'feat(argocd): add KSOPS Age key and test apps'"
-	@echo "   3. Push: git push"
-	@echo "   4. Flux will deploy the secret automatically"
-	@echo "   5. Deploy test apps: kubectl apply -k ../../../argocd-examples/argocd-apps/base/"
-	@echo ""
-	@echo "⚠️  Remember to backup: $(HOME)/.config/sops/age/argocd-ksops.txt"
+# ============================================================================
+# Cleanup
+# ============================================================================
 
 .PHONY: clean
-clean: ## Remove generated plain text files (keeps encrypted secrets)
-	@echo "🧹 Cleaning up..."
-	@rm -f secret-sops-age.yaml.decrypted
-	@echo "✅ Cleanup complete"
+clean: sops-clean ## Remove temporary files (keeps encrypted secrets)
+	@echo "$(_SOPS_GREEN)Cleanup complete$(_SOPS_NC)"
 
 .PHONY: clean-all
-clean-all: ## Remove all generated files including encrypted secrets
-	@echo "🧹 Removing all generated files..."
-	@read -p "This will delete encrypted secrets. Continue? (yes/no): " confirm; \
-	if [ "$$confirm" = "yes" ]; then \
-		rm -f secret-sops-age.yaml secret-sops-age.yaml.decrypted; \
-		rm -f .sops.yaml; \
-		echo "✅ All files removed"; \
+clean-all: clean ## Remove all generated files including encrypted secrets
+	@echo "$(_SOPS_YELLOW)Removing all generated files...$(_SOPS_NC)"
+	@printf "This will delete encrypted secrets. Continue? [y/N] "
+	@read -r confirm; \
+	if [ "$$confirm" = "y" ] || [ "$$confirm" = "Y" ]; then \
+		rm -f $(SECRET_FILE) secret-sops-age.yaml; \
+		echo "$(_SOPS_GREEN)All files removed$(_SOPS_NC)"; \
 	else \
-		echo "❌ Cancelled"; \
+		echo "Cancelled"; \
 	fi
+
+# ============================================================================
+# Backward Compatibility Aliases
+# ============================================================================
+
+.PHONY: check-deps check-sops-config validate
+check-deps: sops-check-deps ## Alias for sops-check-deps
+	@:
+check-sops-config: sops-check-config ## Alias for sops-check-config
+	@:
+validate: sops-validate ## Alias for sops-validate
+	@:

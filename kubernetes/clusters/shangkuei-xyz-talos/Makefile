@@ -1,85 +1,83 @@
-.PHONY: help secret-create secret-edit secret-view secret-encrypt secret-decrypt
-.PHONY: secret-validate validate-all flux-reconcile flux-status
+# ============================================================================
+# Makefile - Kubernetes Cluster Secret Management (shangkuei-xyz-talos)
+# ============================================================================
+# Manages SOPS-encrypted Kubernetes secrets for Flux GitOps
+#
+# Usage:
+#   make help                                    # Show all targets
+#   make secret-create NAME=<name> NAMESPACE=<ns>  # Create encrypted secret
+#   make secret-edit FILE=<path>                 # Edit encrypted secret
+#   make sops-validate                           # Validate encrypted files
+# ============================================================================
 
 # Configuration
+SOPS_DOMAIN := kubernetes
+SOPS_ENV_NAME := cluster-shangkuei-xyz-talos
+SOPS_KEY_STRATEGY := central
+
+# Cluster configuration
 CLUSTER_NAME := shangkuei-xyz-talos
-AGE_DIR := $(HOME)/.config/sops/age
 
 # Flux age key (for encrypting Kubernetes manifests)
-AGE_FLUX_PRIVATE_KEY := $(AGE_DIR)/talos-gitops-flux.txt
-AGE_FLUX_PUBLIC_KEY := $(AGE_DIR)/talos-gitops-flux.txt.pub
+AGE_FLUX_PRIVATE_KEY := $(HOME)/.config/sops/age/talos-gitops-flux.txt
+AGE_FLUX_PUBLIC_KEY := $(HOME)/.config/sops/age/talos-gitops-flux.txt.pub
 
-# Default SOPS key file for Flux operations
-export SOPS_AGE_KEY_FILE := $(AGE_FLUX_PRIVATE_KEY)
+# Override SOPS_AGE_KEY_FILE for central strategy
+SOPS_AGE_KEY_FILE := $(AGE_FLUX_PRIVATE_KEY)
+export SOPS_AGE_KEY_FILE
 
 # Directories
 SECRETS_DIR := secrets
-CLUSTER_DIR := $(shell pwd)
-BASE_DIR := ../../base
 
-# Colors for output
-RED := \033[0;31m
-GREEN := \033[0;32m
-YELLOW := \033[1;33m
-BLUE := \033[0;34m
-CYAN := \033[0;36m
-NC := \033[0m # No Color
+# Include shared SOPS operations
+include ../../../makefiles/sops.mk
 
-# Default target
-help:
-	@echo "$(CYAN)Kubernetes Cluster: $(CLUSTER_NAME)$(NC)"
+# ============================================================================
+# Default Target
+# ============================================================================
+
+.PHONY: help
+help: ## Show this help message
 	@echo ""
-	@echo "$(BLUE)Secret Management:$(NC)"
-	@echo "  make secret-create NAME=<name> NAMESPACE=<ns>  Create encrypted secret interactively"
-	@echo "  make secret-edit FILE=<path>                   Edit encrypted secret"
-	@echo "  make secret-view FILE=<path>                   View decrypted secret"
-	@echo "  make secret-encrypt FILE=<path>                Encrypt existing secret file"
-	@echo "  make secret-decrypt FILE=<path>                Decrypt and display secret"
+	@echo "$(_SOPS_BOLD)Kubernetes Cluster: $(CLUSTER_NAME)$(_SOPS_NC)"
+	@echo "Environment: $(SOPS_ENV_NAME)"
+	@echo "Strategy: $(SOPS_KEY_STRATEGY) | Key: $(SOPS_AGE_KEY_FILE)"
 	@echo ""
-	@echo "$(BLUE)Validation:$(NC)"
-	@echo "  make secret-validate FILE=<path>               Validate secret is properly encrypted"
-	@echo "  make validate-all                              Validate all YAML files in cluster"
+	@echo "$(_SOPS_BOLD)Secret Management:$(_SOPS_NC)"
+	@echo "  secret-create NAME=x NS=y  Create encrypted secret interactively"
+	@echo "  secret-edit FILE=<path>    Edit encrypted secret"
+	@echo "  secret-view FILE=<path>    View decrypted secret"
+	@echo "  secret-encrypt FILE=<path> Encrypt existing secret file"
+	@echo "  secret-decrypt FILE=<path> Decrypt and display secret"
 	@echo ""
-	@echo "$(BLUE)Flux Operations:$(NC)"
-	@echo "  make flux-reconcile                            Force reconcile cluster resources"
-	@echo "  make flux-status                               Show Flux Kustomization status"
+	@echo "$(_SOPS_BOLD)Validation:$(_SOPS_NC)"
+	@echo "  secret-validate FILE=<path> Validate secret is encrypted"
+	@echo "  validate-all                Validate all YAML files in cluster"
+	@echo "  sops-validate               Validate all encrypted files"
 	@echo ""
-	@echo "$(YELLOW)Examples:$(NC)"
+	@echo "$(_SOPS_BOLD)SOPS Operations:$(_SOPS_NC)"
+	@echo "  sops-decrypt FILE=x        Decrypt file to stdout"
+	@echo "  sops-edit FILE=x           Edit encrypted file"
+	@echo "  sops-info                  Display encryption configuration"
+	@echo "  sops-clean                 Remove decrypted/temporary files"
+	@echo ""
+	@echo "$(_SOPS_BOLD)Flux Operations:$(_SOPS_NC)"
+	@echo "  flux-reconcile             Force reconcile cluster resources"
+	@echo "  flux-status                Show Flux Kustomization status"
+	@echo ""
+	@echo "$(_SOPS_BOLD)Examples:$(_SOPS_NC)"
 	@echo "  make secret-create NAME=db-credentials NAMESPACE=production"
 	@echo "  make secret-edit FILE=secrets/db-credentials.yaml"
-	@echo "  make secret-view FILE=secrets/db-credentials.yaml"
+	@echo ""
 
-# Check if SOPS and age are installed
-check-tools:
-	@if ! command -v sops >/dev/null 2>&1; then \
-		echo "$(RED)Error: sops is not installed$(NC)"; \
-		echo ""; \
-		echo "Install sops:"; \
-		echo "  macOS:   brew install sops"; \
-		echo "  Linux:   see https://github.com/getsops/sops"; \
-		exit 1; \
-	fi
-	@if ! command -v age >/dev/null 2>&1; then \
-		echo "$(RED)Error: age is not installed$(NC)"; \
-		echo ""; \
-		echo "Install age:"; \
-		echo "  macOS:   brew install age"; \
-		echo "  Linux:   apt install age"; \
-		exit 1; \
-	fi
-	@if [ ! -f $(AGE_FLUX_PRIVATE_KEY) ]; then \
-		echo "$(RED)Error: Flux age key not found at $(AGE_FLUX_PRIVATE_KEY)$(NC)"; \
-		echo ""; \
-		echo "Generate age keys:"; \
-		echo "  cd ../../terraform/environments/talos-gitops"; \
-		echo "  make age-keygen"; \
-		exit 1; \
-	fi
+# ============================================================================
+# Secret Management
+# ============================================================================
 
-# Create a new encrypted secret interactively
-secret-create: check-tools
+.PHONY: secret-create
+secret-create: sops-check-deps sops-check-config ## Create encrypted secret interactively (NAME=, NAMESPACE=)
 	@if [ -z "$(NAME)" ] || [ -z "$(NAMESPACE)" ]; then \
-		echo "$(RED)Usage: make secret-create NAME=<name> NAMESPACE=<namespace>$(NC)"; \
+		echo "$(_SOPS_RED)Usage: make secret-create NAME=<name> NAMESPACE=<namespace>$(_SOPS_NC)"; \
 		echo ""; \
 		echo "Example: make secret-create NAME=db-credentials NAMESPACE=production"; \
 		exit 1; \
@@ -87,14 +85,15 @@ secret-create: check-tools
 	@mkdir -p $(SECRETS_DIR)
 	@SECRET_FILE="$(SECRETS_DIR)/$(NAME).yaml"; \
 	if [ -f "$$SECRET_FILE" ]; then \
-		echo "$(YELLOW)Warning: Secret file already exists: $$SECRET_FILE$(NC)"; \
-		read -p "Overwrite? (yes/no): " confirm; \
+		echo "$(_SOPS_YELLOW)Warning: Secret file already exists: $$SECRET_FILE$(_SOPS_NC)"; \
+		printf "Overwrite? (yes/no): "; \
+		read confirm; \
 		if [ "$$confirm" != "yes" ]; then \
-			echo "$(CYAN)Cancelled$(NC)"; \
+			echo "$(_SOPS_CYAN)Cancelled$(_SOPS_NC)"; \
 			exit 0; \
 		fi; \
 	fi; \
-	echo "$(BLUE)==> Creating secret: $(NAME) in namespace: $(NAMESPACE)$(NC)"; \
+	echo "$(_SOPS_BLUE)==> Creating secret: $(NAME) in namespace: $(NAMESPACE)$(_SOPS_NC)"; \
 	echo "---" > $$SECRET_FILE; \
 	echo "apiVersion: v1" >> $$SECRET_FILE; \
 	echo "kind: Secret" >> $$SECRET_FILE; \
@@ -105,159 +104,185 @@ secret-create: check-tools
 	echo "stringData:" >> $$SECRET_FILE; \
 	echo "  # Add your secret data below (will be encrypted)" >> $$SECRET_FILE; \
 	echo "  # example-key: example-value" >> $$SECRET_FILE; \
-	echo "$(GREEN)==> Created template: $$SECRET_FILE$(NC)"; \
+	echo "$(_SOPS_GREEN)==> Created template: $$SECRET_FILE$(_SOPS_NC)"; \
 	echo ""; \
-	echo "$(YELLOW)==> Opening editor to add secret data...$(NC)"; \
+	echo "$(_SOPS_YELLOW)==> Opening editor to add secret data...$(_SOPS_NC)"; \
 	$${EDITOR:-vim} $$SECRET_FILE; \
 	echo ""; \
-	echo "$(BLUE)==> Encrypting secret with SOPS...$(NC)"; \
-	echo "$(YELLOW)==> Note: Only stringData section will be encrypted (metadata remains plaintext)$(NC)"; \
-	sops --input-type yaml --output-type yaml --encrypted-regex '^(data|stringData)$$' -e -i $$SECRET_FILE; \
-	echo "$(GREEN)==> Secret encrypted successfully!$(NC)"; \
+	echo "$(_SOPS_BLUE)==> Encrypting secret with SOPS...$(_SOPS_NC)"; \
+	echo "$(_SOPS_YELLOW)==> Note: Only stringData section will be encrypted (metadata remains plaintext)$(_SOPS_NC)"; \
+	SOPS_AGE_KEY_FILE="$(SOPS_AGE_KEY_FILE)" sops --config $(SOPS_CONFIG) --input-type yaml --output-type yaml -e -i $$SECRET_FILE; \
+	echo "$(_SOPS_GREEN)==> Secret encrypted successfully!$(_SOPS_NC)"; \
 	echo ""; \
-	echo "$(CYAN)Next steps:$(NC)"; \
+	echo "$(_SOPS_CYAN)Next steps:$(_SOPS_NC)"; \
 	echo "  1. Review encrypted file: make secret-view FILE=$$SECRET_FILE"; \
-	echo "  2. Add to kustomization.yaml: ../../base/<namespace>/kustomization.yaml"; \
+	echo "  2. Add to kustomization.yaml"; \
 	echo "  3. Commit to git: git add $$SECRET_FILE && git commit -m 'feat(secrets): add $(NAME)'"; \
 	echo "  4. Flux will decrypt and apply automatically"
 
-# Edit an encrypted secret
-secret-edit: check-tools
+.PHONY: secret-edit
+secret-edit: sops-check-deps sops-check-config ## Edit encrypted secret (FILE=)
 	@if [ -z "$(FILE)" ]; then \
-		echo "$(RED)Usage: make secret-edit FILE=<path>$(NC)"; \
+		echo "$(_SOPS_RED)Usage: make secret-edit FILE=<path>$(_SOPS_NC)"; \
 		echo ""; \
 		echo "Example: make secret-edit FILE=secrets/db-credentials.yaml"; \
 		exit 1; \
 	fi
 	@if [ ! -f $(FILE) ]; then \
-		echo "$(RED)Error: File not found: $(FILE)$(NC)"; \
+		echo "$(_SOPS_RED)Error: File not found: $(FILE)$(_SOPS_NC)"; \
 		exit 1; \
 	fi
-	@echo "$(BLUE)==> Editing encrypted secret: $(FILE)$(NC)"
-	@sops $(FILE)
-	@echo "$(GREEN)==> Secret saved and re-encrypted$(NC)"
+	@echo "$(_SOPS_BLUE)==> Editing encrypted secret: $(FILE)$(_SOPS_NC)"
+	@SOPS_AGE_KEY_FILE="$(SOPS_AGE_KEY_FILE)" sops --config $(SOPS_CONFIG) $(FILE)
+	@echo "$(_SOPS_GREEN)==> Secret saved and re-encrypted$(_SOPS_NC)"
 
-# View decrypted secret
-secret-view: check-tools
+.PHONY: secret-view
+secret-view: sops-check-deps sops-check-config ## View decrypted secret (FILE=)
 	@if [ -z "$(FILE)" ]; then \
-		echo "$(RED)Usage: make secret-view FILE=<path>$(NC)"; \
+		echo "$(_SOPS_RED)Usage: make secret-view FILE=<path>$(_SOPS_NC)"; \
 		echo ""; \
 		echo "Example: make secret-view FILE=secrets/db-credentials.yaml"; \
 		exit 1; \
 	fi
 	@if [ ! -f $(FILE) ]; then \
-		echo "$(RED)Error: File not found: $(FILE)$(NC)"; \
+		echo "$(_SOPS_RED)Error: File not found: $(FILE)$(_SOPS_NC)"; \
 		exit 1; \
 	fi
-	@echo "$(BLUE)==> Decrypted contents of $(FILE):$(NC)"
+	@echo "$(_SOPS_BLUE)==> Decrypted contents of $(FILE):$(_SOPS_NC)"
 	@echo ""
-	@sops -d $(FILE)
+	@SOPS_AGE_KEY_FILE="$(SOPS_AGE_KEY_FILE)" sops --config $(SOPS_CONFIG) -d $(FILE)
 
-# Encrypt an existing unencrypted secret file
-secret-encrypt: check-tools
+.PHONY: secret-encrypt
+secret-encrypt: sops-check-deps sops-check-config ## Encrypt existing secret file (FILE=)
 	@if [ -z "$(FILE)" ]; then \
-		echo "$(RED)Usage: make secret-encrypt FILE=<path>$(NC)"; \
+		echo "$(_SOPS_RED)Usage: make secret-encrypt FILE=<path>$(_SOPS_NC)"; \
 		echo ""; \
 		echo "Example: make secret-encrypt FILE=secrets/db-credentials.yaml"; \
 		exit 1; \
 	fi
 	@if [ ! -f $(FILE) ]; then \
-		echo "$(RED)Error: File not found: $(FILE)$(NC)"; \
+		echo "$(_SOPS_RED)Error: File not found: $(FILE)$(_SOPS_NC)"; \
 		exit 1; \
 	fi
-	@echo "$(BLUE)==> Encrypting $(FILE) with SOPS...$(NC)"
-	@echo "$(YELLOW)==> Note: Only data/stringData sections will be encrypted (metadata remains plaintext)$(NC)"
-	@sops --input-type yaml --output-type yaml --encrypted-regex '^(data|stringData)$$' -e -i $(FILE)
-	@echo "$(GREEN)==> File encrypted successfully$(NC)"
+	@echo "$(_SOPS_BLUE)==> Encrypting $(FILE) with SOPS...$(_SOPS_NC)"
+	@echo "$(_SOPS_YELLOW)==> Note: Only data/stringData sections will be encrypted (metadata remains plaintext)$(_SOPS_NC)"
+	@SOPS_AGE_KEY_FILE="$(SOPS_AGE_KEY_FILE)" sops --config $(SOPS_CONFIG) --input-type yaml --output-type yaml -e -i $(FILE)
+	@echo "$(_SOPS_GREEN)==> File encrypted successfully$(_SOPS_NC)"
 
-# Decrypt secret (same as secret-view)
-secret-decrypt: secret-view
+.PHONY: secret-decrypt
+secret-decrypt: secret-view ## Decrypt secret (alias for secret-view)
 
-# Validate that a secret is properly encrypted
-secret-validate: check-tools
+.PHONY: secret-validate
+secret-validate: sops-check-deps ## Validate secret is properly encrypted (FILE=)
 	@if [ -z "$(FILE)" ]; then \
-		echo "$(RED)Usage: make secret-validate FILE=<path>$(NC)"; \
+		echo "$(_SOPS_RED)Usage: make secret-validate FILE=<path>$(_SOPS_NC)"; \
 		exit 1; \
 	fi
 	@if [ ! -f $(FILE) ]; then \
-		echo "$(RED)Error: File not found: $(FILE)$(NC)"; \
+		echo "$(_SOPS_RED)Error: File not found: $(FILE)$(_SOPS_NC)"; \
 		exit 1; \
 	fi
-	@echo "$(BLUE)==> Validating $(FILE)$(NC)"
+	@echo "$(_SOPS_BLUE)==> Validating $(FILE)$(_SOPS_NC)"
 	@if grep -q "sops:" $(FILE) && grep -q "mac:" $(FILE); then \
-		echo "$(GREEN)✓ File is encrypted with SOPS$(NC)"; \
+		echo "$(_SOPS_GREEN)✓ File is encrypted with SOPS$(_SOPS_NC)"; \
 	else \
-		echo "$(RED)✗ File does not appear to be encrypted$(NC)"; \
+		echo "$(_SOPS_RED)✗ File does not appear to be encrypted$(_SOPS_NC)"; \
 		exit 1; \
 	fi
-	@if sops -d $(FILE) > /dev/null 2>&1; then \
-		echo "$(GREEN)✓ File can be decrypted$(NC)"; \
+	@if SOPS_AGE_KEY_FILE="$(SOPS_AGE_KEY_FILE)" sops --config $(SOPS_CONFIG) -d $(FILE) > /dev/null 2>&1; then \
+		echo "$(_SOPS_GREEN)✓ File can be decrypted$(_SOPS_NC)"; \
 	else \
-		echo "$(RED)✗ Cannot decrypt file$(NC)"; \
+		echo "$(_SOPS_RED)✗ Cannot decrypt file$(_SOPS_NC)"; \
 		exit 1; \
 	fi
-	@echo "$(GREEN)✓ Secret is valid$(NC)"
+	@echo "$(_SOPS_GREEN)✓ Secret is valid$(_SOPS_NC)"
 
-# Validate all YAML files in cluster directory
-validate-all:
-	@echo "$(BLUE)==> Validating all YAML files in cluster$(NC)"
+# ============================================================================
+# Validation
+# ============================================================================
+
+.PHONY: validate-all
+validate-all: ## Validate all YAML files in cluster directory
+	@echo "$(_SOPS_BLUE)==> Validating all YAML files in cluster$(_SOPS_NC)"
 	@echo ""
 	@VALID=0; INVALID=0; \
 	for file in $$(find . -name "*.yaml" -o -name "*.yml"); do \
-		echo -n "Checking $$file... "; \
+		printf "Checking $$file... "; \
 		if grep -q "kind: Secret" $$file 2>/dev/null; then \
 			if grep -q "sops:" $$file && grep -q "mac:" $$file; then \
-				echo "$(GREEN)encrypted ✓$(NC)"; \
+				echo "$(_SOPS_GREEN)encrypted ✓$(_SOPS_NC)"; \
 				VALID=$$((VALID + 1)); \
 			else \
-				echo "$(RED)NOT ENCRYPTED ✗$(NC)"; \
+				echo "$(_SOPS_RED)NOT ENCRYPTED ✗$(_SOPS_NC)"; \
 				INVALID=$$((INVALID + 1)); \
 			fi; \
 		else \
 			if python3 -c "import yaml; yaml.safe_load(open('$$file'))" 2>/dev/null; then \
-				echo "$(GREEN)valid ✓$(NC)"; \
+				echo "$(_SOPS_GREEN)valid ✓$(_SOPS_NC)"; \
 				VALID=$$((VALID + 1)); \
 			else \
-				echo "$(RED)invalid ✗$(NC)"; \
+				echo "$(_SOPS_RED)invalid ✗$(_SOPS_NC)"; \
 				INVALID=$$((INVALID + 1)); \
 			fi; \
 		fi; \
 	done; \
 	echo ""; \
-	echo "$(CYAN)==> Summary$(NC)"; \
+	echo "$(_SOPS_CYAN)==> Summary$(_SOPS_NC)"; \
 	echo "  Valid:   $$VALID"; \
 	echo "  Invalid: $$INVALID"; \
 	if [ $$INVALID -gt 0 ]; then \
 		exit 1; \
 	fi
 
-# Force reconcile all cluster Kustomizations
-flux-reconcile:
-	@echo "$(BLUE)==> Reconciling cluster Kustomizations$(NC)"
+# ============================================================================
+# Flux Operations
+# ============================================================================
+
+.PHONY: flux-reconcile
+flux-reconcile: ## Force reconcile cluster resources
+	@echo "$(_SOPS_BLUE)==> Reconciling cluster Kustomizations$(_SOPS_NC)"
 	@if ! command -v flux >/dev/null 2>&1; then \
-		echo "$(YELLOW)Warning: flux CLI not installed$(NC)"; \
+		echo "$(_SOPS_YELLOW)Warning: flux CLI not installed$(_SOPS_NC)"; \
 		echo "Install: brew install fluxcd/tap/flux"; \
 		exit 1; \
 	fi
 	@flux reconcile source git flux-system
 	@flux reconcile kustomization kube-system --with-source
 	@flux reconcile kustomization kube-addons --with-source
-	@echo "$(GREEN)==> Reconciliation triggered$(NC)"
+	@echo "$(_SOPS_GREEN)==> Reconciliation triggered$(_SOPS_NC)"
 
-# Show Flux Kustomization status
-flux-status:
-	@echo "$(BLUE)==> Flux Kustomization Status$(NC)"
+.PHONY: flux-status
+flux-status: ## Show Flux Kustomization status
+	@echo "$(_SOPS_BLUE)==> Flux Kustomization Status$(_SOPS_NC)"
 	@if ! command -v flux >/dev/null 2>&1; then \
-		echo "$(YELLOW)Warning: flux CLI not installed$(NC)"; \
+		echo "$(_SOPS_YELLOW)Warning: flux CLI not installed$(_SOPS_NC)"; \
 		echo "Install: brew install fluxcd/tap/flux"; \
 		exit 1; \
 	fi
 	@echo ""
-	@echo "$(CYAN)GitRepository:$(NC)"
+	@echo "$(_SOPS_CYAN)GitRepository:$(_SOPS_NC)"
 	@kubectl -n flux-system get gitrepository flux-system
 	@echo ""
-	@echo "$(CYAN)Kustomizations:$(NC)"
+	@echo "$(_SOPS_CYAN)Kustomizations:$(_SOPS_NC)"
 	@kubectl -n flux-system get kustomization
 	@echo ""
-	@echo "$(CYAN)Cluster Resources:$(NC)"
+	@echo "$(_SOPS_CYAN)Cluster Resources:$(_SOPS_NC)"
 	@kubectl get ns kube-system kube-addons 2>/dev/null || true
+
+# ============================================================================
+# Cleanup
+# ============================================================================
+
+.PHONY: clean
+clean: sops-clean ## Remove temporary files
+	@echo "$(_SOPS_GREEN)Cleanup complete$(_SOPS_NC)"
+
+# ============================================================================
+# Backward Compatibility Aliases
+# ============================================================================
+
+.PHONY: check-tools check-deps
+check-tools: sops-check-deps ## Alias for sops-check-deps
+	@:
+check-deps: sops-check-deps ## Alias for sops-check-deps
+	@:

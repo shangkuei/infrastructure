@@ -25,7 +25,9 @@ terraform/
 │
 └── environments/       # Environment deployments
     ├── r2-terraform-state/ # R2 backend for Terraform state
-    ├── talos-cluster/      # Talos Kubernetes with Tailscale
+    ├── talos-cluster/      # Talos Kubernetes (production)
+    ├── talos-cluster-shangkuei-dev/  # Talos Kubernetes (dev)
+    ├── talos-gitops/       # GitOps for talos-cluster
     ├── prod/               # Production (Oracle Cloud)
     └── unraid/             # Homelab Talos on Unraid
 ```
@@ -788,6 +790,7 @@ The Terraform structure achieves:
 ## Related Documentation
 
 - [Talos Cluster Environment](environments/talos-cluster/README.md)
+- [Talos Cluster Dev Environment](environments/talos-cluster-shangkuei-dev/README.md)
 - [R2 State Backend](environments/r2-terraform-state/README.md)
 - [ADR-0002: Terraform as Primary IaC Tool](../docs/decisions/0002-terraform-primary-tool.md)
 - [ADR-0008: Secret Management Strategy](../docs/decisions/0008-secret-management.md)

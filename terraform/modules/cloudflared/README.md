@@ -253,7 +253,7 @@ terraform plan
 - [Deploy Tunnels with Terraform](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/deploy-tunnels/deployment-guides/terraform/)
 - [Cloudflare Zero Trust Tunnel (Cloudflared)](https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/zero_trust_tunnel_cloudflared)
 - [Cloudflare Zero Trust Tunnel Config](https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/zero_trust_tunnel_cloudflared_config)
-<!-- BEGINNING OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
+<!-- BEGIN_TF_DOCS -->
 ## Requirements
 
 | Name | Version |
@@ -304,4 +304,4 @@ No modules.
 | <a name="output_tunnel_id"></a> [tunnel\_id](#output\_tunnel\_id) | ID of the created Cloudflare Tunnel |
 | <a name="output_tunnel_name"></a> [tunnel\_name](#output\_tunnel\_name) | Name of the created Cloudflare Tunnel |
 | <a name="output_tunnel_token"></a> [tunnel\_token](#output\_tunnel\_token) | Tunnel token for cloudflared to connect (sensitive) |
-<!-- END OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
+<!-- END_TF_DOCS -->

@@ -1,4 +1,0 @@
-services:
-  vaultwarden:
-    ports: !reset
-    networks: !reset

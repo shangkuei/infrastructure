@@ -6,35 +6,12 @@
 
 output "generated_configs" {
   description = "Paths to all generated machine configuration files"
-  value = {
-    control_plane = {
-      for k, v in var.control_plane_nodes : k => {
-        config              = abspath("${path.module}/generated/control-plane-${k}.yaml")
-        patch               = abspath("${path.module}/generated/control-plane-${k}-patch.yaml")
-        tailscale_extension = abspath("${path.module}/generated/control-plane-${k}-tailscale.yaml")
-        tailscale_ipv4      = v.tailscale_ipv4
-        tailscale_ipv6      = v.tailscale_ipv6
-        physical_ip         = v.physical_ip
-      }
-    }
-    worker = {
-      for k, v in var.worker_nodes : k => {
-        config              = abspath("${path.module}/generated/worker-${k}.yaml")
-        patch               = abspath("${path.module}/generated/worker-${k}-patch.yaml")
-        tailscale_extension = abspath("${path.module}/generated/worker-${k}-tailscale.yaml")
-        tailscale_ipv4      = v.tailscale_ipv4
-        tailscale_ipv6      = v.tailscale_ipv6
-        physical_ip         = v.physical_ip
-      }
-    }
-  }
+  value       = module.talos_cluster.generated_configs
 }
 
 output "client_configs" {
   description = "Client configuration files for cluster access"
-  value = {
-    talosconfig = abspath("${path.module}/generated/talosconfig")
-  }
+  value       = module.talos_cluster.client_configs
 }
 
 output "deployment_commands" {
@@ -55,38 +32,17 @@ output "deployment_commands" {
 
 output "cluster_info" {
   description = "Cluster configuration summary"
-  value = {
-    name               = var.cluster_name
-    endpoint           = local.cluster_endpoint
-    talos_version      = var.talos_version
-    kubernetes_version = var.kubernetes_version
-    cni                = var.cni_name
-    pod_cidr           = var.pod_cidr
-    service_cidr       = var.service_cidr
-  }
+  value       = module.talos_cluster.cluster_info
 }
 
 output "node_summary" {
   description = "Summary of cluster nodes"
-  value = {
-    control_plane_count          = length(var.control_plane_nodes)
-    worker_count                 = length(var.worker_nodes)
-    total_nodes                  = length(var.control_plane_nodes) + length(var.worker_nodes)
-    control_plane_tailscale_ipv4 = [for n in var.control_plane_nodes : n.tailscale_ipv4]
-    control_plane_tailscale_ipv6 = [for n in var.control_plane_nodes : n.tailscale_ipv6 if n.tailscale_ipv6 != null]
-    worker_tailscale_ipv4        = [for n in var.worker_nodes : n.tailscale_ipv4]
-    worker_tailscale_ipv6        = [for n in var.worker_nodes : n.tailscale_ipv6 if n.tailscale_ipv6 != null]
-  }
+  value       = module.talos_cluster.node_summary
 }
 
 output "tailscale_config" {
   description = "Tailscale network configuration"
-  value = {
-    control_plane_ipv4 = { for k, v in var.control_plane_nodes : k => v.tailscale_ipv4 }
-    control_plane_ipv6 = { for k, v in var.control_plane_nodes : k => v.tailscale_ipv6 if v.tailscale_ipv6 != null }
-    worker_ipv4        = { for k, v in var.worker_nodes : k => v.tailscale_ipv4 }
-    worker_ipv6        = { for k, v in var.worker_nodes : k => v.tailscale_ipv6 if v.tailscale_ipv6 != null }
-  }
+  value       = module.talos_cluster.tailscale_config
 }
 
 # =============================================================================
@@ -101,9 +57,9 @@ output "deployment_workflow" {
     ║  Talos Cluster Deployment Workflow - ${var.cluster_name}
     ╚════════════════════════════════════════════════════════════════╝
 
-    Cluster Endpoint: ${local.cluster_endpoint}
-    Control Plane Nodes: ${length(var.control_plane_nodes)}
-    Worker Nodes: ${length(var.worker_nodes)}
+    Cluster Endpoint: ${module.talos_cluster.cluster_info.endpoint}
+    Control Plane Nodes: ${module.talos_cluster.node_summary.control_plane_count}
+    Worker Nodes: ${module.talos_cluster.node_summary.worker_count}
 
     ┌────────────────────────────────────────────────────────────────┐
     │ Quick Start - Automated Deployment                             │
@@ -150,7 +106,7 @@ output "deployment_workflow" {
     │ Generated Configuration Files                                  │
     └────────────────────────────────────────────────────────────────┘
 
-      Location: ${abspath("${path.module}/generated/")}
+      Location: ${module.talos_cluster.output_directory}
 
       Per-node machine configs (3 files each):
     %{~for k in keys(var.control_plane_nodes)}
@@ -219,10 +175,5 @@ output "deployment_workflow" {
 
 output "troubleshooting" {
   description = "Common troubleshooting commands"
-  value = {
-    check_node_status = "talosctl -n <node-ip> services"
-    view_logs         = "talosctl -n <node-ip> logs <service>"
-    reset_node        = "talosctl -n <node-ip> reset --graceful"
-    dashboard         = "talosctl -n <node-ip> dashboard"
-  }
+  value       = module.talos_cluster.troubleshooting
 }

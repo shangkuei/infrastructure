@@ -6,8 +6,8 @@ kind: Kustomization
 resources:
   - ../../../base/flux-instance
   # SOPS-encrypted secrets for Flux (decrypted by kustomize-controller)
-  - ../../../overlays/flux-instance/shangkuei-xyz-talos/secret-sops-age.yaml.enc
-  - ../../../overlays/flux-instance/shangkuei-xyz-talos/secret-flux-git-credentials.yaml.enc
+  - ../../../overlays/flux-instance/shangkuei-xyz-talos/secret-sops-age.enc.yaml
+  - ../../../overlays/flux-instance/shangkuei-xyz-talos/secret-flux-git-credentials.enc.yaml
 
 # Inherit labels from base
 labels:
@@ -17,8 +17,17 @@ labels:
       app.kubernetes.io/managed-by: flux-operator
     includeSelectors: true
 
-# Patch FluxInstance to enable SOPS decryption for flux-system Kustomization
+# Patch FluxInstance for shangkuei-xyz-talos cluster
 patches:
+  # Patch sync path to point to shangkuei-xyz-talos cluster directory
+  - patch: |-
+      - op: replace
+        path: /spec/sync/path
+        value: kubernetes/clusters/shangkuei-xyz-talos
+    target:
+      kind: FluxInstance
+      name: flux
+  # Enable SOPS decryption for flux-system Kustomization
   - patch: |-
       - op: add
         path: /spec/kustomize/patches

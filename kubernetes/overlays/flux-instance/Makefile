@@ -127,23 +127,6 @@ secret-flux-git: check-deps check-sops-config ## Generate Flux Git credentials s
 	@echo "   2. Use in Terraform with: sops --decrypt secret-flux-git-credentials.yaml.enc"
 	@echo "   3. Or: terraform/environments/talos-gitops/terraform.tfvars.enc"
 
-.PHONY: decrypt-all
-decrypt-all: check-deps ## Decrypt all encrypted secrets (for viewing)
-	@echo "🔓 Decrypting secrets..."
-	@if [ ! -f age-key.txt ]; then \
-		echo "❌ age-key.txt not found. Run: make import-age-key AGE_KEY_FILE=/path/to/key"; \
-		exit 1; \
-	fi
-	@for file in *.enc; do \
-		if [ -f "$$file" ]; then \
-			echo "  📄 $$file"; \
-			SOPS_AGE_KEY_FILE=$$PWD/age-key.txt sops --config .sops.yaml --decrypt "$$file" > "$${file%.enc}.decrypted"; \
-		fi; \
-	done
-	@echo ""
-	@echo "✅ Decrypted files created with .decrypted extension"
-	@echo "⚠️  DO NOT commit .decrypted files to Git!"
-
 .PHONY: encrypt-all
 encrypt-all: check-deps check-sops-config ## Encrypt all decrypted secrets
 	@echo "🔐 Encrypting secrets..."

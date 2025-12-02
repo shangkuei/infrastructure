@@ -1,0 +1,67 @@
+---
+# Flux Kustomization for ArgoCD
+# GitOps continuous delivery tool installed directly via Helm
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: argocd
+  namespace: flux-system
+spec:
+  interval: 30m
+  timeout: 10m
+  prune: true
+  wait: true
+
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+
+  path: ./kubernetes/overlays/argocd-projects/shangkuei-dev
+
+  # SOPS decryption for ArgoCD Age key secret
+  # Flux will decrypt the ArgoCD SOPS Age key secret and deploy it
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
+
+  # Dependencies: CNI must be ready for pod networking
+  dependsOn:
+    - name: cilium
+
+  healthChecks:
+    # Verify argocd namespace exists
+    - apiVersion: v1
+      kind: Namespace
+      name: argocd
+
+    # Verify Argo Helm repository is ready
+    - apiVersion: source.toolkit.fluxcd.io/v1
+      kind: HelmRepository
+      name: argo
+      namespace: flux-system
+
+    # Verify ArgoCD HelmRelease is ready
+    - apiVersion: helm.toolkit.fluxcd.io/v2
+      kind: HelmRelease
+      name: argocd
+      namespace: argocd
+
+    # Verify ArgoCD server is running
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: argocd-server
+      namespace: argocd
+
+    # Verify ArgoCD application controller is running
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: argocd-application-controller
+      namespace: argocd
+
+    # Verify ArgoCD repo server is running
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: argocd-repo-server
+      namespace: argocd

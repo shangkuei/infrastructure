@@ -7,7 +7,7 @@
 # 1. Deploy r2-terraform-state environment: cd ../r2-terraform-state && make apply
 # 2. Generate age encryption key: age-keygen (unique key per environment)
 # 3. Create backend.hcl from backend.hcl.example with R2 credentials
-# 4. Encrypt backend config: sops -e -i backend.hcl && mv backend.hcl backend.hcl.enc
+# 4. Encrypt backend config: sops -e -i backend.hcl && mv backend.hcl backend.enc.hcl
 # 5. Uncomment the backend block below
 # 6. Initialize with SOPS-encrypted config
 #
@@ -34,32 +34,32 @@ terraform {
 #    # Edit backend.hcl with R2 credentials
 #
 # 4. Encrypt backend config with SOPS:
-#    sops -e backend.hcl > backend.hcl.enc
+#    sops -e backend.hcl > backend.enc.hcl
 #    rm backend.hcl  # Remove plaintext file
 #
 # 5. Create and encrypt terraform.tfvars:
 #    cp terraform.tfvars.example terraform.tfvars
 #    # Add your GitHub token and credentials
-#    sops -e terraform.tfvars > terraform.tfvars.enc
+#    sops -e terraform.tfvars > terraform.enc.tfvars
 #    rm terraform.tfvars  # Remove plaintext file
 #
 # 6. Store private key in GitHub Secrets:
 #    gh secret set SOPS_AGE_KEY_TALOS_FLUX < ~/.config/sops/age/talos-flux-key.txt
 #
 # 7. Initialize Terraform (with SOPS decryption):
-#    sops exec-file backend.hcl.enc 'terraform init -backend-config={}'
+#    sops exec-file backend.enc.hcl 'terraform init -backend-config={}'
 #
 # 8. Plan/Apply with encrypted variables:
-#    sops exec-file terraform.tfvars.enc 'terraform plan -var-file={}'
-#    sops exec-file terraform.tfvars.enc 'terraform apply -var-file={}'
+#    sops exec-file terraform.enc.tfvars 'terraform plan -var-file={}'
+#    sops exec-file terraform.enc.tfvars 'terraform apply -var-file={}'
 #
 # Daily Usage:
-# - Decrypt and init:  sops exec-file backend.hcl.enc 'terraform init -backend-config={}'
-# - Decrypt and plan:  sops exec-file terraform.tfvars.enc 'terraform plan -var-file={}'
-# - Decrypt and apply: sops exec-file terraform.tfvars.enc 'terraform apply -var-file={}'
+# - Decrypt and init:  sops exec-file backend.enc.hcl 'terraform init -backend-config={}'
+# - Decrypt and plan:  sops exec-file terraform.enc.tfvars 'terraform plan -var-file={}'
+# - Decrypt and apply: sops exec-file terraform.enc.tfvars 'terraform apply -var-file={}'
 #
 # Security Notes:
-# - backend.hcl.enc and terraform.tfvars.enc are safe to commit (encrypted)
+# - backend.enc.hcl and terraform.enc.tfvars are safe to commit (encrypted)
 # - backend.hcl and terraform.tfvars should NEVER be committed (gitignored)
 # - Private age key must be stored securely (GitHub Secrets + password manager)
 # - See docs/runbooks/0008-sops-secret-management.md for full documentation

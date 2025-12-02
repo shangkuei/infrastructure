@@ -7,7 +7,7 @@
 # Backend configuration (plaintext only - encrypted .enc files are tracked)
 backend.hcl
 !backend.hcl.example
-!backend.hcl.enc
+!backend.enc.hcl
 
 # Age encryption keys
 .age/

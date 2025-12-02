@@ -10,6 +10,6 @@ metadata:
 spec:
   url: https://github.com/kubernetes-sigs/gateway-api
   ref:
-    tag: v1.3.0  # PINNED: Do not use 'branch' or 'semver' for production
+    tag: v1.4.0  # PINNED: Do not use 'branch' or 'semver' for production
   interval: 24h
   timeout: 60s

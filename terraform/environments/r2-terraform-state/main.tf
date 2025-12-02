@@ -10,7 +10,7 @@ terraform {
   # This migrates the local state to R2 for centralized storage
 
   # Backend configuration using partial configuration
-  # Sensitive values (access_key, secret_key, endpoint) are stored in backend.hcl.enc
+  # Sensitive values (access_key, secret_key, endpoint) are stored in backend.enc.hcl
   # See README.md for setup instructions
   backend "s3" {}
 
@@ -23,7 +23,7 @@ terraform {
 }
 
 # Cloudflare Provider Configuration
-# API token is stored encrypted in terraform.tfvars.enc using SOPS
+# API token is stored encrypted in terraform.enc.tfvars using SOPS
 provider "cloudflare" {
   api_token = var.cloudflare_api_token
 }

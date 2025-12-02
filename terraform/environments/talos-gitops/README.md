@@ -1214,7 +1214,7 @@ kubectl -n monitoring get all
 - **[ADR-0018: Flux for Kubernetes GitOps](../../../docs/decisions/0018-flux-kubernetes-gitops.md)** - GitOps decision and workflow
 - **[kubernetes/README.md](../../../kubernetes/README.md)** - Kubernetes manifests structure
 - **[Terraform Environments Overview](../README.md)** - Complete infrastructure workflow
-<!-- BEGINNING OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
+<!-- BEGIN_TF_DOCS -->
 ## Requirements
 
 | Name | Version |
@@ -1300,4 +1300,4 @@ No modules.
 | <a name="output_next_steps"></a> [next\_steps](#output\_next\_steps) | Next steps after complete installation |
 | <a name="output_olm_namespace"></a> [olm\_namespace](#output\_olm\_namespace) | Namespace where OLM is installed |
 | <a name="output_verification_commands"></a> [verification\_commands](#output\_verification\_commands) | Commands to verify the installation |
-<!-- END OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
+<!-- END_TF_DOCS -->

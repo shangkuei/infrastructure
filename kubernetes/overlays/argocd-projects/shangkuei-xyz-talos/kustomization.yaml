@@ -8,7 +8,7 @@ resources:
   - ../../../base/argocd-projects/argocd-examples
   - ../../../base/argocd-projects/edatw
   # Cluster-specific resources
-  - secret-sops-age.yaml
+  - secret-sops-age.enc.yaml
 
 labels:
   - pairs:

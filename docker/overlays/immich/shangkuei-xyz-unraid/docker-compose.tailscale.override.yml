@@ -1,48 +1,12 @@
-#ENC[AES256_GCM,data:urOxHO4490YTqlexmvYlDRo6TnuQ/+7vz467tn7F9TpC/3li,iv:74BJE/Kg8aoPW9H4rJcoNr/lgBxhH6v+E8kPBtV+S8k=,tag:GcKyFnf0U1nnibtIbXJwvg==,type:comment]
-#ENC[AES256_GCM,data:Wg4mgkFAIDZwVSs15NMDpmBZ5TD9hlfEgqd4MwwDDOqfkBsuwDQOGdHL9Jxcp+jcX+TYTw==,iv:we31wJ8/ea3xqSShcuTvRkRBxEqvPkYJ1spwCCV8xCs=,tag:ks0zMCIeYHZLe2ygUUQKbg==,type:comment]
-#ENC[AES256_GCM,data:nI/sV3iVAIqT7EywFeltDaK1FCo2Ow6u9zAtxtA7OXDPHDQj2Y25ixl9s0WkbNrej5bB26GVq5tQdrk=,iv:GiQ07uxs8B92d5hIrEZIz0e4OWa9/Ai9vjZ/I9jxwHg=,tag:Ee8PeYYYgkN94rjJptNIQg==,type:comment]
+# Immich - Tailscale Raw Override (unencrypted)
+# Contains YAML syntax that cannot be encrypted (!reset)
 #
-#ENC[AES256_GCM,data:Sai7Eqqk9lOH1iJJm5Xwpl/Dx3Jh,iv:in7aL+Hx7KJTO04uOfMBeiHhqq0MQytYexV0T4AwYK4=,tag:XtSrttCBUsxaXrrJVKoYFw==,type:comment]
-#ENC[AES256_GCM,data:UXdPJj2twKm52LMRZOGnkF18LGAZpJUfuwqDy09S6iIERxr30Ce7f1OFkEqyjaotws8=,iv:+5to1ivJWLa3YQ4nDsxL3nG8JiAAYDk3x91yNjDWENE=,tag:xvqeyV5ulEKfQeIQ/O+1OQ==,type:comment]
-#ENC[AES256_GCM,data:QXnOFoDRSZF4uGELiOBIiqaKYVbJsatw4c9I0O6lcNySXlgBrZ+711cQ63zRfgHq8bp2LwCUaYlmoOlN750=,iv:OCH0AgPdBAAslZsBqGUgbqykMQVY9bwTcZ2YXLutMvs=,tag:1pLuBEzaIVQKDnU0T0S+rA==,type:comment]
+# This file is used when running Tailscale-only mode to clear
+# the direct port binding from docker-compose.override.yml
+#
+# Usage: Only included with tailscale-only mode (make up-tailscale)
+
 services:
-    tailscale:
-        image: ENC[AES256_GCM,data:ffZTJYcgwbhSSaSHhkVHxmB1Hw8uKwQEmsk=,iv:PfPerujlhgXU0oMOhNGL0Vxf5jBl+up7yqjgvJMbe4o=,tag:1/6qll29aJJ1ufN46GF7SQ==,type:str]
-        container_name: ENC[AES256_GCM,data:MSi9AW1kreIA3fqSThgygQ==,iv:/fOjTMSrc987e7CG3TTf8J577MLRTPexV2igQ8CZP9Y=,tag:2cuFaSMEy4j1UN/bgO5dfA==,type:str]
-        hostname: ENC[AES256_GCM,data:1yijJBrR,iv:TJwXRXDg+Fy/F7HjFQ5FIGLrMEGjl/U3rAXD1d/XfOM=,tag:CqZOm4Q3xlnCxaR1ngUVZQ==,type:str]
-        restart: ENC[AES256_GCM,data:TEAQDlGxNahAJF6RtsY=,iv:Ux4oPM4V5yBf59NVfN8NuJxXtZ7E9DVTP/f3PQ67T/8=,tag:a8hagEfiMe3/Mk7RFB8d+g==,type:str]
-        cap_add:
-            - ENC[AES256_GCM,data:IA+62OPlNjV9,iv:cNmoGH0IeLJpl7ZRa2DTf8nieG+3zVp2g49JSB9oUK0=,tag:ZesywKqSWhLqq8aaqMTdig==,type:str]
-        environment:
-            - ENC[AES256_GCM,data:FE/GrZp7l1nT7KNcDqtcSUpAHrrdunFG3A0vdgsdH/lMynSEpeU=,iv:6wf02e/CnQNiMv4wH6mJpDj/cUceMkoEHpGbbaHnVk8=,tag:wL21kIeiDYxFBacrx3HeSQ==,type:comment]
-            - ENC[AES256_GCM,data:jzWXhe/opuK8+28W/MOcB+VMnxpIuBec,iv:mM462gE5uSUG/4xegcNrNCw91G4/1PxBEgKmbUgBWmk=,tag:U+/7xQkM8T8nzozJPvtBaw==,type:str]
-            - ENC[AES256_GCM,data:nrvKzu3gBxKfOhGUUOyEKgpMMX5tujlTfdnaLvdPVHKh,iv:G8rcDSYn30CsLsN+BMM6xHiBBv/KM/ZsO2IcO/Wz1ag=,tag:hsLRRJaCO6t7968m5x7lMA==,type:comment]
-            - ENC[AES256_GCM,data:ZxBeG9TRhxv5f94b2t2PoaL8zUQvVHQvoXdQKTxFtpnwEg==,iv:saIKU9xsDYaZdrfIv765VByIPC9I0fNkcqIro6EP/tI=,tag:FsJWKLy9Z60GHlcmoomr3g==,type:str]
-            - ENC[AES256_GCM,data:5QviWiYeoah4sazyeaE=,iv:1vzaKNceUT9W5ACZRi0eCZuS1VBiLkVeGF+f0+RxKGs=,tag:td/BDOKXSRS2INc+L7APpg==,type:comment]
-            - ENC[AES256_GCM,data:d86qRRU0ZFmPnmQN/4o4rFAFkF5UFUDKzijMqJ29sA==,iv:XxEQlD2aqarG9gtKMo67tfeXi2LzWX7zrI2SR1JaJjg=,tag:lEzMLl7jP0/PCNb0m83xKg==,type:str]
-            - ENC[AES256_GCM,data:+WHhHVmHueD499Axau0mIwVbqyvLY5pMlA==,iv:EmCiwKU+nfPAShhhBoK+TDv/uvKZo1awj/Dr3woAKKI=,tag:9Q/5oQ7H2e7jephQ7r/OKg==,type:comment]
-            - ENC[AES256_GCM,data:dRF+bRbh3GrO5E9LR4xqF6gvm6dDQvcDHMm7eHriqUDtS14VTw==,iv:d7kxNTaoTPH/97YCBdi9P4DfCw79d/Msv0lAqrBZeMI=,tag:RH5Y/1OkHOGFkbtjkC+m9g==,type:str]
-        volumes:
-            - ENC[AES256_GCM,data:v3ZhFoMMmbAgbgSSrMEpEs7GPKrT/7LIBbc+qQ==,iv:lJQ3GIvC0pYZAoybLlXF1oVJ+hnGDreN4pbnLyDePGY=,tag:LZDYdBFVHIY3nrHBS/6KAA==,type:comment]
-            - ENC[AES256_GCM,data:FbJOyvftv8rqENiiAOrLpZ4KOkhJ+aoTqHT7B70MF+hFZw4VObHSbSjbNja9Qb4ZRAsDfj8=,iv:Luou61l+vQizjpKAUZnm2S89ZS1B64k5Saw0INHPigo=,tag:n8C5bLcx38xGphAsB6kIDA==,type:str]
-            - ENC[AES256_GCM,data:69HBGS6hVxLz/i9VHX2EO0QC26c=,iv:XRzKBXxcLpfNeg+gC2id2c2bRw9PbQrUsO2ZDSRaejI=,tag:vwKWPTh8hH/bFt/BrUs8ZA==,type:comment]
-            - ENC[AES256_GCM,data:3KV/goD9FfdtdjFZLlF05HNnZ4ohZuvsaNnLjQMnDSR0gU5U4c9vlp3l7wLpzuPjIxjzYpO2+/xmmgeLXAfTVD93dQjKrWheMtycbmQ=,iv:Ca93Fym7rUZgaY3SqAGUcMBUz1qoRGcEMvC4LczKHKc=,tag:/EIKapJLQHNJcLHFozhVaA==,type:str]
-        devices:
-            - ENC[AES256_GCM,data:IaNK7JMPJOl/s2/ocFC9fcD0x01lLHDlJQ==,iv:qpaX31QSfSjAFdzBG3o7Dp/8VxJoaTW8dvDJcfbPyYU=,tag:+o33QqEVa7ExPcOp2EVYIQ==,type:str]
-        networks:
-            - ENC[AES256_GCM,data:N9uUFqFm,iv:16VoAcj0g52hBoztdvI7TMBnMXJU3FCktoLqgu0SqwI=,tag:KMkM1cqNDs1FwCg/SkHspQ==,type:str]
-sops:
-    age:
-        - recipient: age18pns8av0m2g3wgenjnfkj046340azfytlp0jgpkw4dw7zkh83dwqlct4np
-          enc: |
-            -----BEGIN AGE ENCRYPTED FILE-----
-            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBsT3JPOHl2V05rSGcwQ3Jw
-            b2ZaTkRDcFJkWW9pSmNoeEx2MGxHdURTaUhrCm5Qc0d2eWZyUFpBa2NnY0N2RmVI
-            bjNvdWpzVnNCQ1lSVjZyWnEyNmZrcVkKLS0tIGJ4R01MRitrUTl0VVR1TjlFb2JI
-            NEw5QWZmWVY3QWpWUVMrbW9qenhobFkKjmzTPnq9aM0WdfcR2PeHoEf2sGoS6V+X
-            0FJMQ83q8s7YHceuBpEtPrQw2j+cclfJBHj2Zc1sixP3O8Nr2Etjng==
-            -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2025-11-27T02:44:12Z"
-    mac: ENC[AES256_GCM,data:KyYFflx8PkWpu+7Ziir9ze5w8OnpNXlgmyQNPuBi4O1wu0bDQpYSYbgI1mhVczqkkFBGKZw3D3aSFbbPq5Hw37gqsplkv4hMez6gzj7Z+uAZH8p7tqy3a2uZEGHD5cWtZip3vFdzV53QqMicVkJhai8EJSSdxZbi0NMvXFH61Qg=,iv:k6VuL9O+Akhucsq3BgCzV7edwyFjG0yteDIkDiNGc9k=,tag:Qpodsshj2XPjnFBbj7vqOg==,type:str]
-    unencrypted_suffix: _unencrypted
-    version: 3.11.0
+  immich-server:
+    # Clear direct port binding when using Tailscale
+    ports: !reset

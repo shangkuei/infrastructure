@@ -522,7 +522,7 @@ For issues:
 1. Check terraform output for instructions
 2. Review [Cloudflare R2 Status](https://www.cloudflarestatus.com/)
 3. See infrastructure repository documentation
-<!-- BEGINNING OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
+<!-- BEGIN_TF_DOCS -->
 ## Requirements
 
 | Name | Version |
@@ -565,4 +565,4 @@ No modules.
 | <a name="output_bucket_location"></a> [bucket\_location](#output\_bucket\_location) | Location of the R2 bucket |
 | <a name="output_bucket_name"></a> [bucket\_name](#output\_bucket\_name) | Name of the R2 bucket for Terraform state |
 | <a name="output_setup_instructions"></a> [setup\_instructions](#output\_setup\_instructions) | Quick setup instructions for configuring backend in other environments |
-<!-- END OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
+<!-- END_TF_DOCS -->

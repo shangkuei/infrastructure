@@ -1,2 +1,10 @@
 # Age private key (never commit)
 age-key.txt
+
+# Decrypted files (should not be committed)
+*.decrypted
+.env.decrypted
+
+# Temporary files
+*.tmp
+*.bak
