@@ -10,27 +10,23 @@ This Terraform environment bootstraps Flux CD on the Talos Kubernetes cluster us
 
 ## Overview
 
-This environment uses a modern operator-based approach to install and manage Flux CD:
+This environment uses the `talos-gitops` module to deploy Flux CD with a modern operator-based approach:
 
-1. **cert-manager**: Certificate management for OLM webhooks (Helm)
-2. **OLM v1**: Operator Lifecycle Manager v1 using operator-controller (kubectl provider)
-3. **ClusterCatalog**: OperatorHub catalog for operator discovery (OLM v1)
-4. **Flux Operator**: Manages Flux installation via FluxInstance CRD (OLM ClusterExtension)
-5. **FluxInstance**: Declarative Flux configuration with SOPS integration
+1. **cert-manager**: Certificate management for webhooks (Helm)
+2. **Flux Operator**: Manages Flux installation via FluxInstance CRD (Helm)
+3. **FluxInstance**: Declarative Flux configuration with SOPS integration
 
 **Architecture Benefits**:
 
 - ✅ Declarative Flux management via FluxInstance CRD
-- ✅ OLM v1-based operator lifecycle management
-- ✅ Catalog-driven operator installation and upgrades
+- ✅ Helm-based operator installation (simple, reliable)
 - ✅ Native SOPS integration for encrypted manifests
 - ✅ GitOps workflow with automatic reconciliation
-- ✅ Clean separation of concerns (operator vs. controllers)
+- ✅ Reusable module architecture
 
 **Managed Namespaces**:
 
 - `cert-manager`: Certificate management
-- `olmv1-system`: Operator Lifecycle Manager v1
 - `flux-system`: Flux Operator and controllers
 - `kube-system`: Core system components (managed by Flux)
 - `kube-addons`: Cluster addons (managed by Flux)
@@ -40,7 +36,6 @@ This environment uses a modern operator-based approach to install and manage Flu
 | Component | Version | Purpose |
 |-----------|---------|---------|
 | cert-manager | v1.19.1 | TLS certificate management for webhooks |
-| OLM v1 | v1.5.1 | Operator Lifecycle Manager (operator-controller) |
 | Flux Operator | 0.33.0 | Flux installation and management |
 | Flux | v2.7.3 | GitOps controllers |
 
@@ -249,7 +244,6 @@ sops_age_key_path = "~/.config/sops/age/talos-gitops-flux.txt"
 
 # Component Versions (optional, defaults provided)
 cert_manager_version  = "v1.19.1"
-olm_version          = "v1.5.1"  # OLM v1 (operator-controller)
 flux_operator_version = "0.33.0"
 flux_version         = "v2.7.3"
 
@@ -292,186 +286,22 @@ terraform plan
 Review the resources that will be created:
 
 - **cert-manager**: Helm release with CRDs and custom DNS configuration
-- **OLM v1**: kubectl_manifest resources from operator-controller release manifests
-- **ClusterCatalog**: OperatorHub catalog for operator discovery
-- **Flux Operator**: ClusterExtension resource for OLM-based installation
+- **Flux Operator**: Helm release from `ghcr.io/controlplaneio-fluxcd/charts/flux-operator`
 - **SOPS Age Secret**: For decrypting manifests
 - **FluxInstance**: Declarative Flux configuration with Git sync
 - **Git Credentials**: Secret for GitHub authentication
 
-### Step 5: Apply the Configuration (Phased Deployment)
-
-**IMPORTANT**: Due to Kubernetes CRD registration timing, this configuration requires a
-**phased deployment approach**. Terraform cannot guarantee that CRDs are fully registered
-and available immediately after installation, even with `depends_on` relationships.
-
-#### Why Phased Deployment?
-
-When OLM v1 is installed, it creates several Custom Resource Definitions (CRDs) including `ClusterCatalog`, `ClusterExtension`, and `FluxInstance`. The Kubernetes API server needs time to:
-
-1. Register the new CRDs
-2. Make them available for resource creation
-3. Start the controllers that manage these resources
-
-If Terraform attempts to create resources using these CRDs in the same apply operation, it will fail with errors like:
-
-```
-Error: no matches for kind 'ClusterCatalog' in group 'olm.operatorframework.io'
-```
-
-#### Deployment Phases
-
-**Phase 1: Core Infrastructure (cert-manager + OLM v1)**
-
-Deploy the foundation components that provide CRDs:
+### Step 5: Apply the Configuration
 
 ```bash
-# Comment out these resources in main.tf before Phase 1:
-# - kubectl_manifest.operatorhub_catalog (lines ~167-187)
-# - kubernetes_manifest.flux_operator_extension (lines ~248-284)
-# - kubernetes_manifest.flux_instance (lines ~364-435)
-
-# Apply Phase 1
-make apply  # or: terraform apply
-
-# Wait for cert-manager to be ready
-kubectl -n cert-manager wait --for=condition=Available deployment/cert-manager --timeout=5m
-kubectl -n cert-manager wait --for=condition=Available deployment/cert-manager-webhook --timeout=5m
-
-# Wait for OLM v1 to be ready
-kubectl -n olmv1-system wait --for=condition=Available deployment/operator-controller-controller-manager --timeout=5m
-
-# Verify CRDs are registered
-kubectl get crd clustercatalogs.olm.operatorframework.io
-kubectl get crd clusterextensions.olm.operatorframework.io
-```
-
-**Phase 2: Operator Catalog**
-
-Deploy the ClusterCatalog to enable operator discovery:
-
-```bash
-# Uncomment kubectl_manifest.operatorhub_catalog in main.tf (lines ~167-187)
-
-# Apply Phase 2
-make apply  # or: terraform apply
-
-# Wait for catalog to be ready
-kubectl wait --for=condition=Serving clustercatalog/operatorhubio --timeout=5m
-
-# Verify catalog is serving
-kubectl get clustercatalog operatorhubio -o jsonpath='{.status.conditions[?(@.type=="Serving")].status}'
-# Should output: True
-```
-
-**Phase 3: Flux Operator Installation**
-
-Deploy the Flux Operator via OLM ClusterExtension:
-
-```bash
-# Uncomment kubernetes_manifest.flux_operator_extension in main.tf (lines ~248-284)
-
-# Apply Phase 3
-make apply  # or: terraform apply
-
-# Wait for operator to be installed
-kubectl wait --for=condition=Installed clusterextension/flux-operator --timeout=10m
-
-# Verify operator pods are running
-kubectl -n flux-system get pods -l app.kubernetes.io/name=flux-operator
-
-# Verify FluxInstance CRD is available
-kubectl get crd fluxinstances.fluxcd.controlplane.io
-```
-
-**Phase 4: Flux Bootstrap**
-
-Deploy the FluxInstance to bootstrap Flux and sync with Git:
-
-```bash
-# Uncomment kubernetes_manifest.flux_instance in main.tf (lines ~364-435)
-
-# Apply Phase 4
-make apply  # or: terraform apply
-
-# Wait for FluxInstance to be ready
-kubectl -n flux-system wait --for=condition=Ready fluxinstance/flux --timeout=10m
-
-# Verify Flux controllers are running
-kubectl -n flux-system get pods
-```
-
-#### Troubleshooting Phased Deployment
-
-**Problem**: CRD not found even after Phase 1 completes
-
-```bash
-# Solution: Wait a bit longer and manually verify
-kubectl get crd | grep olm.operatorframework.io
-kubectl api-resources | grep olm.operatorframework.io
-
-# If still not showing, check OLM v1 controller logs
-kubectl -n olmv1-system logs -l app.kubernetes.io/name=operator-controller
-```
-
-**Problem**: ClusterCatalog remains in "Unpacking" state
-
-```bash
-# Solution: Check catalog controller logs
-kubectl -n olmv1-system logs -l app.kubernetes.io/name=catalogd
-
-# Check catalog status details
-kubectl get clustercatalog operatorhubio -o yaml
-```
-
-**Problem**: ClusterExtension installation fails
-
-```bash
-# Solution: Verify catalog is serving
-kubectl get clustercatalog operatorhubio -o jsonpath='{.status.conditions[?(@.type=="Serving")]}'
-
-# Check if flux-operator package exists in catalog
-kubectl get packages | grep flux-operator
-
-# Check ClusterExtension events
-kubectl describe clusterextension flux-operator
-```
-
-**Problem**: FluxInstance fails to create Flux controllers
-
-```bash
-# Solution: Check Flux Operator logs
-kubectl -n flux-system logs -l app.kubernetes.io/name=flux-operator
-
-# Verify SOPS age secret exists
-kubectl -n flux-system get secret sops-age
-
-# Check FluxInstance status
-kubectl -n flux-system get fluxinstance flux -o yaml
-```
-
-#### Single-Phase Deployment (Advanced)
-
-For automated environments, you can use a single apply with retry logic:
-
-```bash
-# Apply everything (will fail on first attempt)
-make apply || true
-
-# Wait for CRDs to register
-sleep 30
-
-# Retry apply (Phase 2-4 resources will now succeed)
+# Using Makefile
 make apply
 
-# Wait for catalog
-sleep 30
-
-# Final apply (remaining resources)
-make apply
+# Or directly
+terraform apply
 ```
 
-This approach is less reliable and not recommended for production deployments.
+The module-based approach handles all dependencies automatically - no phased deployment required.
 
 ## Verification
 
@@ -481,18 +311,6 @@ This approach is less reliable and not recommended for production deployments.
 # Check cert-manager
 kubectl -n cert-manager get pods
 kubectl get crd | grep cert-manager
-
-# Check OLM v1
-kubectl -n olmv1-system get pods
-kubectl get crd | grep operator.operatorframework.io
-
-# Check ClusterCatalog
-kubectl get clustercatalog operatorhubio
-kubectl get clustercatalog operatorhubio -o jsonpath='{.status.conditions}' | jq
-
-# Check Flux Operator ClusterExtension
-kubectl get clusterextension flux-operator
-kubectl get clusterextension flux-operator -o jsonpath='{.status.conditions}' | jq
 
 # Check Flux Operator pods
 kubectl -n flux-system get pods -l app.kubernetes.io/name=flux-operator
@@ -710,7 +528,7 @@ Replace with your **Flux age public key** from: `cat ~/.config/sops/age/talos-gi
 **Step 2: Create a secret file**
 
 ```yaml
-# kubernetes/clusters/shangkuei-xyz-talos/secrets/database-credentials.yaml
+# kubernetes/clusters/talos-gitops/secrets/database-credentials.yaml
 apiVersion: v1
 kind: Secret
 metadata:
@@ -725,13 +543,13 @@ stringData:
 **Step 3: Encrypt with SOPS**
 
 ```bash
-sops --encrypt --in-place kubernetes/clusters/shangkuei-xyz-talos/secrets/database-credentials.yaml
+sops --encrypt --in-place kubernetes/clusters/talos-gitops/secrets/database-credentials.yaml
 ```
 
 **Step 4: Create Kustomization with SOPS decryption**
 
 ```yaml
-# kubernetes/clusters/shangkuei-xyz-talos/secrets-kustomization.yaml
+# kubernetes/clusters/talos-gitops/secrets-kustomization.yaml
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
@@ -739,7 +557,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 10m
-  path: ./kubernetes/clusters/shangkuei-xyz-talos/secrets
+  path: ./kubernetes/clusters/talos-gitops/secrets
   prune: true
   sourceRef:
     kind: GitRepository
@@ -809,43 +627,6 @@ kubectl -n flux-system logs -l app.kubernetes.io/name=flux-operator --tail=100
 ```
 
 **Solution**: Check operator logs for specific error messages
-
-### ClusterCatalog not ready
-
-**Problem**: ClusterCatalog shows as not serving
-
-```bash
-# Check ClusterCatalog status
-kubectl get clustercatalog operatorhubio
-kubectl describe clustercatalog operatorhubio
-
-# Check catalog pod logs
-kubectl -n olmv1-system logs -l olm.catalogd.io/catalog-name=operatorhubio
-```
-
-**Solution**: Verify network connectivity and image pull permissions
-
-### ClusterExtension failing to install
-
-**Problem**: Flux Operator ClusterExtension not installing
-
-```bash
-# Check ClusterExtension status
-kubectl get clusterextension flux-operator
-kubectl describe clusterextension flux-operator
-
-# Check OLM controller logs
-kubectl -n olmv1-system logs -l app.kubernetes.io/name=operator-controller
-```
-
-**Common issues**:
-
-- Package name mismatch in catalog
-- Version not available in catalog
-- Insufficient RBAC permissions for installer service account
-- Dependency conflicts with existing resources
-
-**Solution**: Verify package availability in catalog and RBAC configuration
 
 ### Flux controllers not starting
 
@@ -964,7 +745,7 @@ The Flux Operator will handle the rolling update of controllers.
 
 ### Upgrading Flux Operator
 
-To upgrade the Flux Operator via OLM:
+To upgrade the Flux Operator:
 
 ```hcl
 flux_operator_version = "0.34.0"  # New version
@@ -974,7 +755,7 @@ flux_operator_version = "0.34.0"  # New version
 terraform apply
 ```
 
-OLM will handle the upgrade through the ClusterExtension resource, performing a rolling update.
+Helm will handle the upgrade, performing a rolling update.
 
 ### Upgrading cert-manager
 
@@ -1002,7 +783,7 @@ terraform apply
 
 ```bash
 # Apply this Flux bootstrap environment
-cd terraform/environments/talos-flux
+cd terraform/environments/talos-gitops
 terraform apply
 ```
 
@@ -1033,7 +814,6 @@ This will remove:
 
 - FluxInstance (Flux controllers will be cleaned up)
 - Flux Operator
-- OLM
 - cert-manager
 - All related secrets and namespaces
 
@@ -1068,7 +848,7 @@ When rotating the age key for this environment:
 
 ```bash
 # Generate new key
-age-keygen -o ~/.config/sops/age/talos-flux-key-new.txt
+age-keygen -o ~/.config/sops/age/talos-gitops-key-new.txt
 
 # Update .sops.yaml with new public key (keep old key temporarily)
 
@@ -1077,16 +857,16 @@ sops updatekeys -y terraform.tfvars.enc
 sops updatekeys -y backend.hcl.enc
 
 # Test decryption with new key
-SOPS_AGE_KEY_FILE=~/.config/sops/age/talos-flux-key-new.txt \
+SOPS_AGE_KEY_FILE=~/.config/sops/age/talos-gitops-key-new.txt \
   sops -d terraform.tfvars.enc
 
 # Update Kubernetes secret
 kubectl -n flux-system create secret generic sops-age \
-  --from-file=age.agekey=~/.config/sops/age/talos-gitops.txt \
+  --from-file=age.agekey=~/.config/sops/age/talos-gitops-flux.txt \
   --dry-run=client -o yaml | kubectl apply -f -
 
 # Update GitHub Secret
-gh secret set SOPS_AGE_KEY_TALOS_FLUX < ~/.config/sops/age/talos-flux-key-new.txt
+gh secret set SOPS_AGE_KEY_TALOS_FLUX < ~/.config/sops/age/talos-gitops-flux.txt
 
 # Remove old key from .sops.yaml and commit
 ```
@@ -1098,13 +878,12 @@ This implementation follows these architectural decisions:
 - **[ADR-0007: GitOps Workflow](../../../docs/decisions/0007-gitops-workflow.md)**: Git as single source of truth
 - **[ADR-0018: Flux for Kubernetes GitOps](../../../docs/decisions/0018-flux-kubernetes-gitops.md)**: Flux CD for GitOps
 - **Operator Pattern**: Using Flux Operator for declarative management
-- **Defense in Depth**: Multiple layers (cert-manager, OLM, operators)
+- **Module Architecture**: Reusable module for consistent deployments
 
 ## References
 
 - [Flux Operator Documentation](https://fluxcd.control-plane.io/operator/)
 - [FluxInstance CRD Reference](https://fluxcd.control-plane.io/operator/fluxinstance/)
-- [OLM Documentation](https://olm.operatorframework.io/)
 - [cert-manager Documentation](https://cert-manager.io/docs/)
 - [SOPS Documentation](https://github.com/getsops/sops)
 - [age Encryption](https://age-encryption.org/)
@@ -1117,7 +896,7 @@ After Flux is successfully installed, all Kubernetes resource management happens
 
 ```
 kubernetes/
-├── clusters/shangkuei-xyz-talos/    # Flux configuration for your cluster
+├── clusters/talos-gitops/           # Flux configuration for your cluster
 │   ├── flux-system/                 # Flux controllers (auto-managed)
 │   ├── kube-system.yaml             # Points to base/kube-system/
 │   └── kube-addons.yaml             # Points to base/kube-addons/
@@ -1214,6 +993,7 @@ kubectl -n monitoring get all
 - **[ADR-0018: Flux for Kubernetes GitOps](../../../docs/decisions/0018-flux-kubernetes-gitops.md)** - GitOps decision and workflow
 - **[kubernetes/README.md](../../../kubernetes/README.md)** - Kubernetes manifests structure
 - **[Terraform Environments Overview](../README.md)** - Complete infrastructure workflow
+
 <!-- BEGIN_TF_DOCS -->
 ## Requirements
 
@@ -1222,41 +1002,22 @@ kubectl -n monitoring get all
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.5.0 |
 | <a name="requirement_github"></a> [github](#requirement\_github) | ~> 5.42 |
 | <a name="requirement_helm"></a> [helm](#requirement\_helm) | ~> 2.12 |
-| <a name="requirement_http"></a> [http](#requirement\_http) | ~> 3.4 |
 | <a name="requirement_kubectl"></a> [kubectl](#requirement\_kubectl) | ~> 1.14 |
 | <a name="requirement_kubernetes"></a> [kubernetes](#requirement\_kubernetes) | ~> 2.23 |
 
 ## Providers
 
-| Name | Version |
-|------|---------|
-| <a name="provider_helm"></a> [helm](#provider\_helm) | 2.17.0 |
-| <a name="provider_http"></a> [http](#provider\_http) | 3.5.0 |
-| <a name="provider_kubectl"></a> [kubectl](#provider\_kubectl) | 1.19.0 |
-| <a name="provider_kubernetes"></a> [kubernetes](#provider\_kubernetes) | 2.38.0 |
+No providers.
 
 ## Modules
 
-No modules.
+| Name | Source | Version |
+|------|--------|---------|
+| <a name="module_talos_gitops"></a> [talos\_gitops](#module\_talos\_gitops) | ../../modules/talos-gitops | n/a |
 
 ## Resources
 
-| Name | Type |
-|------|------|
-| [helm_release.cert_manager](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
-| [kubectl_manifest.olm](https://registry.terraform.io/providers/gavinbunney/kubectl/latest/docs/resources/manifest) | resource |
-| [kubernetes_cluster_role.flux_operator_installer](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/cluster_role) | resource |
-| [kubernetes_cluster_role_binding.flux_operator_installer](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/cluster_role_binding) | resource |
-| [kubernetes_manifest.flux_instance](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/manifest) | resource |
-| [kubernetes_manifest.flux_operator_extension](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/manifest) | resource |
-| [kubernetes_manifest.operatorhub_catalog](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/manifest) | resource |
-| [kubernetes_namespace.cert_manager](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/namespace) | resource |
-| [kubernetes_namespace.flux_system](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/namespace) | resource |
-| [kubernetes_namespace.olmv1_system](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/namespace) | resource |
-| [kubernetes_secret.flux_git_credentials](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/secret) | resource |
-| [kubernetes_secret.sops_age](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/secret) | resource |
-| [kubernetes_service_account.flux_operator_installer](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/service_account) | resource |
-| [http_http.olm_install_manifest](https://registry.terraform.io/providers/hashicorp/http/latest/docs/data-sources/http) | data source |
+No resources.
 
 ## Inputs
 
@@ -1272,7 +1033,7 @@ No modules.
 | <a name="input_flux_components_extra"></a> [flux\_components\_extra](#input\_flux\_components\_extra) | Extra Flux components to install (e.g., image-reflector-controller, image-automation-controller) | `list(string)` | `[]` | no |
 | <a name="input_flux_namespace"></a> [flux\_namespace](#input\_flux\_namespace) | Namespace where Flux controllers will be installed | `string` | `"flux-system"` | no |
 | <a name="input_flux_network_policy"></a> [flux\_network\_policy](#input\_flux\_network\_policy) | Enable network policies for Flux controllers | `bool` | `true` | no |
-| <a name="input_flux_operator_version"></a> [flux\_operator\_version](#input\_flux\_operator\_version) | Version of Flux Operator to install via OLM ClusterExtension | `string` | `"0.33.0"` | no |
+| <a name="input_flux_operator_version"></a> [flux\_operator\_version](#input\_flux\_operator\_version) | Version of Flux Operator Helm chart to install | `string` | `"0.33.0"` | no |
 | <a name="input_flux_version"></a> [flux\_version](#input\_flux\_version) | Version of Flux controllers to deploy via FluxInstance | `string` | `"v2.7.3"` | no |
 | <a name="input_github_branch"></a> [github\_branch](#input\_github\_branch) | Git branch to track for GitOps | `string` | `"main"` | no |
 | <a name="input_github_owner"></a> [github\_owner](#input\_github\_owner) | GitHub repository owner (organization or user) | `string` | n/a | yes |
@@ -1281,7 +1042,6 @@ No modules.
 | <a name="input_kubernetes_cluster_ca_certificate"></a> [kubernetes\_cluster\_ca\_certificate](#input\_kubernetes\_cluster\_ca\_certificate) | Kubernetes cluster CA certificate (base64 encoded) | `string` | n/a | yes |
 | <a name="input_kubernetes_host"></a> [kubernetes\_host](#input\_kubernetes\_host) | Kubernetes cluster API endpoint (e.g., https://api.cluster.example.com:6443) | `string` | n/a | yes |
 | <a name="input_kubernetes_token"></a> [kubernetes\_token](#input\_kubernetes\_token) | Kubernetes authentication token | `string` | n/a | yes |
-| <a name="input_olm_version"></a> [olm\_version](#input\_olm\_version) | Version of OLM v1 (operator-controller) to install | `string` | `"v1.5.1"` | no |
 | <a name="input_sops_age_key_path"></a> [sops\_age\_key\_path](#input\_sops\_age\_key\_path) | Path to the SOPS age private key file for Flux decryption (deployed to Kubernetes) | `string` | `"~/.config/sops/age/talos-gitops-flux.txt"` | no |
 
 ## Outputs
@@ -1298,6 +1058,5 @@ No modules.
 | <a name="output_git_branch"></a> [git\_branch](#output\_git\_branch) | Git branch tracked by Flux |
 | <a name="output_git_repository"></a> [git\_repository](#output\_git\_repository) | Git repository URL used by Flux |
 | <a name="output_next_steps"></a> [next\_steps](#output\_next\_steps) | Next steps after complete installation |
-| <a name="output_olm_namespace"></a> [olm\_namespace](#output\_olm\_namespace) | Namespace where OLM is installed |
 | <a name="output_verification_commands"></a> [verification\_commands](#output\_verification\_commands) | Commands to verify the installation |
 <!-- END_TF_DOCS -->

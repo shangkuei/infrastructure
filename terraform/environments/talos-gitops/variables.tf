@@ -109,14 +109,8 @@ variable "cert_manager_enable_gateway_api" {
   default     = true
 }
 
-variable "olm_version" {
-  description = "Version of OLM v1 (operator-controller) to install"
-  type        = string
-  default     = "v1.5.1"
-}
-
 variable "flux_operator_version" {
-  description = "Version of Flux Operator to install via OLM ClusterExtension"
+  description = "Version of Flux Operator Helm chart to install"
   type        = string
   default     = "0.33.0"
 }
