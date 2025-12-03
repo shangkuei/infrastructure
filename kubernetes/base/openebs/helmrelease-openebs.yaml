@@ -1,12 +1,16 @@
 ---
 # OpenEBS Dynamic Storage Provisioner
-# Configuration optimized for Talos Linux with both LocalPV and Replicated Engine
+# Configuration optimized for Talos Linux with LocalPV Hostpath (default)
 # Version: 4.4.0 (PINNED - stable release)
 #
 # Supported Storage Classes:
-# 1. openebs-hostpath (default): Simple local storage, no replication
-# 2. openebs-replicated: High-performance replicated storage (requires node configuration)
+# 1. openebs-hostpath (default): Simple local storage using host directories
 #
+# Additional engines (enabled via cluster overlays):
+# 2. openebs-zfs: ZFS-backed local storage with snapshots, compression
+# 3. openebs-mayastor: High-performance replicated storage via NVMe-oF
+#
+# For advanced storage configuration, use cluster-specific overlays.
 # For Replicated Engine requirements, see: ../../../terraform/environments/talos-cluster/README.md#storage-configuration
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
@@ -46,25 +50,23 @@ spec:
 
   values:
     # Engine Configuration
-    # Both LocalPV and Replicated Engine enabled for flexible storage options
+    # Only LocalPV Hostpath enabled by default
+    # Enable ZFS and Mayastor via cluster-specific overlays
     engines:
-      # LocalPV Hostpath - Simple local storage (enabled by default)
       local:
         lvm:
           enabled: false
         zfs:
-          enabled: false
+          enabled: false  # Enable via overlay
         hostpath:
-          enabled: true
+          enabled: true  # Default storage
 
-      # Replicated Engine (Mayastor) - High-performance replicated storage
-      # Requires Talos machine configuration with hugepages and disk labels
-      # See: terraform/environments/talos-cluster/README.md#storage-configuration
+      # Replicated Engine (Mayastor) - disabled by default
+      # Enable via overlay with node requirements:
+      # - 2GiB hugepages (2MiB pages)
+      # - Labeled NVMe/SSD disks (openebs.io/engine=mayastor)
       replicated:
         mayastor:
-          # Set to true when nodes are configured with:
-          # - 2GiB hugepages (2MiB pages)
-          # - Labeled NVMe/SSD disks (openebs.io/engine=mayastor)
           enabled: false
 
     # LocalPV Hostpath Configuration
@@ -96,76 +98,31 @@ spec:
           memory: 64Mi
 
     # NDM (Node Disk Manager) Configuration
-    # Required for Replicated Engine to discover and manage disks
+    # Required for Replicated Engine (Mayastor) and ZFS LocalPV
     # Can be disabled if only using LocalPV hostpath
     ndm:
-      enabled: false  # Set to true when enabling Replicated Engine
+      enabled: false  # Enable via overlay when using ZFS or Mayastor
       sparse:
         path: "/var/openebs/sparse"
         size: "10737418240"  # 10GB
         count: "0"  # Disable sparse files in production
       filters:
-        enableOSDiskExcludeFilter: true
+        enableOsDiskExcludeFilter: true
         enableVendorFilter: true
         excludeVendors: "CLOUDBYT,OpenEBS"
         enablePathFilter: true
         includePaths: ""  # Include specific disk paths if needed
         excludePaths: "/dev/loop,/dev/fd0,/dev/sr0,/dev/ram,/dev/dm-,/dev/md,/dev/rbd,/dev/zd"
 
-    # NDM Operator - Required for Replicated Engine
+    # NDM Operator - Required for Replicated Engine and ZFS
     ndmOperator:
-      enabled: false  # Set to true when enabling Replicated Engine
-
-    # Mayastor / Replicated Engine Configuration
-    # Only applies when engines.replicated.mayastor.enabled = true
-    mayastor:
-      # Storage pool configuration
-      # Pools are created from labeled disks on nodes
-      pool:
-        # Example pool configuration (adjust for your environment):
-        # pools:
-        #   - name: pool-on-node-1
-        #     node: node-1
-        #     disks: ["/dev/nvme0n1"]
-        pools: []
-
-      # CSI node plugin
-      csi:
-        node:
-          resources:
-            limits:
-              cpu: "1"
-              memory: "500Mi"
-            requests:
-              cpu: "100m"
-              memory: "50Mi"
-
-      # IO engine pods
-      io_engine:
-        resources:
-          limits:
-            cpu: "2"
-            memory: "1Gi"
-            hugepages-2Mi: "2Gi"  # Required for Mayastor
-          requests:
-            cpu: "500m"
-            memory: "500Mi"
-            hugepages-2Mi: "2Gi"  # Required for Mayastor
-
-        # Node selector for storage nodes with hugepages configured
-        # These labels are automatically applied by Terraform when openebs_storage = true
-        nodeSelector:
-          openebs.io/storage-node: "true"
-
-        # Tolerate storage node taints
-        tolerations: []
+      enabled: false  # Enable via overlay when using ZFS or Mayastor
 
     # Webhook Configuration
     webhook:
       enabled: true
 
     # Observability components (disabled by default)
-    # Enable as needed for OpenEBS metrics and logging
     loki:
       enabled: false
     alloy:

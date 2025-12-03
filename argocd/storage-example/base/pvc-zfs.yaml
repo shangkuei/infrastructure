@@ -1,0 +1,19 @@
+---
+# PersistentVolumeClaim using OpenEBS ZFS LocalPV StorageClass
+# Advanced local storage with ZFS features (snapshots, compression, etc.)
+# Requires: ZFS pool created on nodes
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: storage-zfs
+  namespace: argocd-example-storage
+  labels:
+    app.kubernetes.io/name: storage-example
+    storage-type: zfs
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: openebs-zfs
+  resources:
+    requests:
+      storage: 1Gi

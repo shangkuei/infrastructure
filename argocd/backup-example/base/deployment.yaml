@@ -1,0 +1,89 @@
+---
+# Data Application Deployment
+# Simulates an application with persistent data that needs backups
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: data-app
+  namespace: argocd-example-backup
+  labels:
+    app.kubernetes.io/name: backup-example
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: data-app
+  template:
+    metadata:
+      labels:
+        app: data-app
+        app.kubernetes.io/name: backup-example
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: data-app
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              echo "Backup Example - Data Application"
+              echo "=================================="
+              echo ""
+              echo "This application demonstrates:"
+              echo "- Persistent data storage with ZFS"
+              echo "- Scheduled backups via CronJob"
+              echo "- Point-in-time recovery using VolumeSnapshots"
+              echo ""
+
+              # Initialize data
+              if [ ! -f /data/initialized ]; then
+                echo "Initializing application data..."
+                echo "Application Data" > /data/app-data.txt
+                echo "Created: $(date)" >> /data/app-data.txt
+                touch /data/initialized
+                echo "✓ Data initialized"
+              else
+                echo "Data already initialized"
+              fi
+
+              # Simulate data updates
+              COUNTER=0
+              while true; do
+                COUNTER=$((COUNTER + 1))
+                echo "[$(date)] Update #${COUNTER}" >> /data/activity.log
+
+                # Keep log file manageable
+                if [ $(wc -l < /data/activity.log 2>/dev/null || echo 0) -gt 100 ]; then
+                  tail -50 /data/activity.log > /data/activity.log.tmp
+                  mv /data/activity.log.tmp /data/activity.log
+                fi
+
+                echo "Data update #${COUNTER} - sleeping 60s..."
+                sleep 60
+              done
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: false  # Need to write to /data
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: backup-data-pvc

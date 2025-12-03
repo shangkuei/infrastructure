@@ -1,0 +1,98 @@
+---
+# Snapshot Test Deployment
+# Demonstrates VolumeSnapshot workflow with source and restored volumes
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: snapshot-test
+  namespace: argocd-example-snapshot
+  labels:
+    app.kubernetes.io/name: snapshot-example
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: snapshot-test
+  template:
+    metadata:
+      labels:
+        app: snapshot-test
+        app.kubernetes.io/name: snapshot-example
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: snapshot-test
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              echo "Snapshot Example - Demonstrating VolumeSnapshot Workflow"
+              echo "========================================================="
+              echo ""
+              echo "Volume Mounts:"
+              echo "  /data/source   - Original PVC (snapshot-source-pvc)"
+              echo "  /data/restored - PVC restored from snapshot (snapshot-restored-pvc)"
+              echo ""
+
+              # Initialize source volume with test data
+              if [ ! -f /data/source/initialized ]; then
+                echo "Initializing source volume with test data..."
+                echo "Created at: $(date)" > /data/source/test-data.txt
+                echo "This is original data" >> /data/source/test-data.txt
+                touch /data/source/initialized
+                echo "✓ Source volume initialized"
+              else
+                echo "Source volume already initialized"
+                echo "Content: $(cat /data/source/test-data.txt)"
+              fi
+
+              echo ""
+
+              # Check restored volume
+              if [ -f /data/restored/test-data.txt ]; then
+                echo "✓ Restored volume contains snapshot data:"
+                cat /data/restored/test-data.txt
+              else
+                echo "ℹ Restored volume is empty (snapshot may not be ready yet)"
+              fi
+
+              echo ""
+              echo "Snapshot workflow:"
+              echo "1. Source PVC: Contains original data"
+              echo "2. VolumeSnapshot: Point-in-time snapshot of source"
+              echo "3. Restored PVC: Created from snapshot (clone)"
+              echo ""
+              echo "Snapshot test complete. Sleeping..."
+
+              while true; do sleep 3600; done
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
+          volumeMounts:
+            - name: data-source
+              mountPath: /data/source
+            - name: data-restored
+              mountPath: /data/restored
+      volumes:
+        - name: data-source
+          persistentVolumeClaim:
+            claimName: snapshot-source-pvc
+        - name: data-restored
+          persistentVolumeClaim:
+            claimName: snapshot-restored-pvc

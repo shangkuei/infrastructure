@@ -1,0 +1,49 @@
+---
+# shangkuei-dev overlay - excludes Mayastor (requires 3+ nodes)
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../base
+
+# Patch out Mayastor-related configurations
+patches:
+  # Remove Mayastor volume mount and volume from deployment
+  - patch: |-
+      - op: remove
+        path: /spec/template/spec/containers/0/volumeMounts/2
+      - op: remove
+        path: /spec/template/spec/volumes/2
+      - op: replace
+        path: /spec/template/spec/containers/0/command/2
+        value: |
+          echo "Storage Example - Testing OpenEBS Storage Classes"
+          echo "================================================="
+          echo ""
+          echo "Available storage mounts:"
+          echo "  /data/hostpath  - OpenEBS Hostpath (simple local storage)"
+          echo "  /data/zfs       - OpenEBS ZFS LocalPV (advanced local storage)"
+          echo ""
+
+          # Write test data to each volume
+          date > /data/hostpath/test.txt && echo "Hostpath volume: writable"
+          date > /data/zfs/test.txt && echo "ZFS volume: writable" || echo "ZFS volume: not available"
+
+          echo ""
+          echo "Storage test complete. Sleeping..."
+
+          # Keep container running
+          while true; do sleep 3600; done
+    target:
+      kind: Deployment
+      name: storage-test
+  # Delete Mayastor PVC
+  - patch: |-
+      $patch: delete
+      apiVersion: v1
+      kind: PersistentVolumeClaim
+      metadata:
+        name: storage-mayastor
+    target:
+      kind: PersistentVolumeClaim
+      name: storage-mayastor

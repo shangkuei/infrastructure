@@ -4,9 +4,11 @@ kind: Kustomization
 
 resources:
   - ../../../base/argocd
-  # ArgoCD Projects (includes AppProject and all Applications)
+  # ArgoCD Projects (AppProject only, Applications selected below)
   - ../../../base/argocd-projects/argocd-examples
   - ../../../base/argocd-projects/edatw
+  # ArgoCD Applications for this cluster (KSOPS example)
+  - ../../../base/argocd-projects/argocd-examples/apps-ksops
   # Cluster-specific resources
   - secret-sops-age.enc.yaml
 
@@ -38,21 +40,14 @@ patches:
     target:
       kind: HelmRelease
       name: argocd
-  # Patch Application paths for cluster-specific overlays
+  # Patch app-example to use cluster-specific overlay with KSOPS
   - patch: |-
       - op: replace
         path: /spec/source/path
-        value: argocd/example-app1/overlays/shangkuei-xyz-talos
+        value: argocd/app-example/overlays/shangkuei-xyz-talos
     target:
       kind: Application
-      name: example-app1
-  - patch: |-
-      - op: replace
-        path: /spec/source/path
-        value: argocd/example-app2/overlays/shangkuei-xyz-talos
-    target:
-      kind: Application
-      name: example-app2
+      name: app-example
   # Patch edatw application paths (from github.com/edatw/infrastructure)
   - patch: |-
       - op: replace

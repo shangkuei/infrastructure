@@ -1,0 +1,37 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-config
+  namespace: argocd-example-app
+data:
+  nginx.conf: |
+    events {
+      worker_connections 1024;
+    }
+
+    http {
+      include /etc/nginx/mime.types;
+      default_type application/octet-stream;
+
+      # Security headers
+      add_header X-Frame-Options "SAMEORIGIN" always;
+      add_header X-Content-Type-Options "nosniff" always;
+      add_header X-XSS-Protection "1; mode=block" always;
+
+      server {
+        listen 8080;
+        server_name _;
+
+        location / {
+          root /usr/share/nginx/html;
+          index index.html;
+        }
+
+        location /healthz {
+          access_log off;
+          return 200 "OK\n";
+          add_header Content-Type text/plain;
+        }
+      }
+    }

@@ -1,0 +1,46 @@
+---
+# ArgoCD Application for Snapshot Example
+# Demonstrates VolumeSnapshot creation and restore
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: snapshot-example
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: snapshot-example
+    app.kubernetes.io/managed-by: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: argocd-examples
+
+  source:
+    repoURL: https://github.com/shangkuei/infrastructure.git
+    targetRevision: HEAD
+    path: argocd/snapshot-example/base
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd-example-snapshot
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas

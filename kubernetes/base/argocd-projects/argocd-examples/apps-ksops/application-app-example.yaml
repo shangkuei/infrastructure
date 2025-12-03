@@ -1,0 +1,46 @@
+---
+# ArgoCD Application for App Example
+# Demonstrates KSOPS/SOPS encryption with ArgoCD
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: app-example
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: app-example
+    app.kubernetes.io/managed-by: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: argocd-examples
+
+  source:
+    repoURL: https://github.com/shangkuei/infrastructure.git
+    targetRevision: HEAD
+    path: argocd/app-example/base
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd-example-app
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas

@@ -1,0 +1,19 @@
+---
+# PersistentVolumeClaim using OpenEBS Mayastor StorageClass
+# High-performance replicated storage via NVMe-oF
+# Requires: Nodes with hugepages and Mayastor pools configured
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: storage-mayastor
+  namespace: argocd-example-storage
+  labels:
+    app.kubernetes.io/name: storage-example
+    storage-type: mayastor
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: openebs-mayastor
+  resources:
+    requests:
+      storage: 1Gi

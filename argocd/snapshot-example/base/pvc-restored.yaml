@@ -1,0 +1,23 @@
+---
+# PVC restored from VolumeSnapshot
+# Demonstrates how to create a new volume from a snapshot
+# This is useful for disaster recovery, testing, or cloning data
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: snapshot-restored-pvc
+  namespace: argocd-example-snapshot
+  labels:
+    app.kubernetes.io/name: snapshot-example
+    role: restored
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: openebs-zfs
+  resources:
+    requests:
+      storage: 1Gi
+  dataSource:
+    name: snapshot-demo
+    kind: VolumeSnapshot
+    apiGroup: snapshot.storage.k8s.io

@@ -4,6 +4,10 @@ kind: Kustomization
 
 resources:
   - ../../../base/argocd
+  # ArgoCD Projects (AppProject only, Applications selected below)
+  - ../../../base/argocd-projects/argocd-examples
+  # ArgoCD Applications for this cluster (storage examples)
+  - ../../../base/argocd-projects/argocd-examples/apps-storage
   # Cluster-specific resources
   - secret-sops-age.enc.yaml
 
@@ -35,3 +39,19 @@ patches:
     target:
       kind: HelmRelease
       name: argocd
+  # Patch storage-example to use cluster-specific overlay (no Mayastor)
+  - patch: |-
+      - op: replace
+        path: /spec/source/path
+        value: argocd/storage-example/overlays/shangkuei-dev
+    target:
+      kind: Application
+      name: storage-example
+  # Patch snapshot-example to use cluster-specific overlay (no Mayastor)
+  - patch: |-
+      - op: replace
+        path: /spec/source/path
+        value: argocd/snapshot-example/overlays/shangkuei-dev
+    target:
+      kind: Application
+      name: snapshot-example

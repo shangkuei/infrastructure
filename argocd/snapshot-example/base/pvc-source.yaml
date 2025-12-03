@@ -1,0 +1,18 @@
+---
+# Source PVC for snapshot demonstration
+# Uses ZFS storage class which supports snapshots
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: snapshot-source-pvc
+  namespace: argocd-example-snapshot
+  labels:
+    app.kubernetes.io/name: snapshot-example
+    role: source
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: openebs-zfs
+  resources:
+    requests:
+      storage: 1Gi

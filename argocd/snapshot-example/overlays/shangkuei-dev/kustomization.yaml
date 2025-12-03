@@ -1,0 +1,19 @@
+---
+# shangkuei-dev overlay - excludes Mayastor VolumeSnapshotClass
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../base
+
+# Remove Mayastor VolumeSnapshotClass for single-node cluster
+patches:
+  - patch: |-
+      $patch: delete
+      apiVersion: snapshot.storage.k8s.io/v1
+      kind: VolumeSnapshotClass
+      metadata:
+        name: openebs-mayastor-snapshot
+    target:
+      kind: VolumeSnapshotClass
+      name: openebs-mayastor-snapshot

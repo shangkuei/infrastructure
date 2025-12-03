@@ -2,7 +2,9 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
+# Base only includes AppProject
+# Applications are selected via cluster-specific overlays:
+# - shangkuei-xyz-talos: app-example only
+# - shangkuei-dev: storage-example, snapshot-example, backup-example
 resources:
   - appproject-argocd-examples.yaml
-  - application-example-app1.yaml
-  - application-example-app2.yaml

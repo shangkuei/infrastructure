@@ -1,0 +1,129 @@
+---
+# CronJob for scheduled volume snapshots
+# Demonstrates automated backup strategy using VolumeSnapshots
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: scheduled-backup
+  namespace: argocd-example-backup
+  labels:
+    app.kubernetes.io/name: backup-example
+spec:
+  # Run daily at 2:00 AM
+  schedule: "0 2 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    metadata:
+      labels:
+        app.kubernetes.io/name: backup-example
+        job-type: scheduled-backup
+    spec:
+      ttlSecondsAfterFinished: 86400  # Clean up after 24 hours
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: backup-example
+        spec:
+          serviceAccountName: backup-manager
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            fsGroup: 1000
+            seccompProfile:
+              type: RuntimeDefault
+          restartPolicy: OnFailure
+          containers:
+            - name: backup
+              image: bitnami/kubectl:1.31
+              command:
+                - /bin/bash
+                - -c
+                - |
+                  set -euo pipefail
+
+                  TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+                  SNAPSHOT_NAME="backup-${TIMESTAMP}"
+                  PVC_NAME="backup-data-pvc"
+                  SNAPSHOT_CLASS="openebs-zfs-snapshot"
+                  RETENTION_COUNT=7  # Keep last 7 snapshots
+
+                  echo "=== Scheduled Backup Job ==="
+                  echo "Timestamp: ${TIMESTAMP}"
+                  echo "PVC: ${PVC_NAME}"
+                  echo "Snapshot: ${SNAPSHOT_NAME}"
+                  echo ""
+
+                  # Create new snapshot
+                  echo "Creating VolumeSnapshot..."
+                  cat <<EOF | kubectl apply -f -
+                  apiVersion: snapshot.storage.k8s.io/v1
+                  kind: VolumeSnapshot
+                  metadata:
+                    name: ${SNAPSHOT_NAME}
+                    namespace: argocd-example-backup
+                    labels:
+                      app.kubernetes.io/name: backup-example
+                      backup-type: scheduled
+                      source-pvc: ${PVC_NAME}
+                  spec:
+                    volumeSnapshotClassName: ${SNAPSHOT_CLASS}
+                    source:
+                      persistentVolumeClaimName: ${PVC_NAME}
+                  EOF
+
+                  # Wait for snapshot to be ready
+                  echo "Waiting for snapshot to be ready..."
+                  kubectl wait --for=jsonpath='{.status.readyToUse}'=true \
+                    volumesnapshot/${SNAPSHOT_NAME} \
+                    -n argocd-example-backup \
+                    --timeout=300s
+
+                  echo "✓ Snapshot created successfully"
+                  echo ""
+
+                  # Cleanup old snapshots (keep last N)
+                  echo "Cleaning up old snapshots (keeping last ${RETENTION_COUNT})..."
+                  SNAPSHOTS=$(kubectl get volumesnapshots -n argocd-example-backup \
+                    -l backup-type=scheduled,source-pvc=${PVC_NAME} \
+                    --sort-by=.metadata.creationTimestamp \
+                    -o jsonpath='{.items[*].metadata.name}')
+
+                  COUNT=0
+                  for snap in ${SNAPSHOTS}; do
+                    COUNT=$((COUNT + 1))
+                  done
+
+                  if [ ${COUNT} -gt ${RETENTION_COUNT} ]; then
+                    DELETE_COUNT=$((COUNT - RETENTION_COUNT))
+                    echo "Found ${COUNT} snapshots, deleting ${DELETE_COUNT} oldest..."
+
+                    for snap in ${SNAPSHOTS}; do
+                      if [ ${DELETE_COUNT} -gt 0 ]; then
+                        echo "Deleting snapshot: ${snap}"
+                        kubectl delete volumesnapshot ${snap} -n argocd-example-backup
+                        DELETE_COUNT=$((DELETE_COUNT - 1))
+                      else
+                        break
+                      fi
+                    done
+                  else
+                    echo "No cleanup needed (${COUNT}/${RETENTION_COUNT} snapshots)"
+                  fi
+
+                  echo ""
+                  echo "=== Backup Complete ==="
+              securityContext:
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop:
+                    - ALL
+                readOnlyRootFilesystem: true
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 64Mi
+                limits:
+                  cpu: 200m
+                  memory: 128Mi

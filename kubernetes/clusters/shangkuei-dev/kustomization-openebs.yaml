@@ -1,6 +1,7 @@
 ---
 # Flux Kustomization for OpenEBS Storage
 # Provides dynamic local storage provisioning for the cluster
+# This cluster enables ZFS LocalPV and Mayastor via overlay
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
@@ -17,7 +18,7 @@ spec:
     name: flux-system
     namespace: flux-system
 
-  path: ./kubernetes/base/openebs
+  path: ./kubernetes/overlays/openebs/shangkuei-dev
 
   # Dependencies: CNI must be ready for pod networking
   dependsOn:

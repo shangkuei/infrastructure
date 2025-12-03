@@ -1,0 +1,24 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: argocd-example-snapshot
+
+resources:
+  - namespace.yaml
+  # VolumeSnapshotClasses (cluster-scoped, applied first)
+  - volumesnapshotclass-zfs.yaml
+  - volumesnapshotclass-mayastor.yaml
+  # Source PVC
+  - pvc-source.yaml
+  # Snapshot of source PVC
+  - volumesnapshot.yaml
+  # PVC restored from snapshot
+  - pvc-restored.yaml
+  # Test deployment
+  - deployment.yaml
+
+labels:
+  - pairs:
+      app.kubernetes.io/name: snapshot-example
+      app.kubernetes.io/managed-by: argocd

@@ -1,0 +1,18 @@
+---
+# PersistentVolumeClaim using OpenEBS Hostpath StorageClass
+# Simple local storage without replication
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: storage-hostpath
+  namespace: argocd-example-storage
+  labels:
+    app.kubernetes.io/name: storage-example
+    storage-type: hostpath
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: openebs-hostpath
+  resources:
+    requests:
+      storage: 1Gi

@@ -1,0 +1,23 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: argocd-example-backup
+
+resources:
+  - namespace.yaml
+  # RBAC for backup CronJob
+  - rbac.yaml
+  # Data PVC
+  - pvc-data.yaml
+  # Documentation
+  - configmap-restore-script.yaml
+  # Scheduled backup CronJob
+  - cronjob-backup.yaml
+  # Application using the data
+  - deployment.yaml
+
+labels:
+  - pairs:
+      app.kubernetes.io/name: backup-example
+      app.kubernetes.io/managed-by: argocd

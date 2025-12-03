@@ -1,0 +1,55 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../../base/openebs
+
+labels:
+  - pairs:
+      app.kubernetes.io/instance: shangkuei-dev
+      app.kubernetes.io/environment: development
+
+# Enable ZFS LocalPV for shangkuei-dev cluster
+# NOTE: Mayastor disabled - requires 3+ nodes for etcd/nats HA
+patches:
+  - patch: |-
+      - op: replace
+        path: /spec/values/engines/local/zfs/enabled
+        value: true
+      - op: replace
+        path: /spec/values/ndm/enabled
+        value: true
+      - op: replace
+        path: /spec/values/ndmOperator/enabled
+        value: true
+      - op: add
+        path: /spec/values/zfs-localpv
+        value:
+          enabled: true
+          # Talos compatibility: use writable path for encryption keys
+          zfsNode:
+            encrKeysDir: "/var/openebs/encr-keys"
+          zfsClass:
+            enabled: true
+            name: openebs-zfs
+            isDefaultClass: false
+            poolName: "zpool"
+            recordSize: "128k"
+            compression: "lz4"
+            dedup: "off"
+            fsType: "zfs"
+            reclaimPolicy: Delete
+            volumeBindingMode: WaitForFirstConsumer
+          nodeSelector: {}
+          tolerations: []
+          resources:
+            limits:
+              cpu: 200m
+              memory: 256Mi
+            requests:
+              cpu: 100m
+              memory: 128Mi
+    target:
+      kind: HelmRelease
+      name: openebs

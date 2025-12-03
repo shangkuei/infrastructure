@@ -1,0 +1,15 @@
+---
+# VolumeSnapshot example
+# Creates a point-in-time snapshot of the source PVC
+# This snapshot can be used to restore data or create new PVCs
+apiVersion: snapshot.storage.k8s.io/v1
+kind: VolumeSnapshot
+metadata:
+  name: snapshot-demo
+  namespace: argocd-example-snapshot
+  labels:
+    app.kubernetes.io/name: snapshot-example
+spec:
+  volumeSnapshotClassName: openebs-zfs-snapshot
+  source:
+    persistentVolumeClaimName: snapshot-source-pvc

@@ -1,0 +1,50 @@
+---
+# ArgoCD Application for Backup Example
+# Demonstrates scheduled backups and restore procedures
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: backup-example
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: backup-example
+    app.kubernetes.io/managed-by: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: argocd-examples
+
+  source:
+    repoURL: https://github.com/shangkuei/infrastructure.git
+    targetRevision: HEAD
+    path: argocd/backup-example/base
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd-example-backup
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas
+    - group: batch
+      kind: CronJob
+      jsonPointers:
+        - /spec/schedule

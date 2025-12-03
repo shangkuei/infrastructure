@@ -1,0 +1,18 @@
+---
+# Data PVC for backup demonstration
+# This represents application data that needs regular backups
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: backup-data-pvc
+  namespace: argocd-example-backup
+  labels:
+    app.kubernetes.io/name: backup-example
+    backup.kubernetes.io/enabled: "true"
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: openebs-zfs
+  resources:
+    requests:
+      storage: 1Gi

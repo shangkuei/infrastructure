@@ -1,0 +1,182 @@
+---
+# ConfigMap containing restore documentation and scripts
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: restore-instructions
+  namespace: argocd-example-backup
+  labels:
+    app.kubernetes.io/name: backup-example
+data:
+  README.md: |
+    # Backup and Restore Guide
+
+    ## Overview
+    This example demonstrates a backup strategy using Kubernetes VolumeSnapshots
+    with OpenEBS storage backends (ZFS LocalPV or Mayastor).
+
+    ## Backup Strategy
+    - **Scheduled Backups**: CronJob runs daily at 2:00 AM
+    - **Retention Policy**: Keeps last 7 snapshots
+    - **Snapshot Class**: openebs-zfs-snapshot (or openebs-mayastor-snapshot)
+
+    ## List Available Snapshots
+    ```bash
+    kubectl get volumesnapshots -n argocd-example-backup \
+      -l backup-type=scheduled \
+      --sort-by=.metadata.creationTimestamp
+    ```
+
+    ## Manual Backup
+    ```bash
+    # Create a manual snapshot
+    TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+    cat <<EOF | kubectl apply -f -
+    apiVersion: snapshot.storage.k8s.io/v1
+    kind: VolumeSnapshot
+    metadata:
+      name: manual-backup-${TIMESTAMP}
+      namespace: argocd-example-backup
+      labels:
+        backup-type: manual
+        source-pvc: backup-data-pvc
+    spec:
+      volumeSnapshotClassName: openebs-zfs-snapshot
+      source:
+        persistentVolumeClaimName: backup-data-pvc
+    EOF
+    ```
+
+    ## Restore from Snapshot
+
+    ### Option 1: Create New PVC from Snapshot
+    ```bash
+    # List available snapshots
+    kubectl get volumesnapshots -n argocd-example-backup
+
+    # Create new PVC from snapshot
+    SNAPSHOT_NAME="backup-YYYYMMDD-HHMMSS"
+    cat <<EOF | kubectl apply -f -
+    apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      name: restored-data-pvc
+      namespace: argocd-example-backup
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      storageClassName: openebs-zfs
+      resources:
+        requests:
+          storage: 1Gi
+      dataSource:
+        name: ${SNAPSHOT_NAME}
+        kind: VolumeSnapshot
+        apiGroup: snapshot.storage.k8s.io
+    EOF
+    ```
+
+    ### Option 2: Replace Existing Volume (Destructive)
+    ```bash
+    # Scale down workloads
+    kubectl scale deployment data-app --replicas=0 -n argocd-example-backup
+
+    # Delete existing PVC
+    kubectl delete pvc backup-data-pvc -n argocd-example-backup
+
+    # Create new PVC from snapshot with same name
+    SNAPSHOT_NAME="backup-YYYYMMDD-HHMMSS"
+    cat <<EOF | kubectl apply -f -
+    apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      name: backup-data-pvc
+      namespace: argocd-example-backup
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      storageClassName: openebs-zfs
+      resources:
+        requests:
+          storage: 1Gi
+      dataSource:
+        name: ${SNAPSHOT_NAME}
+        kind: VolumeSnapshot
+        apiGroup: snapshot.storage.k8s.io
+    EOF
+
+    # Scale up workloads
+    kubectl scale deployment data-app --replicas=1 -n argocd-example-backup
+    ```
+
+    ## Verify Restore
+    ```bash
+    # Check PVC status
+    kubectl get pvc -n argocd-example-backup
+
+    # Verify data integrity
+    kubectl exec -it deploy/data-app -n argocd-example-backup -- ls -la /data
+    ```
+
+    ## Best Practices
+    1. **Test restores regularly** - Don't wait for an emergency
+    2. **Monitor snapshot creation** - Set up alerts for backup failures
+    3. **Offsite backups** - Consider exporting snapshots to external storage
+    4. **Document recovery procedures** - Keep runbooks up to date
+    5. **Retention policy** - Balance storage costs with recovery needs
+
+  restore.sh: |
+    #!/bin/bash
+    # Interactive restore script
+    set -euo pipefail
+
+    NAMESPACE="argocd-example-backup"
+    STORAGE_CLASS="openebs-zfs"
+    SNAPSHOT_CLASS="openebs-zfs-snapshot"
+
+    echo "=== Volume Restore Tool ==="
+    echo ""
+
+    # List available snapshots
+    echo "Available snapshots:"
+    kubectl get volumesnapshots -n ${NAMESPACE} \
+      --sort-by=.metadata.creationTimestamp \
+      -o custom-columns="NAME:.metadata.name,READY:.status.readyToUse,SIZE:.status.restoreSize,AGE:.metadata.creationTimestamp"
+
+    echo ""
+    read -p "Enter snapshot name to restore from: " SNAPSHOT_NAME
+    read -p "Enter new PVC name: " NEW_PVC_NAME
+    read -p "Enter storage size (e.g., 1Gi): " STORAGE_SIZE
+
+    echo ""
+    echo "Creating PVC '${NEW_PVC_NAME}' from snapshot '${SNAPSHOT_NAME}'..."
+
+    cat <<EOF | kubectl apply -f -
+    apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      name: ${NEW_PVC_NAME}
+      namespace: ${NAMESPACE}
+      labels:
+        restored-from: ${SNAPSHOT_NAME}
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      storageClassName: ${STORAGE_CLASS}
+      resources:
+        requests:
+          storage: ${STORAGE_SIZE}
+      dataSource:
+        name: ${SNAPSHOT_NAME}
+        kind: VolumeSnapshot
+        apiGroup: snapshot.storage.k8s.io
+    EOF
+
+    echo ""
+    echo "✓ PVC created. Waiting for it to be bound..."
+    kubectl wait --for=jsonpath='{.status.phase}'=Bound \
+      pvc/${NEW_PVC_NAME} -n ${NAMESPACE} --timeout=120s
+
+    echo ""
+    echo "=== Restore Complete ==="
+    kubectl get pvc ${NEW_PVC_NAME} -n ${NAMESPACE}

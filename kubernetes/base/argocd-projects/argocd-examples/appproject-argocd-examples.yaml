@@ -1,6 +1,9 @@
 ---
 # AppProject for ArgoCD example applications
-# This project contains test applications for validating KSOPS functionality
+# This project contains test applications demonstrating:
+# - KSOPS/SOPS encryption
+# - OpenEBS storage classes (Hostpath, ZFS, Mayastor)
+# - VolumeSnapshot and backup/restore workflows
 apiVersion: argoproj.io/v1alpha1
 kind: AppProject
 metadata:
@@ -10,7 +13,7 @@ metadata:
     app.kubernetes.io/name: argocd-examples
     app.kubernetes.io/managed-by: flux
 spec:
-  description: ArgoCD example applications for KSOPS validation
+  description: ArgoCD example applications for storage, snapshots, and KSOPS validation
 
   # Source repositories allowed
   sourceRepos:
@@ -22,9 +25,12 @@ spec:
       server: https://kubernetes.default.svc
 
   # Cluster resource whitelist
+  # VolumeSnapshotClass is cluster-scoped
   clusterResourceWhitelist:
     - group: ''
       kind: Namespace
+    - group: snapshot.storage.k8s.io
+      kind: VolumeSnapshotClass
 
   # Namespace resource whitelist (all allowed for test apps)
   namespaceResourceWhitelist:

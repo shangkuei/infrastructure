@@ -1,0 +1,16 @@
+---
+# VolumeSnapshotClass for OpenEBS ZFS LocalPV
+# Enables snapshot creation for ZFS-backed volumes
+apiVersion: snapshot.storage.k8s.io/v1
+kind: VolumeSnapshotClass
+metadata:
+  name: openebs-zfs-snapshot
+  labels:
+    app.kubernetes.io/name: snapshot-example
+  annotations:
+    snapshot.storage.kubernetes.io/is-default-class: "false"
+driver: zfs.csi.openebs.io
+deletionPolicy: Delete
+parameters:
+  # ZFS snapshot naming pattern (optional)
+  snapname: "snapshot-{{ .PVCName }}-{{ .TimeStamp }}"

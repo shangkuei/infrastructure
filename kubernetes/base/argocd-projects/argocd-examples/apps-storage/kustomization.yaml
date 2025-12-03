@@ -1,0 +1,9 @@
+---
+# OpenEBS storage example applications
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - application-storage-example.yaml
+  - application-snapshot-example.yaml
+  - application-backup-example.yaml
