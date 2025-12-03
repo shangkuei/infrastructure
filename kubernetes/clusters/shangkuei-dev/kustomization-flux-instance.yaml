@@ -2,7 +2,6 @@
 # Flux Kustomization for Flux Instance
 # Deploys core Flux CD components (source, kustomize, helm, notification controllers)
 # Managed by Flux Operator via FluxInstance CRD
-# Note: flux-operator is Terraform-bootstrapped (no OLM dependency)
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
@@ -26,10 +25,9 @@ spec:
 
   path: ./kubernetes/clusters/shangkuei-dev/flux-instance-sops
 
-  # Dependencies: CNI must be ready for pod networking
-  # flux-operator is already running (Terraform-bootstrapped)
+  # Dependencies: flux-operator must be ready (provides FluxInstance CRD)
   dependsOn:
-    - name: cilium
+    - name: flux-operator
 
   healthChecks:
     - apiVersion: apps/v1
