@@ -1,0 +1,99 @@
+---
+# Flux Operator HelmRelease
+# Manages Flux CD installations via FluxInstance CRDs
+# Source: https://github.com/controlplaneio-fluxcd/flux-operator
+# Docs: https://fluxcd.control-plane.io/operator/
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: flux-operator
+  namespace: flux-system
+spec:
+  # Release configuration
+  interval: 10m
+  timeout: 10m
+
+  # Drift detection
+  driftDetection:
+    mode: warn
+    ignore:
+      - paths: ["/spec/replicas"]
+
+  # Helm chart source
+  chart:
+    spec:
+      chart: flux-operator
+      version: "^0.14.0"
+      sourceRef:
+        kind: HelmRepository
+        name: flux-operator
+        namespace: flux-system
+      interval: 5m
+
+  # Installation configuration
+  install:
+    crds: CreateReplace
+    remediation:
+      retries: 3
+    createNamespace: false
+
+  # Upgrade configuration
+  upgrade:
+    crds: CreateReplace
+    remediation:
+      retries: 3
+      remediateLastFailure: true
+    cleanupOnFail: true
+
+  # Rollback configuration
+  rollback:
+    recreate: true
+    cleanupOnFail: true
+
+  # Uninstall configuration
+  uninstall:
+    keepHistory: false
+
+  # Values override
+  values:
+    # Controller configuration
+    fullnameOverride: flux-operator
+
+    # Resource limits
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+
+    # Security context
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+          - ALL
+      readOnlyRootFilesystem: true
+      runAsNonRoot: true
+      seccompProfile:
+        type: RuntimeDefault
+
+    # Pod security context
+    podSecurityContext:
+      runAsNonRoot: true
+      seccompProfile:
+        type: RuntimeDefault
+
+    # Service account
+    serviceAccount:
+      create: true
+      name: flux-operator
+
+    # Metrics
+    metrics:
+      enabled: true
+
+    # Leader election
+    leaderElection:
+      enabled: true

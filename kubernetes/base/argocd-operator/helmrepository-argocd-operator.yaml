@@ -1,0 +1,13 @@
+---
+# ArgoCD Operator Helm Repository
+# Official ArgoCD Operator from argoproj-labs
+# Source: https://github.com/argoproj-labs/argocd-operator
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: argocd-operator
+  namespace: flux-system
+spec:
+  url: https://argoproj-labs.github.io/argocd-operator
+  interval: 24h
+  timeout: 60s

@@ -1,0 +1,14 @@
+---
+# Flux Operator Helm Repository (OCI)
+# ControlPlane's Flux Operator for managing Flux CD installations
+# Source: https://github.com/controlplaneio-fluxcd/flux-operator
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: flux-operator
+  namespace: flux-system
+spec:
+  type: oci
+  url: oci://ghcr.io/controlplaneio-fluxcd/charts
+  interval: 24h
+  timeout: 60s

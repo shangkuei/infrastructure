@@ -2,18 +2,16 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-# Flux Operator installed via OLM ClusterExtension
-# Requires: olmv1-catalog (OperatorHub catalog)
-# Version: ^0.33.0 (stable channel, automatic upgrades)
+# Flux Operator installed via Helm
+# Manages Flux CD installations via FluxInstance CRDs
+# Source: https://github.com/controlplaneio-fluxcd/flux-operator
 
 resources:
   - namespace-flux-system.yaml
-  - serviceaccount-flux-operator-installer.yaml
-  - clusterrole-flux-operator-installer.yaml
-  - clusterrolebinding-flux-operator-installer.yaml
-  - clusterextension-flux-operator.yaml
+  - helmrepository-flux-operator.yaml
+  - helmrelease-flux-operator.yaml
 
 labels:
   - pairs:
       app.kubernetes.io/name: flux-operator
-      app.kubernetes.io/managed-by: olm
+      app.kubernetes.io/managed-by: helm

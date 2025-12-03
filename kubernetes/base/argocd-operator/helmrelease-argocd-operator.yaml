@@ -1,0 +1,105 @@
+---
+# ArgoCD Operator HelmRelease
+# Manages ArgoCD installations via ArgoCD CRDs
+# Source: https://github.com/argoproj-labs/argocd-operator
+# Docs: https://argocd-operator.readthedocs.io/
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: argocd-operator
+  namespace: argocd
+spec:
+  # Release configuration
+  interval: 10m
+  timeout: 10m
+
+  # Drift detection
+  driftDetection:
+    mode: warn
+    ignore:
+      - paths: ["/spec/replicas"]
+
+  # Helm chart source
+  chart:
+    spec:
+      chart: argocd-operator
+      version: "^0.13.0"
+      sourceRef:
+        kind: HelmRepository
+        name: argocd-operator
+        namespace: flux-system
+      interval: 5m
+
+  # Installation configuration
+  install:
+    crds: CreateReplace
+    remediation:
+      retries: 3
+    createNamespace: false
+
+  # Upgrade configuration
+  upgrade:
+    crds: CreateReplace
+    remediation:
+      retries: 3
+      remediateLastFailure: true
+    cleanupOnFail: true
+
+  # Rollback configuration
+  rollback:
+    recreate: true
+    cleanupOnFail: true
+
+  # Uninstall configuration
+  uninstall:
+    keepHistory: false
+
+  # Values override
+  values:
+    # Operator configuration
+    fullnameOverride: argocd-operator
+
+    # Resource limits
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+
+    # Security context
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+          - ALL
+      readOnlyRootFilesystem: true
+      runAsNonRoot: true
+      seccompProfile:
+        type: RuntimeDefault
+
+    # Pod security context
+    podSecurityContext:
+      runAsNonRoot: true
+      seccompProfile:
+        type: RuntimeDefault
+
+    # Service account
+    serviceAccount:
+      create: true
+      name: argocd-operator
+
+    # RBAC
+    rbac:
+      create: true
+
+    # Metrics
+    metrics:
+      enabled: true
+      serviceMonitor:
+        enabled: false
+
+    # Leader election
+    leaderElection:
+      enabled: true

@@ -2,18 +2,16 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-# ArgoCD Operator (OLM v1)
-# GitOps continuous delivery tool for Kubernetes
-# Installed via OperatorHub using OLM v1 ClusterExtension
+# ArgoCD Operator installed via Helm
+# Manages ArgoCD installations via ArgoCD CRDs
+# Source: https://github.com/argoproj-labs/argocd-operator
 
 resources:
   - namespace-argocd.yaml
-  - serviceaccount-argocd-operator-installer.yaml
-  - clusterrole-argocd-operator-installer.yaml
-  - clusterrolebinding-argocd-operator-installer.yaml
-  - clusterextension-argocd-operator.yaml
+  - helmrepository-argocd-operator.yaml
+  - helmrelease-argocd-operator.yaml
 
 labels:
   - pairs:
-      app.kubernetes.io/name: argocd
-      app.kubernetes.io/managed-by: olm
+      app.kubernetes.io/name: argocd-operator
+      app.kubernetes.io/managed-by: helm
