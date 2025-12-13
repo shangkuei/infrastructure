@@ -23,7 +23,7 @@ spec:
     name: flux-system
     namespace: flux-system
 
-  path: ./kubernetes/clusters/shangkuei-xyz-talos/flux-instance-sops
+  path: ./kubernetes/overlays/flux-instance/shangkuei-xyz-talos
 
   # Dependencies: Flux Operator must be running to process FluxInstance CRD
   dependsOn:

@@ -1,0 +1,45 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Cluster: edatw-cluster
+# Organization: Application-based resource management
+# Note: flux-system is managed by flux-operator (Helm-based)
+
+# Dependency order:
+# 1. gateway-api: CRDs (no dependencies)
+# 2. cilium: CNI (depends on gateway-api, implements Gateway API)
+# 3. cert-manager: Certificates (depends on gateway-api for HTTP01/TLS challenges)
+# 4. openebs: Storage provisioner (depends on cilium for pod networking)
+# 5. snapshot-controller: Volume snapshot controller (depends on cilium)
+# 6. flux-operator: Foundation (depends on cilium, installed via Helm)
+# 7. flux-instance: Core Flux components (depends on flux-operator)
+# 8. argocd: GitOps CD tool (depends on flux-instance, openebs)
+
+resources:
+  # Namespace configuration (kube-system with pod security labels for CSI)
+  - namespace-kube-system.yaml
+
+  # Source repositories (must be created before Kustomizations that use them)
+  - ../../base/gateway-api
+
+  # Gateway API CRDs (standard + experimental)
+  - kustomization-gateway-api-standard.yaml
+  - kustomization-gateway-api-experimental.yaml
+
+  # CNI and certificate management (depend on Gateway API)
+  - kustomization-cilium.yaml
+  - kustomization-cert-manager.yaml
+
+  # Storage provisioners (depend on CNI)
+  - kustomization-openebs.yaml
+  - kustomization-csi-driver-smb.yaml
+  - kustomization-snapshot-controller.yaml
+
+  # Infrastructure applications (Flux Kustomization CRs)
+  # Flux foundation (installed via Helm)
+  - kustomization-flux-operator.yaml
+  - kustomization-flux-instance.yaml
+
+  # GitOps applications (installed via Helm)
+  - kustomization-argocd.yaml

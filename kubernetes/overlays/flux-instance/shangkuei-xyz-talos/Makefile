@@ -13,7 +13,7 @@
 
 # Configuration
 SOPS_DOMAIN := kubernetes
-SOPS_ENV_NAME := gitops-flux
+SOPS_ENV_NAME := talos-gitops-flux
 SOPS_KEY_STRATEGY := central
 
 # Encrypted file variables (new naming convention: .enc.yaml)

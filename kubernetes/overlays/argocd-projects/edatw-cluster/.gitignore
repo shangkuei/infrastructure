@@ -1,0 +1,11 @@
+# Ignore decrypted secrets
+*.decrypted
+*.decrypted.yaml
+
+# Ignore local age key copies
+age-key.txt
+*.txt.pub
+
+# Ignore temporary files
+*.tmp
+*.bak

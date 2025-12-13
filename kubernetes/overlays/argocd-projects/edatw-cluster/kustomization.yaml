@@ -5,16 +5,13 @@ kind: Kustomization
 resources:
   - ../../../base/argocd
   # ArgoCD Projects (AppProject only, Applications selected below)
-  - ../../../base/argocd-projects/argocd-examples
-  # - ../../../base/argocd-projects/edatw
-  # ArgoCD Applications for this cluster (KSOPS example)
-  - ../../../base/argocd-projects/argocd-examples/apps-ksops
+  - ../../../base/argocd-projects/edatw
   # Cluster-specific resources
   - secret-sops-age.enc.yaml
 
 labels:
   - pairs:
-      app.kubernetes.io/instance: shangkuei-xyz-talos
+      app.kubernetes.io/instance: edatw-cluster
       app.kubernetes.io/environment: production
 
 # Patch HelmRelease to mount the SOPS Age key and configure KSOPS
@@ -40,14 +37,6 @@ patches:
     target:
       kind: HelmRelease
       name: argocd
-  # Patch app-example to use cluster-specific overlay with KSOPS
-  - patch: |-
-      - op: replace
-        path: /spec/source/path
-        value: argocd/app-example/overlays/shangkuei-xyz-talos
-    target:
-      kind: Application
-      name: app-example
   # Patch edatw application paths (from github.com/edatw/infrastructure)
   - patch: |-
       - op: replace
