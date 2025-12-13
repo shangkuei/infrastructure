@@ -6,8 +6,8 @@ kind: Kustomization
 resources:
   - ../../../base/flux-instance
   # SOPS-encrypted secrets for Flux (decrypted by kustomize-controller)
-  - ../../../overlays/flux-instance/shangkuei-xyz-talos/secret-sops-age.enc.yaml
-  - ../../../overlays/flux-instance/shangkuei-xyz-talos/secret-flux-git-credentials.enc.yaml
+  - ./secret-sops-age.enc.yaml
+  - ./secret-flux-git-credentials.enc.yaml
 
 # Inherit labels from base
 labels:

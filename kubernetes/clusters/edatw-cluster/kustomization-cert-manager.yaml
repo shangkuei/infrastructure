@@ -1,0 +1,39 @@
+---
+# Flux Kustomization for cert-manager
+# Automated certificate management with Gateway API support
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: cert-manager
+  namespace: flux-system
+spec:
+  interval: 30m
+  timeout: 10m
+  prune: true
+  wait: true
+
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+
+  path: ./kubernetes/base/cert-manager
+
+  # Dependencies: Gateway API CRDs must be available for HTTP01/TLS challenges
+  # Requires standard CRDs (experimental TLSRoute not needed by cert-manager)
+  dependsOn:
+    - name: gateway-api-standard
+
+  healthChecks:
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: cert-manager
+      namespace: cert-manager
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: cert-manager-webhook
+      namespace: cert-manager
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: cert-manager-cainjector
+      namespace: cert-manager

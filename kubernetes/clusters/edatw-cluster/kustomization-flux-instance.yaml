@@ -23,7 +23,7 @@ spec:
     name: flux-system
     namespace: flux-system
 
-  path: ./kubernetes/overlays/flux-instance/shangkuei-dev
+  path: ./kubernetes/overlays/flux-instance/edatw-cluster
 
   # Dependencies: flux-operator must be ready (provides FluxInstance CRD)
   dependsOn:

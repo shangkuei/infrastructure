@@ -1,0 +1,12 @@
+---
+# kube-system namespace with pod security labels for CSI drivers
+# CSI drivers require privileged access for hostPath, hostNetwork, etc.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kube-system
+  labels:
+    # Pod Security Standards labels for CSI drivers
+    pod-security.kubernetes.io/enforce: privileged
+    pod-security.kubernetes.io/audit: privileged
+    pod-security.kubernetes.io/warn: privileged

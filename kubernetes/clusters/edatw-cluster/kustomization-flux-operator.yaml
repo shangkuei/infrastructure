@@ -1,0 +1,44 @@
+---
+# Flux Kustomization for Flux Operator
+# Foundation component - manages Flux CD installations via FluxInstance CRDs
+# Installed via Helm (HelmRelease)
+# Must be installed before flux-instance
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: flux-operator
+  namespace: flux-system
+spec:
+  interval: 30m
+  timeout: 10m
+  prune: true
+  wait: true
+
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+
+  path: ./kubernetes/base/flux-operator
+
+  # Dependencies: CNI must be ready for pod networking
+  dependsOn:
+    - name: cilium
+
+  healthChecks:
+    # Verify HelmRelease is reconciled
+    - apiVersion: helm.toolkit.fluxcd.io/v2
+      kind: HelmRelease
+      name: flux-operator
+      namespace: flux-system
+
+    # Verify flux-operator deployment is running
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: flux-operator
+      namespace: flux-system
+
+    # Verify FluxInstance CRD is installed (required by flux-instance)
+    - apiVersion: apiextensions.k8s.io/v1
+      kind: CustomResourceDefinition
+      name: fluxinstances.fluxcd.controlplane.io

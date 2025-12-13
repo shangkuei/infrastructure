@@ -1,5 +1,5 @@
 # ============================================================================
-# Makefile - Flux Instance SOPS Secret Management (shangkuei-dev)
+# Makefile - Flux Instance SOPS Secret Management (edatw-cluster)
 # ============================================================================
 # Generates SOPS-encrypted Kubernetes secrets for Flux GitOps
 #
@@ -13,7 +13,7 @@
 
 # Configuration
 SOPS_DOMAIN := kubernetes
-SOPS_ENV_NAME := talos-gitops-shangkuei-dev-flux
+SOPS_ENV_NAME := gitops-edatw-cluster-flux
 SOPS_KEY_STRATEGY := central
 
 # Encrypted file variables (new naming convention: .enc.yaml)
@@ -65,9 +65,15 @@ help: ## Show this help message
 .PHONY: secret-sops-age
 secret-sops-age: sops-check-deps sops-check-config ## Generate SOPS age secret (encrypted)
 	@echo "$(_SOPS_BLUE)Generating SOPS age secret...$(_SOPS_NC)"
-	@if [ ! -f "$(SOPS_LOCAL_KEY)" ]; then \
-		echo "$(_SOPS_RED)Error: $(SOPS_LOCAL_KEY) not found$(_SOPS_NC)"; \
-		echo "Run: make sops-import-key AGE_KEY_FILE=/path/to/key"; \
+	@echo "Strategy: $(SOPS_KEY_STRATEGY)"
+	@if [ ! -f "$(SOPS_AGE_KEY_FILE)" ]; then \
+		echo "$(_SOPS_RED)Error: Age key not found: $(SOPS_AGE_KEY_FILE)$(_SOPS_NC)"; \
+		if [ "$(SOPS_KEY_STRATEGY)" = "central" ]; then \
+			echo "Run: make sops-keygen    (generate new key)"; \
+			echo " or: make sops-import-key AGE_KEY_FILE=/path/to/key"; \
+		else \
+			echo "Run: make sops-import-key AGE_KEY_FILE=/path/to/key"; \
+		fi; \
 		exit 1; \
 	fi
 	@echo "---" > $(SOPS_AGE_ENC)
@@ -82,7 +88,7 @@ secret-sops-age: sops-check-deps sops-check-config ## Generate SOPS age secret (
 	@echo "type: Opaque" >> $(SOPS_AGE_ENC)
 	@echo "stringData:" >> $(SOPS_AGE_ENC)
 	@echo "  age.agekey: |" >> $(SOPS_AGE_ENC)
-	@sed 's/^/    /' $(SOPS_LOCAL_KEY) >> $(SOPS_AGE_ENC)
+	@sed 's/^/    /' $(SOPS_AGE_KEY_FILE) >> $(SOPS_AGE_ENC)
 	@SOPS_AGE_KEY_FILE="$(SOPS_AGE_KEY_FILE)" sops --config $(SOPS_CONFIG) --input-type yaml --output-type yaml --encrypt --in-place $(SOPS_AGE_ENC)
 	@echo "$(_SOPS_GREEN)Generated: $(SOPS_AGE_ENC)$(_SOPS_NC)"
 	@echo ""
@@ -126,10 +132,10 @@ setup: secret-sops-age secret-flux-git ## Complete setup: generate all secrets
 	@ls -1 *.enc.yaml 2>/dev/null || echo "  (no encrypted files)"
 	@echo ""
 	@echo "Next steps:"
-	@echo "  1. Securely store $(SOPS_LOCAL_KEY) backup"
-	@echo "  2. Update Terraform variables in terraform/environments/gitops-shangkuei-dev/"
+	@echo "  1. Securely store $(SOPS_AGE_KEY_FILE) backup"
+	@echo "  2. Update Terraform variables in terraform/environments/gitops-edatw-cluster/"
 	@echo "  3. Apply Terraform to create secrets in cluster"
-	@echo "  4. DO NOT commit $(SOPS_LOCAL_KEY) or *.decrypted to Git"
+	@echo "  4. DO NOT commit age keys or *.decrypted to Git"
 
 # ============================================================================
 # Bulk Operations
@@ -153,9 +159,9 @@ encrypt-all: sops-check-deps sops-check-config ## Encrypt all decrypted secrets
 
 .PHONY: clean
 clean: sops-clean ## Remove generated files (keeps encrypted files)
-	@rm -f $(SOPS_LOCAL_KEY)
 	@echo "$(_SOPS_GREEN)Cleanup complete$(_SOPS_NC)"
 	@echo "Encrypted files preserved"
+	@echo "Central key location: $(SOPS_AGE_KEY_FILE)"
 
 .PHONY: clean-all
 clean-all: clean ## Remove all generated files including encrypted secrets
