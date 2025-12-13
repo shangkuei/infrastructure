@@ -498,7 +498,7 @@ See [docs/decisions/](docs/decisions/) for design decisions and rationale.
 This repository uses **per-environment SOPS configuration** instead of a root `.sops.yaml`:
 
 - `terraform/environments/talos-cluster/.sops.yaml` - For Terraform variables encryption
-- `terraform/environments/talos-gitops/.sops.yaml` - For GitOps bootstrap secrets
+- `terraform/environments/gitops/.sops.yaml` - For GitOps bootstrap secrets
 - `kubernetes/overlays/flux-instance/*/sops.yaml` - For Kubernetes manifest encryption
 
 This approach provides better security isolation and supports different age keys per environment.

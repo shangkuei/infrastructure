@@ -17,7 +17,7 @@ This directory contains Flux-managed configuration for:
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │ BOOTSTRAP PHASE (Terraform)                                 │
-│ terraform/environments/talos-gitops/                         │
+│ terraform/environments/gitops/                         │
 ├─────────────────────────────────────────────────────────────┤
 │ 1. cert-manager (Helm)                                       │
 │ 2. OLM v1 operator-controller (kubectl manifests)            │
@@ -88,7 +88,7 @@ If you're migrating from Terraform-managed resources, follow this process:
 ### Step 1: Verify Terraform State
 
 ```bash
-cd terraform/environments/talos-gitops
+cd terraform/environments/gitops
 terraform state list | grep -E "olmv1|operatorhub"
 ```
 

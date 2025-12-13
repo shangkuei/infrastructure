@@ -9,7 +9,7 @@ This directory contains SOPS-encrypted secrets that are managed via Flux GitOps.
 - **SOPS-encrypted secrets** are safe to commit to Git
 - **Flux kustomize-controller** automatically decrypts using the `sops-age` secret
 - **Secrets managed via Kustomize** overlay for cluster-specific configuration
-- **Referenced by**: `kubernetes/clusters/talos-gitops/flux-instance-sops/kustomization.yaml`
+- **Referenced by**: `kubernetes/clusters/gitops/flux-instance-sops/kustomization.yaml`
 
 ## Directory Structure
 

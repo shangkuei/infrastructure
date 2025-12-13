@@ -19,8 +19,8 @@ SOPS_KEY_STRATEGY := central
 CLUSTER_NAME := shangkuei-dev
 
 # Flux age key (for encrypting Kubernetes manifests)
-AGE_FLUX_PRIVATE_KEY := $(HOME)/.config/sops/age/talos-gitops-shangkuei-dev-flux.txt
-AGE_FLUX_PUBLIC_KEY := $(HOME)/.config/sops/age/talos-gitops-shangkuei-dev-flux.txt.pub
+AGE_FLUX_PRIVATE_KEY := $(HOME)/.config/sops/age/gitops-shangkuei-dev-flux.txt
+AGE_FLUX_PUBLIC_KEY := $(HOME)/.config/sops/age/gitops-shangkuei-dev-flux.txt.pub
 
 # Override SOPS_AGE_KEY_FILE for central strategy
 SOPS_AGE_KEY_FILE := $(AGE_FLUX_PRIVATE_KEY)

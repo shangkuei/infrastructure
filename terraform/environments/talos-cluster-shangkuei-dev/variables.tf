@@ -93,6 +93,12 @@ variable "worker_nodes" {
     openebs_storage       = optional(bool, false)  # Enable OpenEBS storage on this node
     openebs_disk          = optional(string)       # Storage disk device (e.g., /dev/nvme0n1, /dev/sdb)
     openebs_hugepages_2mi = optional(number, 1024) # Number of 2MiB hugepages (1024 = 2GiB, required for Mayastor)
+    # OpenEBS ZFS LocalPV configuration - supports multiple pools per node
+    zfs_pools = optional(list(object({
+      name  = string               # Pool name (e.g., "zpool", "tank", "data")
+      disks = list(string)         # Disk devices (e.g., ["/dev/sdb"] or ["/dev/sdb", "/dev/sdc"])
+      type  = optional(string, "") # Pool type: "" (single/stripe), "mirror", "raidz", "raidz2", "raidz3"
+    })), [])
   }))
   default = {}
 }

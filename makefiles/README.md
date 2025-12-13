@@ -16,6 +16,18 @@ Provides standardized Terraform operations with SOPS integration for encrypted t
 
 **Requires**: `sops.mk` (must be included first)
 
+### helm.mk - Helm Chart Operations
+
+Provides standardized Helm chart management operations with pre-configured repositories.
+
+**Requires**: `sops.mk` (must be included first for color definitions)
+
+### talos.mk - Talos Cluster Operations
+
+Provides standardized Talos cluster management operations for deployment, access, and maintenance.
+
+**Requires**: `sops.mk`, `terraform.mk` (must be included first)
+
 ## Usage
 
 Include the shared Makefile in your domain Makefile:
@@ -208,11 +220,11 @@ kubeconfig: ## Get kubeconfig for the cluster
 
 ```makefile
 SOPS_DOMAIN := terraform
-SOPS_ENV_NAME := talos-gitops-dev
+SOPS_ENV_NAME := gitops-dev
 SOPS_KEY_STRATEGY := central
 
 # Flux uses separate key from Terraform
-AGE_FLUX_PRIVATE_KEY := $(SOPS_AGE_DIR)/talos-gitops-dev-flux.txt
+AGE_FLUX_PRIVATE_KEY := $(SOPS_AGE_DIR)/gitops-dev-flux.txt
 
 include ../../../makefiles/sops.mk
 include ../../../makefiles/terraform.mk

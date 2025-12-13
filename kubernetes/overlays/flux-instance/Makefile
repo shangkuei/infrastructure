@@ -97,7 +97,7 @@ secret-sops-age: check-deps check-sops-config ## Generate SOPS age secret (encry
 	@echo "📋 Next steps:"
 	@echo "   1. Review: secret-sops-age.yaml.enc"
 	@echo "   2. Use in Terraform with: sops --decrypt secret-sops-age.yaml.enc"
-	@echo "   3. Or: terraform/environments/talos-gitops/terraform.tfvars.enc"
+	@echo "   3. Or: terraform/environments/gitops/terraform.tfvars.enc"
 
 .PHONY: secret-flux-git
 secret-flux-git: check-deps check-sops-config ## Generate Flux Git credentials secret (encrypted)
@@ -125,7 +125,7 @@ secret-flux-git: check-deps check-sops-config ## Generate Flux Git credentials s
 	@echo "📋 Next steps:"
 	@echo "   1. Review: secret-flux-git-credentials.yaml.enc"
 	@echo "   2. Use in Terraform with: sops --decrypt secret-flux-git-credentials.yaml.enc"
-	@echo "   3. Or: terraform/environments/talos-gitops/terraform.tfvars.enc"
+	@echo "   3. Or: terraform/environments/gitops/terraform.tfvars.enc"
 
 .PHONY: encrypt-all
 encrypt-all: check-deps check-sops-config ## Encrypt all decrypted secrets
@@ -185,7 +185,7 @@ setup: secret-sops-age secret-flux-git ## Complete setup: import key and generat
 	@echo ""
 	@echo "📋 Next steps:"
 	@echo "   1. Securely store age-key.txt backup"
-	@echo "   2. Update Terraform variables in terraform/environments/talos-gitops/"
+	@echo "   2. Update Terraform variables in terraform/environments/gitops/"
 	@echo "   3. Apply Terraform to create secrets in cluster"
 	@echo "   4. DO NOT commit age-key.txt or *.decrypted to Git"
 	@echo ""

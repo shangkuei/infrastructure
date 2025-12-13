@@ -1,0 +1,20 @@
+# Local SOPS configuration for talos-cluster-edatw-cluster environment
+# This allows running SOPS commands from within this directory
+#
+# IMPORTANT: Replace the age public key below with your own key.
+# Generate a new key with: make age-keygen
+# The public key will be displayed after generation.
+creation_rules:
+  # Match input files for encryption (terraform.tfvars -> terraform.enc.tfvars)
+  - path_regex: .*\.tfvars$
+    age: age13gvh8c0rmcfyfx70h8nu6auflytz9zqjqw8pmgyk0e00x86uuqgqkxcx2q
+
+  - path_regex: .*\.enc\.tfvars$
+    age: age13gvh8c0rmcfyfx70h8nu6auflytz9zqjqw8pmgyk0e00x86uuqgqkxcx2q
+
+  # Match backend configuration files (backend.hcl -> backend.enc.hcl)
+  - path_regex: backend\.hcl$
+    age: age13gvh8c0rmcfyfx70h8nu6auflytz9zqjqw8pmgyk0e00x86uuqgqkxcx2q
+
+  - path_regex: backend\.enc\.hcl$
+    age: age13gvh8c0rmcfyfx70h8nu6auflytz9zqjqw8pmgyk0e00x86uuqgqkxcx2q

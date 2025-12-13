@@ -52,10 +52,10 @@ rm terraform.tfvars  # Remove unencrypted file
 ```bash
 make init
 make apply
-make apply-configs INSECURE=true
+make talos-apply INSECURE=true
 # Wait for nodes to join Tailscale
-make bootstrap
-make health
+make talos-bootstrap
+make talos-health
 ```
 
 ## Directory Structure
@@ -97,38 +97,38 @@ talos-cluster-shangkuei-dev/
 
 | Command | Description |
 |---------|-------------|
-| `make apply-configs` | Apply configs to all nodes |
-| `make apply-configs INSECURE=true` | Initial setup (before certs) |
-| `make apply-configs NODE=cp-01` | Apply to specific node |
-| `make bootstrap` | Bootstrap Kubernetes cluster |
+| `make talos-apply` | Apply configs to all nodes |
+| `make talos-apply INSECURE=true` | Initial setup (before certs) |
+| `make talos-apply NODE=cp-01` | Apply to specific node |
+| `make talos-bootstrap` | Bootstrap Kubernetes cluster |
 | `make deploy-cilium` | Deploy Cilium CNI |
 
 ### Cluster Status
 
 | Command | Description |
 |---------|-------------|
-| `make health` | Check cluster health |
-| `make nodes` | List cluster nodes |
-| `make pods` | List all pods |
-| `make status` | Complete cluster status |
+| `make talos-health` | Check cluster health |
+| `make talos-nodes` | List cluster nodes |
+| `make talos-pods` | List all pods |
+| `make talos-status` | Complete cluster status |
 
 ### Cluster Access
 
 | Command | Description |
 |---------|-------------|
-| `make kubeconfig` | Retrieve kubeconfig |
-| `make talosconfig` | Show talosconfig export |
-| `make env` | Show all environment exports |
-| `make dashboard NODE=<ip>` | Open Talos dashboard |
-| `make logs NODE=<ip> SERVICE=<name>` | View service logs |
+| `make talos-kubeconfig` | Retrieve kubeconfig |
+| `make talos-talosconfig` | Show talosconfig export |
+| `make talos-env` | Show all environment exports |
+| `make talos-dashboard NODE=<ip>` | Open Talos dashboard |
+| `make talos-logs NODE=<ip> SERVICE=<name>` | View service logs |
 
 ### Maintenance
 
 | Command | Description |
 |---------|-------------|
-| `make upgrade-k8s VERSION=v1.32.0` | Upgrade Kubernetes |
-| `make upgrade-talos VERSION=v1.9.0 NODE=<ip>` | Upgrade Talos |
-| `make reset-node NODE=<ip>` | Reset a node |
+| `make talos-upgrade-k8s VERSION=v1.32.0` | Upgrade Kubernetes |
+| `make talos-upgrade VERSION=v1.9.0 NODE=<ip>` | Upgrade Talos |
+| `make talos-reset NODE=<ip>` | Reset a node |
 | `make clean` | Remove generated files |
 
 ### SOPS Encryption
@@ -139,6 +139,15 @@ talos-cluster-shangkuei-dev/
 | `make age-info` | Display key information |
 | `make encrypt-backend` | Encrypt backend.hcl |
 | `make encrypt-tfvars` | Encrypt terraform.tfvars |
+
+### Help Commands
+
+| Command | Description |
+|---------|-------------|
+| `make help` | Show all available commands |
+| `make talos-help` | Show Talos operations help |
+| `make tf-help` | Show Terraform operations help |
+| `make sops-help` | Show SOPS operations help |
 
 ## Deployment Workflow
 
@@ -153,7 +162,7 @@ talos-cluster-shangkuei-dev/
 2. **Apply configs in insecure mode** (before Tailscale is active):
 
    ```bash
-   make apply-configs INSECURE=true
+   make talos-apply INSECURE=true
    ```
 
 3. **Wait for Tailscale** (~1-2 minutes):
@@ -170,20 +179,20 @@ talos-cluster-shangkuei-dev/
 6. **Reapply configs in secure mode**:
 
    ```bash
-   make apply-configs
+   make talos-apply
    ```
 
 7. **Bootstrap Kubernetes**:
 
    ```bash
-   make bootstrap
+   make talos-bootstrap
    ```
 
 8. **Verify cluster**:
 
    ```bash
-   make health
-   make nodes
+   make talos-health
+   make talos-nodes
    ```
 
 ### With Cilium CNI
@@ -191,7 +200,7 @@ talos-cluster-shangkuei-dev/
 After bootstrap:
 
 ```bash
-make kubeconfig
+make talos-kubeconfig
 make deploy-cilium
 ```
 
@@ -274,7 +283,7 @@ No resources.
 | <a name="input_talos_version"></a> [talos\_version](#input\_talos\_version) | Talos Linux version (e.g., v1.8.0) | `string` | `"v1.8.0"` | no |
 | <a name="input_use_dhcp_for_physical_interface"></a> [use\_dhcp\_for\_physical\_interface](#input\_use\_dhcp\_for\_physical\_interface) | Use DHCP for physical network interface configuration | `bool` | `true` | no |
 | <a name="input_wipe_install_disk"></a> [wipe\_install\_disk](#input\_wipe\_install\_disk) | Wipe the installation disk before installing Talos | `bool` | `false` | no |
-| <a name="input_worker_nodes"></a> [worker\_nodes](#input\_worker\_nodes) | Map of worker nodes with their configuration (using Tailscale IPs) | <pre>map(object({<br/>    tailscale_ipv4 = string           # Tailscale IPv4 address (100.64.0.0/10 range)<br/>    tailscale_ipv6 = optional(string) # Tailscale IPv6 address (fd7a:115c:a1e0::/48 range)<br/>    physical_ip    = optional(string) # Physical IP (for initial bootstrapping only)<br/>    install_disk   = string<br/>    hostname       = optional(string)<br/>    interface      = optional(string, "tailscale0")<br/>    platform       = optional(string, "metal")                        # Platform type: metal, metal-arm64, metal-secureboot, aws, gcp, azure, etc.<br/>    extensions     = optional(list(string), ["siderolabs/tailscale"]) # Talos system extensions (default: Tailscale only)<br/>    # SBC overlay configuration (for Raspberry Pi, Rock Pi, etc.)<br/>    overlay = optional(object({<br/>      image = string # Overlay image (e.g., "siderolabs/sbc-raspberrypi")<br/>      name  = string # Overlay name (e.g., "rpi_generic", "rpi_5")<br/>    }))<br/>    # Kubernetes topology and node labels<br/>    region      = optional(string)          # topology.kubernetes.io/region<br/>    zone        = optional(string)          # topology.kubernetes.io/zone<br/>    arch        = optional(string)          # kubernetes.io/arch (e.g., amd64, arm64)<br/>    os          = optional(string)          # kubernetes.io/os (e.g., linux)<br/>    node_labels = optional(map(string), {}) # Additional node-specific labels<br/>    # OpenEBS Replicated Storage configuration<br/>    openebs_storage       = optional(bool, false)  # Enable OpenEBS storage on this node<br/>    openebs_disk          = optional(string)       # Storage disk device (e.g., /dev/nvme0n1, /dev/sdb)<br/>    openebs_hugepages_2mi = optional(number, 1024) # Number of 2MiB hugepages (1024 = 2GiB, required for Mayastor)<br/>  }))</pre> | `{}` | no |
+| <a name="input_worker_nodes"></a> [worker\_nodes](#input\_worker\_nodes) | Map of worker nodes with their configuration (using Tailscale IPs) | <pre>map(object({<br/>    tailscale_ipv4 = string           # Tailscale IPv4 address (100.64.0.0/10 range)<br/>    tailscale_ipv6 = optional(string) # Tailscale IPv6 address (fd7a:115c:a1e0::/48 range)<br/>    physical_ip    = optional(string) # Physical IP (for initial bootstrapping only)<br/>    install_disk   = string<br/>    hostname       = optional(string)<br/>    interface      = optional(string, "tailscale0")<br/>    platform       = optional(string, "metal")                        # Platform type: metal, metal-arm64, metal-secureboot, aws, gcp, azure, etc.<br/>    extensions     = optional(list(string), ["siderolabs/tailscale"]) # Talos system extensions (default: Tailscale only)<br/>    # SBC overlay configuration (for Raspberry Pi, Rock Pi, etc.)<br/>    overlay = optional(object({<br/>      image = string # Overlay image (e.g., "siderolabs/sbc-raspberrypi")<br/>      name  = string # Overlay name (e.g., "rpi_generic", "rpi_5")<br/>    }))<br/>    # Kubernetes topology and node labels<br/>    region      = optional(string)          # topology.kubernetes.io/region<br/>    zone        = optional(string)          # topology.kubernetes.io/zone<br/>    arch        = optional(string)          # kubernetes.io/arch (e.g., amd64, arm64)<br/>    os          = optional(string)          # kubernetes.io/os (e.g., linux)<br/>    node_labels = optional(map(string), {}) # Additional node-specific labels<br/>    # OpenEBS Replicated Storage configuration<br/>    openebs_storage       = optional(bool, false)  # Enable OpenEBS storage on this node<br/>    openebs_disk          = optional(string)       # Storage disk device (e.g., /dev/nvme0n1, /dev/sdb)<br/>    openebs_hugepages_2mi = optional(number, 1024) # Number of 2MiB hugepages (1024 = 2GiB, required for Mayastor)<br/>    # OpenEBS ZFS LocalPV configuration - supports multiple pools per node<br/>    zfs_pools = optional(list(object({<br/>      name  = string               # Pool name (e.g., "zpool", "tank", "data")<br/>      disks = list(string)         # Disk devices (e.g., ["/dev/sdb"] or ["/dev/sdb", "/dev/sdc"])<br/>      type  = optional(string, "") # Pool type: "" (single/stripe), "mirror", "raidz", "raidz2", "raidz3"<br/>    })), [])<br/>  }))</pre> | `{}` | no |
 
 ## Outputs
 

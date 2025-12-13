@@ -1,0 +1,169 @@
+#!/bin/sh
+# ZFS Pool Setup Script for Talos Linux
+# This script is idempotent - it will only create pools if they don't exist
+#
+# Node: ${node_name}
+# Pools: ${length(pools)}
+%{ for pool in pools ~}
+#   - ${pool.name}: ${join(", ", pool.disks)} (${pool.type != "" ? pool.type : "single/stripe"})
+%{ endfor ~}
+#
+# Usage: Run via a privileged debug pod in kube-system namespace.
+#        Uses nsenter to access host's ZFS tools from the Talos ZFS extension.
+#        (Talos is immutable, kube-system bypasses Pod Security Standards)
+#
+# Step 1: Create a persistent debug pod on the target node
+#   kubectl apply -f - <<EOF
+#   apiVersion: v1
+#   kind: Pod
+#   metadata:
+#     name: zfs-debug-${node_name}
+#     namespace: kube-system
+#   spec:
+#     nodeName: ${node_name}
+#     hostPID: true
+#     containers:
+#     - name: debug
+#       image: alpine
+#       command: ["sleep", "3600"]
+#       securityContext:
+#         privileged: true
+#   EOF
+#
+# Step 2: Wait for the pod to be ready
+#   kubectl wait --for=condition=ready pod/zfs-debug-${node_name} -n kube-system --timeout=60s
+#
+# Step 3: Copy this script into the pod and run it
+#   kubectl cp worker-${node_name}-zfs-pool-setup.sh kube-system/zfs-debug-${node_name}:/tmp/setup.sh
+#   kubectl exec -it zfs-debug-${node_name} -n kube-system -- /bin/sh /tmp/setup.sh
+#
+# Step 4: Verify the pool was created
+#   kubectl exec -it zfs-debug-${node_name} -n kube-system -- nsenter -t 1 -m -u -i -n -- zpool list
+#   kubectl exec -it zfs-debug-${node_name} -n kube-system -- nsenter -t 1 -m -u -i -n -- zpool status
+#
+# Step 5: Cleanup the debug pod
+#   kubectl delete pod zfs-debug-${node_name} -n kube-system
+#
+# Quick single-pool creation (alternative):
+#   kubectl exec -it zfs-debug-${node_name} -n kube-system -- \
+#     nsenter -t 1 -m -u -i -n -- zpool create -f -o ashift=12 <pool-name> <disk>
+
+set -e
+
+# Use nsenter to run commands in host namespace (required for Talos ZFS extension)
+HOST_CMD="nsenter -t 1 -m -u -i -n --"
+
+# Check if we can access host namespace and zpool command exists
+echo "Checking host ZFS availability..."
+if ! $HOST_CMD zpool version >/dev/null 2>&1; then
+    echo "ERROR: Cannot access zpool command on host."
+    echo "Ensure the Talos ZFS extension is installed and hostPID is enabled."
+    exit 1
+fi
+echo "ZFS tools available on host."
+
+# Create a single ZFS pool
+create_pool() {
+    local pool_name="$1"
+    local pool_type="$2"
+    shift 2
+    local pool_disks="$*"
+    local disk_count="$#"
+
+    echo "========================================"
+    echo "Processing pool: $pool_name"
+    echo "========================================"
+
+    # Check if pool already exists
+    if $HOST_CMD zpool list "$pool_name" >/dev/null 2>&1; then
+        echo "ZFS pool '$pool_name' already exists."
+        $HOST_CMD zpool status "$pool_name"
+        return 0
+    fi
+
+    # Note: Talos is minimal - no ls/stat/sh available via nsenter
+    # Disk validation is done by zpool create itself
+    echo "Disks to use: $pool_disks"
+
+    # Validate disk count for pool type
+    case "$pool_type" in
+        mirror)
+            if [ "$disk_count" -lt 2 ]; then
+                echo "ERROR: Pool '$pool_name': Mirror requires at least 2 disks, got $disk_count"
+                return 1
+            fi
+            ;;
+        raidz)
+            if [ "$disk_count" -lt 3 ]; then
+                echo "ERROR: Pool '$pool_name': RAIDZ requires at least 3 disks, got $disk_count"
+                return 1
+            fi
+            ;;
+        raidz2)
+            if [ "$disk_count" -lt 4 ]; then
+                echo "ERROR: Pool '$pool_name': RAIDZ2 requires at least 4 disks, got $disk_count"
+                return 1
+            fi
+            ;;
+        raidz3)
+            if [ "$disk_count" -lt 5 ]; then
+                echo "ERROR: Pool '$pool_name': RAIDZ3 requires at least 5 disks, got $disk_count"
+                return 1
+            fi
+            ;;
+    esac
+
+    # Create the pool based on type
+    # Note: Use -m none because Talos has a read-only root filesystem
+    # Datasets can be created later with specific mountpoints under /var
+    echo "Creating ZFS pool '$pool_name' with disks: $pool_disks"
+    if [ -z "$pool_type" ]; then
+        # Single disk or stripe (no redundancy)
+        if [ "$disk_count" -eq 1 ]; then
+            echo "Creating single disk pool..."
+        else
+            echo "Creating striped pool (no redundancy)..."
+        fi
+        $HOST_CMD zpool create -f -m none -o ashift=12 "$pool_name" $pool_disks
+    else
+        # RAID pool (mirror, raidz, raidz2, raidz3)
+        echo "Creating $pool_type pool..."
+        $HOST_CMD zpool create -f -m none -o ashift=12 "$pool_name" "$pool_type" $pool_disks
+    fi
+
+    if [ $? -eq 0 ]; then
+        echo "ZFS pool '$pool_name' created successfully."
+        $HOST_CMD zpool status "$pool_name"
+    else
+        echo "ERROR: Failed to create ZFS pool '$pool_name'."
+        return 1
+    fi
+}
+
+echo "Starting ZFS pool setup for node: ${node_name}"
+echo "Number of pools to configure: ${length(pools)}"
+echo ""
+
+FAILED=0
+
+%{ for pool in pools ~}
+# Create pool: ${pool.name}
+if ! create_pool "${pool.name}" "${pool.type}" ${join(" ", pool.disks)}; then
+    FAILED=1
+fi
+echo ""
+
+%{ endfor ~}
+
+echo "========================================"
+echo "ZFS Pool Setup Summary"
+echo "========================================"
+$HOST_CMD zpool list
+echo ""
+
+if [ "$FAILED" -eq 1 ]; then
+    echo "WARNING: Some pools failed to create. Check errors above."
+    exit 1
+fi
+
+echo "All pools created successfully!"

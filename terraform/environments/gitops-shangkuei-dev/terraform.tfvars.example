@@ -1,0 +1,45 @@
+# Kubernetes Configuration
+# Obtain these credentials from your cluster:
+#   kubernetes_host: kubectl config view --minify -o jsonpath='{.clusters[0].cluster.server}'
+#   kubernetes_token: kubectl get secret -n kube-system gitops-admin-token -o jsonpath='{.data.token}' | base64 -d
+#   kubernetes_cluster_ca_certificate: kubectl config view --minify --raw -o jsonpath='{.clusters[0].cluster.certificate-authority-data}'
+kubernetes_host                        = "https://api.cluster.example.com:6443"
+kubernetes_token                       = ""  # Set via environment variable: TF_VAR_kubernetes_token
+kubernetes_cluster_ca_certificate      = ""  # Set via environment variable: TF_VAR_kubernetes_cluster_ca_certificate (base64 encoded)
+
+# GitHub Configuration (HTTPS + PAT)
+github_owner      = "shangkuei"  # Your GitHub username or organization
+github_repository = "infrastructure"
+github_token      = ""  # Set via environment variable: TF_VAR_github_token or SOPS encryption
+github_branch     = "main"
+
+# Cluster Configuration
+cluster_name = "shangkuei-dev"
+cluster_path = "./kubernetes/clusters/shangkuei-dev"
+
+# Flux Configuration
+flux_namespace      = "flux-system"
+flux_network_policy = true
+# flux_components_extra = []  # Optional: Add extra components like image-reflector-controller, image-automation-controller
+
+# SOPS Configuration
+# Flux age key path (deployed to Kubernetes secret for Flux decryption)
+# Terraform age key is separate: ~/.config/sops/age/gitops-shangkuei-dev.txt
+sops_age_key_path = "~/.config/sops/age/gitops-shangkuei-dev-flux.txt"
+
+# ============================================================================
+# Component Versions (optional, defaults provided)
+# ============================================================================
+
+# cert-manager configuration
+cert_manager_version = "v1.19.1"
+
+# cert-manager DNS01 and feature configuration
+cert_manager_dns01_recursive_nameservers       = ["1.1.1.1:53", "8.8.8.8:53"]  # DNS servers for ACME DNS01 challenges
+cert_manager_dns01_recursive_nameservers_only  = true                           # Only use configured resolvers
+cert_manager_enable_certificate_owner_ref      = true                           # Auto-cleanup secrets when cert deleted
+cert_manager_enable_gateway_api                = true                           # Enable Gateway API support
+
+# Flux versions
+flux_operator_version = "0.33.0"  # Flux Operator Helm chart version
+flux_version          = "v2.7.3"  # Flux controllers version

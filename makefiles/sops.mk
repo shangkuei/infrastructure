@@ -125,6 +125,7 @@ sops-help: ## Show SOPS operations help
 	@echo ""
 	@echo "$(_SOPS_BOLD)Key Management:$(_SOPS_NC)"
 	@echo "  sops-keygen        Generate new age key pair"
+	@echo "  sops-init-config   Generate key + update .sops.yaml placeholder"
 	@echo "  sops-import-key    Import existing key (AGE_KEY_FILE=path)"
 	@echo "  sops-export-public Export public key for sharing"
 	@echo "  sops-rotate-key    Rotate encryption key"
@@ -273,8 +274,8 @@ sops-keygen: sops-check-deps ## Generate new age key pair
 	@echo "Environment: $(SOPS_ENV_NAME)"
 	@echo ""
 ifeq ($(SOPS_KEY_STRATEGY),central)
-	@mkdir -p "$(SOPS_AGE_DIR)"
-	@if [ -f "$(SOPS_AGE_KEY_FILE)" ]; then \
+	@mkdir -p "$(SOPS_AGE_DIR)"; \
+	if [ -f "$(SOPS_AGE_KEY_FILE)" ]; then \
 		echo "$(_SOPS_YELLOW)Warning: Key already exists: $(SOPS_AGE_KEY_FILE)$(_SOPS_NC)"; \
 		printf "Overwrite? [y/N] "; \
 		read -r confirm; \
@@ -282,28 +283,84 @@ ifeq ($(SOPS_KEY_STRATEGY),central)
 			echo "Aborted."; \
 			exit 0; \
 		fi; \
-	fi
-	@age-keygen -o "$(SOPS_AGE_KEY_FILE)" 2>&1
-	@chmod 600 "$(SOPS_AGE_KEY_FILE)"
-	@age-keygen -y "$(SOPS_AGE_KEY_FILE)" > "$(SOPS_AGE_PUB_FILE)"
-	@chmod 644 "$(SOPS_AGE_PUB_FILE)"
-	@echo ""
-	@echo "$(_SOPS_GREEN)Key generated successfully$(_SOPS_NC)"
-	@echo ""
-	@echo "Files created:"
-	@echo "  Private key: $(SOPS_AGE_KEY_FILE)"
-	@echo "  Public key:  $(SOPS_AGE_PUB_FILE)"
-	@echo ""
-	@echo "Public key value:"
-	@cat "$(SOPS_AGE_PUB_FILE)" | sed 's/^/  /'
-	@echo ""
-	@echo "$(_SOPS_YELLOW)IMPORTANT - Next steps:$(_SOPS_NC)"
-	@echo "  1. $(_SOPS_BOLD)Backup$(_SOPS_NC) private key to password manager"
-	@echo "  2. $(_SOPS_BOLD)Update$(_SOPS_NC) $(SOPS_CONFIG) with public key above"
-	@echo "  3. $(_SOPS_BOLD)Never$(_SOPS_NC) commit private key to Git"
-	@echo ""
+	fi; \
+	age-keygen -o "$(SOPS_AGE_KEY_FILE)" 2>&1 && \
+	chmod 600 "$(SOPS_AGE_KEY_FILE)" && \
+	age-keygen -y "$(SOPS_AGE_KEY_FILE)" > "$(SOPS_AGE_PUB_FILE)" && \
+	chmod 644 "$(SOPS_AGE_PUB_FILE)" && \
+	echo "" && \
+	echo "$(_SOPS_GREEN)Key generated successfully$(_SOPS_NC)" && \
+	echo "" && \
+	echo "Files created:" && \
+	echo "  Private key: $(SOPS_AGE_KEY_FILE)" && \
+	echo "  Public key:  $(SOPS_AGE_PUB_FILE)" && \
+	echo "" && \
+	echo "Public key value:" && \
+	cat "$(SOPS_AGE_PUB_FILE)" | sed 's/^/  /' && \
+	echo "" && \
+	echo "$(_SOPS_YELLOW)IMPORTANT - Next steps:$(_SOPS_NC)" && \
+	echo "  1. $(_SOPS_BOLD)Backup$(_SOPS_NC) private key to password manager" && \
+	echo "  2. $(_SOPS_BOLD)Update$(_SOPS_NC) $(SOPS_CONFIG) with public key above" && \
+	echo "  3. $(_SOPS_BOLD)Never$(_SOPS_NC) commit private key to Git" && \
+	echo ""
 else
 	@echo "$(_SOPS_YELLOW)Local strategy uses import, not keygen$(_SOPS_NC)"
+	@echo "Run: make sops-import-key AGE_KEY_FILE=/path/to/key.txt"
+endif
+
+.PHONY: sops-init-config
+sops-init-config: sops-check-deps ## Generate key (if needed) and update .sops.yaml with public key
+	@echo "$(_SOPS_BLUE)Initializing SOPS configuration...$(_SOPS_NC)"
+	@echo "Strategy: $(SOPS_KEY_STRATEGY)"
+	@echo "Environment: $(SOPS_ENV_NAME)"
+	@echo ""
+ifeq ($(SOPS_KEY_STRATEGY),central)
+	@# Step 1: Generate key if it doesn't exist
+	@if [ ! -f "$(SOPS_AGE_KEY_FILE)" ]; then \
+		echo "$(_SOPS_YELLOW)==> No key found, generating new key...$(_SOPS_NC)"; \
+		mkdir -p "$(SOPS_AGE_DIR)"; \
+		age-keygen -o "$(SOPS_AGE_KEY_FILE)" 2>&1; \
+		chmod 600 "$(SOPS_AGE_KEY_FILE)"; \
+		age-keygen -y "$(SOPS_AGE_KEY_FILE)" > "$(SOPS_AGE_PUB_FILE)"; \
+		chmod 644 "$(SOPS_AGE_PUB_FILE)"; \
+		echo "  [$(_SOPS_OK)] Key generated: $(SOPS_AGE_KEY_FILE)"; \
+	else \
+		echo "  [$(_SOPS_OK)] Key exists: $(SOPS_AGE_KEY_FILE)"; \
+	fi
+	@# Step 2: Get public key
+	@_pubkey=$$(age-keygen -y "$(SOPS_AGE_KEY_FILE)"); \
+	echo "  [$(_SOPS_INFO)] Public key: $$_pubkey"; \
+	echo ""; \
+	if [ ! -f "$(SOPS_CONFIG)" ]; then \
+		echo "$(_SOPS_RED)Error: $(SOPS_CONFIG) not found$(_SOPS_NC)"; \
+		echo "Create $(SOPS_CONFIG) first with placeholder REPLACE_WITH_YOUR_AGE_PUBLIC_KEY"; \
+		exit 1; \
+	fi; \
+	if grep -q "REPLACE_WITH_YOUR_AGE_PUBLIC_KEY" "$(SOPS_CONFIG)"; then \
+		echo "$(_SOPS_BLUE)==> Updating $(SOPS_CONFIG) with public key...$(_SOPS_NC)"; \
+		sed -i.bak "s/REPLACE_WITH_YOUR_AGE_PUBLIC_KEY/$$_pubkey/g" "$(SOPS_CONFIG)"; \
+		rm -f "$(SOPS_CONFIG).bak"; \
+		echo "  [$(_SOPS_OK)] $(SOPS_CONFIG) updated"; \
+	elif grep -q "$$_pubkey" "$(SOPS_CONFIG)"; then \
+		echo "  [$(_SOPS_OK)] $(SOPS_CONFIG) already has correct key"; \
+	else \
+		echo "$(_SOPS_YELLOW)Warning: $(SOPS_CONFIG) has different key configured$(_SOPS_NC)"; \
+		echo "Current key in config:"; \
+		grep -oE "age1[a-z0-9]+" "$(SOPS_CONFIG)" 2>/dev/null | head -1 | sed 's/^/  /'; \
+		echo ""; \
+		echo "Expected key:"; \
+		echo "  $$_pubkey"; \
+		echo ""; \
+		echo "To force update, manually replace the key in $(SOPS_CONFIG)"; \
+	fi
+	@echo ""
+	@echo "$(_SOPS_GREEN)SOPS configuration initialized$(_SOPS_NC)"
+	@echo ""
+	@echo "$(_SOPS_YELLOW)IMPORTANT:$(_SOPS_NC)"
+	@echo "  1. $(_SOPS_BOLD)Backup$(_SOPS_NC) private key to password manager"
+	@echo "  2. $(_SOPS_BOLD)Never$(_SOPS_NC) commit private key to Git"
+else
+	@echo "$(_SOPS_YELLOW)Local strategy: use sops-import-key instead$(_SOPS_NC)"
 	@echo "Run: make sops-import-key AGE_KEY_FILE=/path/to/key.txt"
 endif
 

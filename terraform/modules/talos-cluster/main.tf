@@ -97,12 +97,22 @@ resource "talos_machine_secrets" "cluster" {
 }
 
 # Generate Talos client configuration for cluster management
+# Endpoints include all control plane IPs (IPv4/IPv6) and FQDNs (MagicDNS hostnames)
+# This allows talosctl to connect via any available control plane endpoint
 data "talos_client_configuration" "cluster" {
   cluster_name         = var.cluster_name
   client_configuration = talos_machine_secrets.cluster.client_configuration
   endpoints = compact(concat(
+    # Control plane Tailscale IPv4 addresses
     [for node in var.control_plane_nodes : node.tailscale_ipv4],
-    [for node in var.control_plane_nodes : node.tailscale_ipv6 if node.tailscale_ipv6 != null]
+    # Control plane Tailscale IPv6 addresses (if configured)
+    [for node in var.control_plane_nodes : node.tailscale_ipv6 if node.tailscale_ipv6 != null],
+    # Control plane MagicDNS hostnames (FQDNs)
+    var.tailscale_tailnet != "" ? [
+      for node in var.control_plane_nodes :
+      "${node.hostname}.${var.tailscale_tailnet}.ts.net"
+      if node.hostname != null
+    ] : []
   ))
 }
 
@@ -362,6 +372,30 @@ locals {
       }
     }
   })
+
+  # OpenEBS ZFS LocalPV configuration patch
+  # - Adds kubelet extraMounts for ZFS encryption keys directory (Talos-compatible path)
+  openebs_zfs_patch = yamlencode({
+    machine = {
+      kubelet = {
+        extraMounts = [
+          {
+            destination = "/var/openebs/encr-keys"
+            type        = "bind"
+            source      = "/var/openebs/encr-keys"
+            options = [
+              "bind",
+              "rshared",
+              "rw"
+            ]
+          }
+        ]
+      }
+    }
+  })
+
+  # Check if any worker nodes have ZFS pool configuration
+  openebs_zfs_enabled = anytrue([for k, v in var.worker_nodes : length(v.zfs_pools) > 0])
 }
 
 # =============================================================================
@@ -385,7 +419,6 @@ data "talos_machine_configuration" "control_plane" {
     var.cni_name == "cilium" ? [local.cilium_cluster_config] : [],
     [local.tailscale_machine_patch],
     [local.kubeprism_patch],
-    var.openebs_hostpath_enabled ? [local.openebs_hostpath_patch] : [],
     var.additional_control_plane_patches
   )
 }
@@ -400,37 +433,45 @@ resource "local_file" "control_plane_config" {
   file_permission = "0600"
 }
 
-# Generate per-node patches (hostname, IP, disk, labels)
+# Generate per-node patches (hostname, IP, disk, labels, extension-specific kernel modules)
 resource "local_file" "control_plane_patches" {
   for_each = var.control_plane_nodes
 
   filename = "${local.output_dir}/control-plane-${each.key}-patch.yaml"
   content = yamlencode({
-    machine = {
-      network = {
-        hostname = coalesce(each.value.hostname, each.key)
-        interfaces = [{
-          interface = each.value.interface
-          dhcp      = var.use_dhcp_for_physical_interface
-        }]
-      }
-      install = {
-        disk  = each.value.install_disk
-        wipe  = var.wipe_install_disk
-        image = local.cp_installer_image_urls[each.key]
-      }
-      nodeLabels = merge(
-        # Topology labels
-        each.value.region != null ? { "topology.kubernetes.io/region" = each.value.region } : {},
-        each.value.zone != null ? { "topology.kubernetes.io/zone" = each.value.zone } : {},
-        # Standard Kubernetes labels
-        each.value.hostname != null ? { "kubernetes.io/hostname" = each.value.hostname } : {},
-        each.value.arch != null ? { "kubernetes.io/arch" = each.value.arch } : {},
-        each.value.os != null ? { "kubernetes.io/os" = each.value.os } : {},
-        # Additional node-specific labels
-        each.value.node_labels
-      )
-    }
+    machine = merge(
+      {
+        network = {
+          hostname = coalesce(each.value.hostname, each.key)
+          interfaces = [{
+            interface = each.value.interface
+            dhcp      = var.use_dhcp_for_physical_interface
+          }]
+        }
+        install = {
+          disk  = each.value.install_disk
+          wipe  = var.wipe_install_disk
+          image = local.cp_installer_image_urls[each.key]
+        }
+        nodeLabels = merge(
+          # Topology labels
+          each.value.region != null ? { "topology.kubernetes.io/region" = each.value.region } : {},
+          each.value.zone != null ? { "topology.kubernetes.io/zone" = each.value.zone } : {},
+          # Standard Kubernetes labels
+          each.value.hostname != null ? { "kubernetes.io/hostname" = each.value.hostname } : {},
+          each.value.arch != null ? { "kubernetes.io/arch" = each.value.arch } : {},
+          each.value.os != null ? { "kubernetes.io/os" = each.value.os } : {},
+          # Additional node-specific labels
+          each.value.node_labels
+        )
+      },
+      # ZFS kernel module (required when siderolabs/zfs extension is used)
+      contains(each.value.extensions, "siderolabs/zfs") ? {
+        kernel = {
+          modules = [{ name = "zfs" }]
+        }
+      } : {}
+    )
   })
 
   file_permission = "0600"
@@ -476,6 +517,7 @@ data "talos_machine_configuration" "worker" {
     [local.tailscale_machine_patch],
     [local.kubeprism_patch],
     var.openebs_hostpath_enabled ? [local.openebs_hostpath_patch] : [],
+    local.openebs_zfs_enabled ? [local.openebs_zfs_patch] : [],
     var.additional_worker_patches
   )
 }
@@ -490,7 +532,7 @@ resource "local_file" "worker_config" {
   file_permission = "0600"
 }
 
-# Generate per-node patches (hostname, IP, disk, labels)
+# Generate per-node patches (hostname, IP, disk, labels, extension-specific kernel modules)
 resource "local_file" "worker_patches" {
   for_each = var.worker_nodes
 
@@ -527,6 +569,12 @@ resource "local_file" "worker_patches" {
           each.value.node_labels
         )
       },
+      # ZFS kernel module (required when siderolabs/zfs extension is used)
+      contains(each.value.extensions, "siderolabs/zfs") ? {
+        kernel = {
+          modules = [{ name = "zfs" }]
+        }
+      } : {},
       # OpenEBS hugepages configuration (when storage enabled)
       each.value.openebs_storage ? {
         sysctls = {
@@ -569,6 +617,24 @@ resource "local_file" "worker_tailscale_extension" {
   })
 
   file_permission = "0600"
+}
+
+# Generate per-node ZFS pool setup scripts (only for workers with ZFS configuration)
+# These scripts are meant to be run via talosctl after the node boots:
+#   cat worker-<node>-zfs-pool-setup.sh | talosctl -n <node-ip> -e <endpoint> run -
+resource "local_file" "worker_zfs_pool_setup" {
+  for_each = {
+    for k, v in var.worker_nodes : k => v
+    if length(v.zfs_pools) > 0
+  }
+
+  filename = "${local.output_dir}/worker-${each.key}-zfs-pool-setup.sh"
+  content = templatefile("${path.module}/templates/zfs-pool-setup.sh.tftpl", {
+    pools     = each.value.zfs_pools
+    node_name = coalesce(each.value.hostname, each.key)
+  })
+
+  file_permission = "0755"
 }
 
 # =============================================================================

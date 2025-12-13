@@ -105,7 +105,7 @@ gateway-api-standard (foundational)
 1. **Bootstrap via Terraform**:
 
    ```bash
-   cd terraform/environments/talos-gitops-shangkuei-dev
+   cd terraform/environments/gitops-shangkuei-dev
    terraform init
    terraform apply
    ```
@@ -114,7 +114,7 @@ gateway-api-standard (foundational)
 
    ```bash
    cd kubernetes/overlays/flux-instance/shangkuei-dev
-   make import-age-key AGE_KEY_FILE=~/.config/sops/age/talos-gitops-shangkuei-dev-flux.txt
+   make import-age-key AGE_KEY_FILE=~/.config/sops/age/gitops-shangkuei-dev-flux.txt
    make setup
    ```
 

@@ -13,7 +13,7 @@
 
 # Configuration
 SOPS_DOMAIN := kubernetes
-SOPS_ENV_NAME := talos-gitops-flux
+SOPS_ENV_NAME := gitops-flux
 SOPS_KEY_STRATEGY := central
 
 # Encrypted file variables (new naming convention: .enc.yaml)
@@ -127,7 +127,7 @@ setup: secret-sops-age secret-flux-git ## Complete setup: generate all secrets
 	@echo ""
 	@echo "Next steps:"
 	@echo "  1. Securely store $(SOPS_LOCAL_KEY) backup"
-	@echo "  2. Update Terraform variables in terraform/environments/talos-gitops/"
+	@echo "  2. Update Terraform variables in terraform/environments/gitops/"
 	@echo "  3. Apply Terraform to create secrets in cluster"
 	@echo "  4. DO NOT commit $(SOPS_LOCAL_KEY) or *.decrypted to Git"
 

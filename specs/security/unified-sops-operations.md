@@ -230,8 +230,8 @@ SOPS_COLOR ?= true
 ~/.config/sops/age/
 ├── talos-cluster.txt           # Private key
 ├── talos-cluster.txt.pub       # Public key
-├── talos-gitops.txt
-├── talos-gitops.txt.pub
+├── gitops.txt
+├── gitops.txt.pub
 └── ...
 ```
 

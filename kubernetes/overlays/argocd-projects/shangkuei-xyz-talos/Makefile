@@ -12,7 +12,7 @@
 
 # Configuration
 SOPS_DOMAIN := kubernetes
-SOPS_ENV_NAME := talos-gitops-flux
+SOPS_ENV_NAME := gitops-flux
 SOPS_KEY_STRATEGY := central
 
 # ArgoCD-specific key files
@@ -69,7 +69,7 @@ check-flux-key: ## Verify Flux Age key exists
 		echo "$(_SOPS_RED)Error: Flux Age key not found at $(SOPS_AGE_KEY_FILE)$(_SOPS_NC)"; \
 		echo ""; \
 		echo "Generate Flux Age keys first:"; \
-		echo "  cd terraform/environments/talos-gitops"; \
+		echo "  cd terraform/environments/gitops"; \
 		echo "  make sops-keygen"; \
 		exit 1; \
 	fi

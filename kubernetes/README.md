@@ -127,7 +127,7 @@ This GitOps configuration assumes cluster is already provisioned and healthy.
 **Terraform-based bootstrap** (recommended):
 
 ```bash
-cd terraform/environments/talos-gitops
+cd terraform/environments/gitops
 terraform init
 terraform apply
 ```

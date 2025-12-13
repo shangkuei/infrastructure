@@ -14,7 +14,7 @@ flowchart LR
     end
 
     subgraph stage2["Stage 2: GitOps Bootstrap"]
-        gitops["talos-gitops[-env]/"]
+        gitops["gitops[-env]/"]
         gitops_tasks["• Install cert-manager<br/>• Install OLM v1<br/>• Install Flux Operator<br/>• Bootstrap FluxInstance"]
     end
 
@@ -29,8 +29,8 @@ flowchart LR
 
 | Cluster Environment | GitOps Environment |
 |---------------------|-------------------|
-| `talos-cluster/` | `talos-gitops/` |
-| `talos-cluster-shangkuei-dev/` | `talos-gitops-shangkuei-dev/` |
+| `talos-cluster/` | `gitops/` |
+| `talos-cluster-shangkuei-dev/` | `gitops-shangkuei-dev/` |
 
 ## Directory Structure
 
@@ -39,10 +39,10 @@ terraform/environments/
 ├── README.md                    # This file - Environment overview
 │
 ├── talos-cluster/               # Production: Cluster Configuration
-├── talos-gitops/                # Production: GitOps Bootstrap
+├── gitops/                # Production: GitOps Bootstrap
 │
 ├── talos-cluster-shangkuei-dev/ # Dev: Cluster Configuration
-├── talos-gitops-shangkuei-dev/  # Dev: GitOps Bootstrap (future)
+├── gitops-shangkuei-dev/  # Dev: GitOps Bootstrap (future)
 │
 └── r2-terraform-state/          # Cloudflare R2 State Backend
 ```
@@ -61,13 +61,13 @@ talos-cluster[-<env>]/           # Stage 1: Cluster Configuration Generator
 ├── backend.hcl.enc              # Encrypted R2 backend config
 └── generated/                   # Generated Talos configs (gitignored)
 
-talos-gitops[-<env>]/            # Stage 2: GitOps Bootstrap
+gitops[-<env>]/            # Stage 2: GitOps Bootstrap
 ├── main.tf                      # Flux Operator installation via OLM
 ├── variables.tf                 # GitOps configuration variables
 ├── outputs.tf                   # Flux installation info
 ├── Makefile                     # Flux management commands
 ├── README.md                    # Bootstrap and operation guide
-├── .sops.yaml                   # SOPS config (talos-gitops age keys)
+├── .sops.yaml                   # SOPS config (gitops age keys)
 ├── terraform.tfvars.enc         # Encrypted GitOps variables
 └── backend.hcl.enc              # Encrypted R2 backend config
 ```
@@ -110,7 +110,7 @@ make bootstrap          # Bootstrap Kubernetes
 make health             # Check cluster status
 ```
 
-### [talos-gitops-shangkuei-dev](talos-gitops-shangkuei-dev/) - GitOps Bootstrap
+### [gitops-shangkuei-dev](gitops-shangkuei-dev/) - GitOps Bootstrap
 
 **What it does**:
 
@@ -137,7 +137,7 @@ make health             # Check cluster status
 **Key Commands**:
 
 ```bash
-cd terraform/environments/talos-gitops-shangkuei-dev
+cd terraform/environments/gitops-shangkuei-dev
 make init               # Initialize Terraform
 make apply              # Bootstrap Flux (phased deployment)
 make flux-check         # Verify Flux installation
@@ -207,11 +207,11 @@ make deploy-cilium                       # Deploy Cilium via Helm
 
 **Result**: Running Kubernetes cluster accessible via kubectl
 
-#### **Phase 2: Enable GitOps** (`talos-gitops-shangkuei-dev/`)
+#### **Phase 2: Enable GitOps** (`gitops-shangkuei-dev/`)
 
 ```bash
 # 1. Setup SOPS encryption (two keys: Terraform + Flux)
-cd terraform/environments/talos-gitops-shangkuei-dev
+cd terraform/environments/gitops-shangkuei-dev
 make age-keygen                          # Generate both age keys
 # Update .sops.yaml with Flux public key
 
@@ -281,7 +281,7 @@ kubectl -n flux-system get kustomization -w
 - **Self-contained**: All config generation logic in one place
 - **Reason**: Single cluster use case, avoid over-complexity
 
-### talos-gitops-shangkuei-dev Environment
+### gitops-shangkuei-dev Environment
 
 - **Not a module**: Bootstraps ONE cluster's GitOps
 - **One-time setup**: Run once per cluster, Flux takes over
@@ -304,17 +304,17 @@ This infrastructure uses **two separate age keys** for different encryption cont
 
 **Location**: `~/.config/sops/age/talos-cluster.txt`
 
-### Key 2: Flux Secrets (`talos-gitops-flux.txt`)
+### Key 2: Flux Secrets (`gitops-flux.txt`)
 
 **Purpose**: Encrypt Kubernetes manifests in Git
-**Used by**: talos-gitops-shangkuei-dev environment and Flux
+**Used by**: gitops-shangkuei-dev environment and Flux
 **Files encrypted**:
 
 - Kubernetes secrets in `kubernetes/` directory
 - Any SOPS-encrypted YAML manifests
 
 **Deployed to**: Kubernetes as `sops-age` secret in `flux-system` namespace
-**Location**: `~/.config/sops/age/talos-gitops-flux.txt`
+**Location**: `~/.config/sops/age/gitops-flux.txt`
 
 ### Key Management Workflow
 
@@ -323,13 +323,13 @@ This infrastructure uses **two separate age keys** for different encryption cont
 cd terraform/environments/talos-cluster-shangkuei-dev
 make age-keygen                          # Generates talos-cluster.txt
 
-cd terraform/environments/talos-gitops-shangkuei-dev
-make age-keygen                          # Generates talos-gitops.txt + talos-gitops-flux.txt
+cd terraform/environments/gitops-shangkuei-dev
+make age-keygen                          # Generates gitops.txt + gitops-flux.txt
 
 # View keys
 make age-info                            # Shows both keys and usage
 
-# Encrypt Terraform files (uses talos-cluster/talos-gitops key)
+# Encrypt Terraform files (uses talos-cluster/gitops key)
 make encrypt-tfvars
 make encrypt-backend
 
@@ -349,7 +349,7 @@ Each environment has comprehensive README documentation:
   - Troubleshooting and operations
   - Makefile command reference
 
-- **[talos-gitops-shangkuei-dev/README.md](talos-gitops-shangkuei-dev/README.md)** (1098 lines)
+- **[gitops-shangkuei-dev/README.md](gitops-shangkuei-dev/README.md)** (1098 lines)
   - Phased deployment instructions
   - OLM v1 and Flux Operator setup
   - FluxInstance configuration
@@ -394,7 +394,7 @@ make upgrade-talos VERSION=v1.9.0 NODE=<ip>
 # 3. make apply-configs NODE=<new-node>
 ```
 
-### GitOps Operations (talos-gitops-shangkuei-dev)
+### GitOps Operations (gitops-shangkuei-dev)
 
 ```bash
 # Check Flux status
@@ -437,7 +437,7 @@ talosctl -n <node> get members           # Verify cluster membership
 ### GitOps Not Syncing
 
 ```bash
-cd terraform/environments/talos-gitops-shangkuei-dev
+cd terraform/environments/gitops-shangkuei-dev
 make flux-check                          # Verify Flux health
 kubectl -n flux-system get gitrepository # Check Git connection
 kubectl -n flux-system logs -l app=source-controller --tail=50

@@ -1,0 +1,30 @@
+# Terraform Backend Configuration for Cloudflare R2
+#
+# Prerequisites:
+# 1. Deploy the r2-terraform-state environment first
+# 2. Retrieve the access keys from terraform output
+# 3. Copy this file to backend.hcl and fill in the values
+# 4. Encrypt with SOPS: make encrypt-backend
+
+# Backend configuration for Cloudflare R2 (S3-compatible)
+bucket = "infrastructure-terraform-state"
+key    = "environments/gitops-shangkuei-dev/terraform.tfstate"
+region = "auto"
+
+# R2 S3-compatible endpoint
+# Format: https://<account_id>.r2.cloudflarestorage.com
+endpoints = {
+  s3 = "https://YOUR_ACCOUNT_ID.r2.cloudflarestorage.com"
+}
+
+# R2 Access Keys (from r2-terraform-state outputs)
+access_key = "YOUR_R2_ACCESS_KEY_ID"
+secret_key = "YOUR_R2_SECRET_ACCESS_KEY"
+
+# S3 compatibility settings for R2
+skip_credentials_validation = true
+skip_metadata_api_check     = true
+skip_region_validation      = true
+skip_requesting_account_id  = true
+skip_s3_checksum            = true
+use_path_style              = true

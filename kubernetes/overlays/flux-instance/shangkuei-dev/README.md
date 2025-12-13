@@ -18,7 +18,7 @@ Generate encrypted secrets using the provided Makefile:
 make help
 
 # Step 1: Import existing age key and generate .sops.yaml
-make import-age-key AGE_KEY_FILE=~/.config/sops/age/talos-gitops-shangkuei-dev-flux.txt
+make import-age-key AGE_KEY_FILE=~/.config/sops/age/gitops-shangkuei-dev-flux.txt
 
 # Step 2: Generate secrets individually
 make secret-sops-age      # Generate SOPS age secret (encrypted)
@@ -36,7 +36,7 @@ make decrypt-all
 
 **Required input**:
 
-- Age encryption key file (from `~/.config/sops/age/talos-gitops-shangkuei-dev-flux.txt`)
+- Age encryption key file (from `~/.config/sops/age/gitops-shangkuei-dev-flux.txt`)
 
 **Output files**:
 

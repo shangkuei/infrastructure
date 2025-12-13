@@ -2,7 +2,7 @@
 # Uses Flux Age key to encrypt the ArgoCD KSOPS Age key secret
 # This allows Flux to decrypt and deploy the secret to ArgoCD namespace
 # Naming convention: *.enc.yaml (encrypted files)
-# NOTE: Update age public key from ~/.config/sops/age/talos-gitops-shangkuei-dev-flux.txt
+# NOTE: Update age public key from ~/.config/sops/age/gitops-shangkuei-dev-flux.txt
 
 creation_rules:
   - path_regex: \.enc\.yaml$

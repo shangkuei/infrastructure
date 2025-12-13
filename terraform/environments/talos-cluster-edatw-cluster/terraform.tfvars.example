@@ -1,0 +1,329 @@
+# Talos Edatw Cluster - Example Configuration
+#
+# Copy this file to terraform.tfvars and update with your values:
+#   cp terraform.tfvars.example terraform.tfvars
+#
+# Then encrypt before committing:
+#   make encrypt-tfvars
+#
+# IMPORTANT: Never commit unencrypted terraform.tfvars!
+
+# =============================================================================
+# Cluster Configuration
+# =============================================================================
+
+cluster_name = "edatw"
+
+# Leave empty to use KubePrism (recommended for single-node or HA clusters)
+# cluster_endpoint = "https://100.64.0.10:6443"
+
+# =============================================================================
+# Control Plane Nodes
+# =============================================================================
+
+control_plane_nodes = {
+  cp-01 = {
+    # Tailscale IP will be assigned when node joins the network
+    # Use "auto-assigned" during initial setup, then update after bootstrap
+    tailscale_ipv4 = "auto-assigned"
+    # tailscale_ipv6 = null  # Optional IPv6 address
+
+    # Physical IP for initial bootstrapping (before Tailscale is active)
+    physical_ip = "192.168.1.100"
+
+    # Installation disk (run: talosctl get disks)
+    install_disk = "/dev/sda"
+
+    # Hostname (used for Tailscale MagicDNS)
+    hostname = "edatw-cp-01"
+
+    # Physical network interface for DHCP (run: talosctl get links)
+    # interface = "eth0"
+
+    # Platform type for installer image
+    # platform = "metal"  # Options: metal, metal-arm64, metal-secureboot
+
+    # Talos system extensions to install
+    extensions = ["siderolabs/tailscale"]
+
+    # SBC overlay configuration (for Raspberry Pi, Rock Pi, etc.)
+    # overlay = {
+    #   image = "siderolabs/sbc-raspberrypi"
+    #   name  = "rpi_generic"
+    # }
+
+    # Kubernetes topology labels (optional)
+    # region = "home"
+    # zone   = "rack-1"
+    # arch   = "amd64"
+    # os     = "linux"
+
+    # Additional node-specific labels
+    # node_labels = {
+    #   "environment" = "production"
+    # }
+  }
+}
+
+# =============================================================================
+# Worker Nodes
+# =============================================================================
+
+# For a single-node cluster, leave worker_nodes empty
+worker_nodes = {}
+
+# Example worker node configuration:
+# worker_nodes = {
+#   worker-01 = {
+#     tailscale_ipv4 = "auto-assigned"
+#     physical_ip    = "192.168.1.101"
+#     install_disk   = "/dev/sda"
+#     hostname       = "edatw-worker-01"
+#     extensions     = ["siderolabs/tailscale"]
+#
+#     # SBC overlay configuration (for Raspberry Pi, Rock Pi, etc.)
+#     # overlay = {
+#     #   image = "siderolabs/sbc-raspberrypi"
+#     #   name  = "rpi_5"
+#     # }
+#
+#     # OpenEBS Replicated Storage configuration (optional)
+#     # openebs_storage       = true
+#     # openebs_disk          = "/dev/sdb"
+#     # openebs_hugepages_2mi = 1024
+#
+#     # OpenEBS ZFS LocalPV configuration - supports multiple pools per node
+#     # Requires siderolabs/zfs extension in extensions list
+#     # zfs_pools = [
+#     #   {
+#     #     name  = "zpool"      # Pool name
+#     #     disks = ["/dev/sdb"] # Single disk pool (no redundancy)
+#     #     type  = ""           # "" = single disk or stripe
+#     #   }
+#     # ]
+#   }
+# }
+
+# Example worker node with ZFS storage (single disk):
+# worker_nodes = {
+#   storage-01 = {
+#     tailscale_ipv4 = "auto-assigned"
+#     physical_ip    = "192.168.1.102"
+#     install_disk   = "/dev/sda"
+#     hostname       = "edatw-storage-01"
+#     extensions     = ["siderolabs/tailscale", "siderolabs/zfs"]
+#     zfs_pools = [
+#       {
+#         name  = "tank"
+#         disks = ["/dev/sdb"]
+#         type  = ""  # Single disk, no redundancy
+#       }
+#     ]
+#   }
+# }
+
+# Example worker node with ZFS mirror (2 disks):
+# worker_nodes = {
+#   storage-02 = {
+#     tailscale_ipv4 = "auto-assigned"
+#     physical_ip    = "192.168.1.103"
+#     install_disk   = "/dev/sda"
+#     hostname       = "edatw-storage-02"
+#     extensions     = ["siderolabs/tailscale", "siderolabs/zfs"]
+#     zfs_pools = [
+#       {
+#         name  = "tank"
+#         disks = ["/dev/sdb", "/dev/sdc"]
+#         type  = "mirror"  # Mirror requires at least 2 disks
+#       }
+#     ]
+#   }
+# }
+
+# Example worker node with ZFS RAIDZ (3+ disks):
+# worker_nodes = {
+#   storage-03 = {
+#     tailscale_ipv4 = "auto-assigned"
+#     physical_ip    = "192.168.1.104"
+#     install_disk   = "/dev/sda"
+#     hostname       = "edatw-storage-03"
+#     extensions     = ["siderolabs/tailscale", "siderolabs/zfs"]
+#     zfs_pools = [
+#       {
+#         name  = "data"
+#         disks = ["/dev/sdb", "/dev/sdc", "/dev/sdd"]
+#         type  = "raidz"  # RAIDZ requires at least 3 disks
+#       }
+#     ]
+#   }
+# }
+
+# Example worker node with multiple ZFS pools:
+# worker_nodes = {
+#   storage-multi = {
+#     tailscale_ipv4 = "auto-assigned"
+#     physical_ip    = "192.168.1.105"
+#     install_disk   = "/dev/sda"
+#     hostname       = "edatw-storage-multi"
+#     extensions     = ["siderolabs/tailscale", "siderolabs/zfs"]
+#     zfs_pools = [
+#       {
+#         name  = "fast"
+#         disks = ["/dev/nvme0n1"]
+#         type  = ""  # Single NVMe for fast storage
+#       },
+#       {
+#         name  = "bulk"
+#         disks = ["/dev/sdb", "/dev/sdc", "/dev/sdd", "/dev/sde"]
+#         type  = "raidz2"  # RAIDZ2 requires at least 4 disks
+#       }
+#     ]
+#   }
+# }
+
+# Example Raspberry Pi worker node:
+# worker_nodes = {
+#   rpi5-worker = {
+#     tailscale_ipv4 = "auto-assigned"
+#     physical_ip    = "192.168.1.102"
+#     install_disk   = "/dev/mmcblk0"
+#     hostname       = "edatw-rpi5"
+#     arch           = "arm64"
+#     extensions     = ["siderolabs/tailscale"]
+#     overlay = {
+#       image = "siderolabs/sbc-raspberrypi"
+#       name  = "rpi_5"
+#     }
+#   }
+# }
+
+# =============================================================================
+# Tailscale Configuration
+# =============================================================================
+
+# Your Tailscale tailnet name (e.g., "myorg" for myorg.ts.net)
+tailscale_tailnet = "your-tailnet-name"
+
+# Tailscale authentication key (use reusable, tagged key)
+# Generate at: https://login.tailscale.com/admin/settings/keys
+# Recommended tags: tag:k8s-node, tag:production
+tailscale_auth_key = "tskey-auth-xxxxxxxxxxxxx-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+
+# =============================================================================
+# Version Configuration
+# =============================================================================
+
+talos_version      = "v1.8.0"
+kubernetes_version = "v1.31.0"
+
+# =============================================================================
+# Network Configuration
+# =============================================================================
+
+# Use defaults unless you have specific requirements
+# pod_cidr     = "10.244.0.0/16"
+# service_cidr = "10.96.0.0/12"
+# dns_domain   = "cluster.local"
+
+# CNI selection: cilium (default), flannel, calico, or none
+cni_name = "cilium"
+
+# Cilium configuration (only used when cni_name = "cilium")
+cilium_helm_values = {
+  # Cilium operator configuration
+  operator = {
+    replicas = 1
+  }
+  # Enable Hubble for observability (optional)
+  hubble = {
+    enabled = true
+    relay = {
+      enabled = true
+    }
+    ui = {
+      enabled = true
+    }
+  }
+
+  # BPF masquerading (if enabled, Talos forwardKubeDNSToHost will be automatically disabled)
+  bpf = {
+    masquerade = false
+  }
+
+  ipam = {
+    mode = "kubernetes"
+  }
+
+  # IPv6 support
+  ipv6 = {
+    enabled = false
+  }
+
+  # Kubernetes API server configuration
+  k8sServiceHost = "localhost"
+  k8sServicePort = 7445
+  # kube-proxy replacement
+  # - "true", "strict", or "probe": Talos kube-proxy will be automatically disabled
+  # - "false": Talos kube-proxy will remain enabled (not recommended with Cilium)
+  kubeProxyReplacement = "true"
+
+  # Security context capabilities (required for Talos Linux)
+  # Source: https://www.talos.dev/v1.8/kubernetes-guides/network/deploying-cilium/
+  securityContext = {
+    capabilities = {
+      ciliumAgent      = ["CHOWN", "KILL", "NET_ADMIN", "NET_RAW", "IPC_LOCK", "SYS_ADMIN", "SYS_RESOURCE", "DAC_OVERRIDE", "FOWNER", "SETGID", "SETUID"]
+      cleanCiliumState = ["NET_ADMIN", "SYS_ADMIN", "SYS_RESOURCE"]
+    }
+  }
+
+  # cgroup configuration (required for Talos Linux)
+  # Source: https://www.talos.dev/v1.8/kubernetes-guides/network/deploying-cilium/
+  cgroup = {
+    autoMount = {
+      enabled = false
+    }
+    hostRoot = "/sys/fs/cgroup"
+  }
+
+  # Gateway API support (optional)
+  # Enables Kubernetes Gateway API for advanced traffic management
+  # When enabled, Gateway API CRDs (v1.2.0) will be automatically installed via extraManifests
+  gatewayAPI = {
+    enabled           = true
+    enableAlpn        = true
+    enableAppProtocol = true
+  }
+}
+
+# =============================================================================
+# Machine Configuration
+# =============================================================================
+
+# KubePrism provides local load balancing for HA API access
+enable_kubeprism = true
+kubeprism_port   = 7445
+
+# Network interface configuration
+use_dhcp_for_physical_interface = true
+
+# Disk wiping (set to true for fresh installations)
+wipe_install_disk = false
+
+# OpenEBS LocalPV Hostpath support
+openebs_hostpath_enabled = false
+
+# =============================================================================
+# Additional Configuration
+# =============================================================================
+
+# Additional certificate SANs (Tailscale IPs are added automatically)
+# cert_sans = []
+
+# Additional node labels for all nodes
+# node_labels = {
+#   "cluster-type" = "production"
+# }
+
+# Additional machine configuration patches
+# additional_control_plane_patches = []
+# additional_worker_patches = []

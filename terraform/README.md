@@ -27,7 +27,7 @@ terraform/
     ├── r2-terraform-state/ # R2 backend for Terraform state
     ├── talos-cluster/      # Talos Kubernetes (production)
     ├── talos-cluster-shangkuei-dev/  # Talos Kubernetes (dev)
-    ├── talos-gitops/       # GitOps for talos-cluster
+    ├── gitops/       # GitOps for talos-cluster
     ├── prod/               # Production (Oracle Cloud)
     └── unraid/             # Homelab Talos on Unraid
 ```

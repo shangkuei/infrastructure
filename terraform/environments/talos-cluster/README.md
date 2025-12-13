@@ -2,7 +2,7 @@
 
 Terraform environment for generating Talos Linux Kubernetes cluster configurations with Tailscale mesh networking as the primary network.
 
-> **📍 Part 1 of 2**: This environment provisions the cluster. After cluster is running, use [`talos-gitops/`](../talos-gitops/) to enable GitOps.
+> **📍 Part 1 of 2**: This environment provisions the cluster. After cluster is running, use [`gitops/`](../gitops/) to enable GitOps.
 >
 > See [Terraform Environments Overview](../README.md) for complete deployment workflow.
 
@@ -271,7 +271,7 @@ Apply the generated configurations to your VMs using physical IPs. The configura
 
 ```bash
 # Apply configs to all nodes (automated)
-make apply-configs
+make talos-apply INSECURE=true
 
 # Nodes will:
 # 1. Apply the machine configuration
@@ -314,35 +314,35 @@ control_plane_nodes = {
 make apply
 
 # Re-apply configs (now using Tailscale IPs)
-make apply-configs
+make talos-apply
 ```
 
 ### 7. Bootstrap Kubernetes Cluster
 
 ```bash
 # Bootstrap the cluster (initializes etcd and control plane)
-make bootstrap
+make talos-bootstrap
 
 # Check cluster health
-make health
-make nodes
-make pods
+make talos-health
+make talos-nodes
+make talos-pods
 ```
 
 ### 8. Access Cluster
 
 ```bash
 # Get environment variable exports
-make env
+make talos-env
 
 # Then export the credentials:
 export TALOSCONFIG=$(pwd)/generated/talosconfig
 export KUBECONFIG=$(pwd)/generated/kubeconfig
 
 # Verify cluster
-make nodes             # List nodes
-make pods              # List all pods
-make status            # Complete cluster status
+make talos-nodes       # List nodes
+make talos-pods        # List all pods
+make talos-status      # Complete cluster status
 ```
 
 ## SOPS Secret Management
@@ -525,14 +525,14 @@ The complete deployment process:
 1. Prepare VMs        → Boot VMs from Talos ISO
 2. Configure Terraform → Set node details, Tailscale auth key
 3. Generate Configs   → make apply (includes Tailscale extension)
-4. Apply to Nodes     → make apply-configs INSECURE=true (initial setup with physical IPs)
+4. Apply to Nodes     → make talos-apply INSECURE=true (initial setup with physical IPs)
 5. Wait for Tailscale → Nodes auto-join tailnet (~1-2 min)
 6. Update Tailscale IPs → Edit terraform.tfvars with real IPs
 7. Regenerate Configs → make apply (with real Tailscale IPs)
-8. Reapply Configs    → make apply-configs (secure mode via Tailscale)
-9. Bootstrap Cluster  → make bootstrap
-10. Get Kubeconfig    → talosctl kubeconfig --nodes <node-ip> --force
-11. Verify            → make health, make nodes, make pods
+8. Reapply Configs    → make talos-apply (secure mode via Tailscale)
+9. Bootstrap Cluster  → make talos-bootstrap
+10. Get Kubeconfig    → make talos-kubeconfig
+11. Verify            → make talos-health, make talos-nodes, make talos-pods
 ```
 
 **Key Points**:
@@ -551,6 +551,7 @@ The environment includes a comprehensive Makefile for common operations:
 ```bash
 # Show all available commands
 make help
+make talos-help        # Talos-specific operations help
 
 # Terraform operations
 make init              # Initialize Terraform
@@ -560,20 +561,28 @@ make validate          # Validate configuration
 make format            # Format Terraform files
 
 # Deployment
-make apply-configs     # Apply configs to nodes
-make bootstrap         # Bootstrap cluster
+make talos-apply                           # Apply configs to all nodes
+make talos-apply NODE=cp-01 INSECURE=true  # Apply to specific node (initial setup)
+make talos-bootstrap                       # Bootstrap cluster
+
+# Cluster access
+make talos-kubeconfig  # Retrieve kubeconfig
+make talos-talosconfig # Export talosconfig path
+make talos-env         # Display all environment exports
 
 # Cluster status
-make health            # Check cluster health
-make nodes             # List nodes
-make pods              # List pods
-make status            # Complete status
+make talos-health      # Check cluster health
+make talos-nodes       # List nodes
+make talos-pods        # List pods
+make talos-status      # Complete status
 
 # Maintenance
-make upgrade-k8s VERSION=v1.34.1            # Upgrade Kubernetes
-make upgrade-talos VERSION=v1.11.3 NODE=...  # Upgrade Talos
-make dashboard NODE=100.64.0.10             # Open dashboard
-make logs NODE=100.64.0.10 SERVICE=kubelet  # View logs
+make talos-upgrade-k8s VERSION=v1.34.1                # Upgrade Kubernetes
+make talos-upgrade NODE=100.64.0.10 VERSION=v1.11.3   # Upgrade Talos
+make talos-dashboard NODE=100.64.0.10                 # Open dashboard
+make talos-logs NODE=100.64.0.10 SERVICE=kubelet      # View logs
+make talos-reset NODE=100.64.0.10                     # Reset a node
+make talos-reboot NODE=100.64.0.10                    # Reboot a node
 
 # Cleanup
 make clean             # Remove generated files
@@ -1376,7 +1385,7 @@ This Talos cluster environment provides a **config-generation workflow** for bui
 ❌ **Does not apply configs**: You use Makefile commands to apply generated configs to nodes
 ❌ **Does not bootstrap cluster**: You use Makefile commands to bootstrap the cluster
 ❌ **Does not manage running cluster**: Cluster lifecycle is managed via talosctl/kubectl
-❌ **Does not enable GitOps**: Use [`talos-gitops/`](../talos-gitops/) environment for GitOps bootstrap
+❌ **Does not enable GitOps**: Use [`gitops/`](../gitops/) environment for GitOps bootstrap
 
 ### Key Architectural Decisions
 
@@ -1389,15 +1398,15 @@ This Talos cluster environment provides a **config-generation workflow** for bui
 
 ```
 1. make apply               → Generate configs (terraform apply)
-2. make apply-configs       → Apply configs to nodes
-3. make bootstrap           → Initialize cluster
-4. kubectl/talosctl         → Manage cluster (make nodes, make pods)
-5. cd ../talos-gitops       → Enable GitOps (next stage)
+2. make talos-apply         → Apply configs to nodes
+3. make talos-bootstrap     → Initialize cluster
+4. kubectl/talosctl         → Manage cluster (make talos-nodes, make talos-pods)
+5. cd ../gitops             → Enable GitOps (next stage)
 ```
 
 ## Next Steps: Enable GitOps
 
-After your cluster is running and healthy, proceed to the **[talos-gitops](../talos-gitops/)** environment to:
+After your cluster is running and healthy, proceed to the **[gitops](../gitops/)** environment to:
 
 1. **Install Flux CD** via Flux Operator for GitOps workflow
 2. **Configure SOPS** integration for encrypted manifest decryption
@@ -1406,9 +1415,9 @@ After your cluster is running and healthy, proceed to the **[talos-gitops](../ta
 
 ```bash
 # After cluster is healthy...
-cd ../talos-gitops
+cd ../gitops
 terraform init
-terraform apply              # Phased deployment (see talos-gitops/README.md)
+terraform apply              # Phased deployment (see gitops/README.md)
 make flux-check              # Verify Flux installation
 ```
 
@@ -1481,7 +1490,7 @@ No resources.
 | <a name="input_talos_version"></a> [talos\_version](#input\_talos\_version) | Talos Linux version (e.g., v1.8.0) | `string` | `"v1.8.0"` | no |
 | <a name="input_use_dhcp_for_physical_interface"></a> [use\_dhcp\_for\_physical\_interface](#input\_use\_dhcp\_for\_physical\_interface) | Use DHCP for physical network interface configuration | `bool` | `true` | no |
 | <a name="input_wipe_install_disk"></a> [wipe\_install\_disk](#input\_wipe\_install\_disk) | Wipe the installation disk before installing Talos | `bool` | `false` | no |
-| <a name="input_worker_nodes"></a> [worker\_nodes](#input\_worker\_nodes) | Map of worker nodes with their configuration (using Tailscale IPs) | <pre>map(object({<br/>    tailscale_ipv4 = string           # Tailscale IPv4 address (100.64.0.0/10 range)<br/>    tailscale_ipv6 = optional(string) # Tailscale IPv6 address (fd7a:115c:a1e0::/48 range)<br/>    physical_ip    = optional(string) # Physical IP (for initial bootstrapping only)<br/>    install_disk   = string<br/>    hostname       = optional(string)<br/>    interface      = optional(string, "tailscale0")<br/>    platform       = optional(string, "metal")                        # Platform type: metal, metal-arm64, metal-secureboot, aws, gcp, azure, etc.<br/>    extensions     = optional(list(string), ["siderolabs/tailscale"]) # Talos system extensions (default: Tailscale only)<br/>    # SBC overlay configuration (for Raspberry Pi, Rock Pi, etc.)<br/>    overlay = optional(object({<br/>      image = string # Overlay image (e.g., "siderolabs/sbc-raspberrypi")<br/>      name  = string # Overlay name (e.g., "rpi_generic", "rpi_5")<br/>    }))<br/>    # Kubernetes topology and node labels<br/>    region      = optional(string)          # topology.kubernetes.io/region<br/>    zone        = optional(string)          # topology.kubernetes.io/zone<br/>    arch        = optional(string)          # kubernetes.io/arch (e.g., amd64, arm64)<br/>    os          = optional(string)          # kubernetes.io/os (e.g., linux)<br/>    node_labels = optional(map(string), {}) # Additional node-specific labels<br/>    # OpenEBS Replicated Storage configuration<br/>    openebs_storage       = optional(bool, false)  # Enable OpenEBS storage on this node<br/>    openebs_disk          = optional(string)       # Storage disk device (e.g., /dev/nvme0n1, /dev/sdb)<br/>    openebs_hugepages_2mi = optional(number, 1024) # Number of 2MiB hugepages (1024 = 2GiB, required for Mayastor)<br/>  }))</pre> | `{}` | no |
+| <a name="input_worker_nodes"></a> [worker\_nodes](#input\_worker\_nodes) | Map of worker nodes with their configuration (using Tailscale IPs) | <pre>map(object({<br/>    tailscale_ipv4 = string           # Tailscale IPv4 address (100.64.0.0/10 range)<br/>    tailscale_ipv6 = optional(string) # Tailscale IPv6 address (fd7a:115c:a1e0::/48 range)<br/>    physical_ip    = optional(string) # Physical IP (for initial bootstrapping only)<br/>    install_disk   = string<br/>    hostname       = optional(string)<br/>    interface      = optional(string, "tailscale0")<br/>    platform       = optional(string, "metal")                        # Platform type: metal, metal-arm64, metal-secureboot, aws, gcp, azure, etc.<br/>    extensions     = optional(list(string), ["siderolabs/tailscale"]) # Talos system extensions (default: Tailscale only)<br/>    # SBC overlay configuration (for Raspberry Pi, Rock Pi, etc.)<br/>    overlay = optional(object({<br/>      image = string # Overlay image (e.g., "siderolabs/sbc-raspberrypi")<br/>      name  = string # Overlay name (e.g., "rpi_generic", "rpi_5")<br/>    }))<br/>    # Kubernetes topology and node labels<br/>    region      = optional(string)          # topology.kubernetes.io/region<br/>    zone        = optional(string)          # topology.kubernetes.io/zone<br/>    arch        = optional(string)          # kubernetes.io/arch (e.g., amd64, arm64)<br/>    os          = optional(string)          # kubernetes.io/os (e.g., linux)<br/>    node_labels = optional(map(string), {}) # Additional node-specific labels<br/>    # OpenEBS Replicated Storage configuration<br/>    openebs_storage       = optional(bool, false)  # Enable OpenEBS storage on this node<br/>    openebs_disk          = optional(string)       # Storage disk device (e.g., /dev/nvme0n1, /dev/sdb)<br/>    openebs_hugepages_2mi = optional(number, 1024) # Number of 2MiB hugepages (1024 = 2GiB, required for Mayastor)<br/>    # OpenEBS ZFS LocalPV configuration - supports multiple pools per node<br/>    zfs_pools = optional(list(object({<br/>      name  = string               # Pool name (e.g., "zpool", "tank", "data")<br/>      disks = list(string)         # Disk devices (e.g., ["/dev/sdb"] or ["/dev/sdb", "/dev/sdc"])<br/>      type  = optional(string, "") # Pool type: "" (single/stripe), "mirror", "raidz", "raidz2", "raidz3"<br/>    })), [])<br/>  }))</pre> | `{}` | no |
 
 ## Outputs
 

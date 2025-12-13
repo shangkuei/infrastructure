@@ -214,7 +214,7 @@ All component versions are **PINNED** for reproducibility and compatibility:
 1. **Bootstrap via Terraform**:
 
    ```bash
-   cd terraform/environments/talos-gitops
+   cd terraform/environments/gitops
    terraform init
    terraform apply
    ```
@@ -419,7 +419,7 @@ cat > .sops.yaml <<EOF
 creation_rules:
   - path_regex: .*\.(yaml|yml)$
     encrypted_regex: '^(data|stringData)$'
-    age: $(cat ~/.config/sops/age/talos-gitops-flux.txt | grep public | cut -d: -f2)
+    age: $(cat ~/.config/sops/age/gitops-flux.txt | grep public | cut -d: -f2)
 EOF
 
 # Then encrypt the secret

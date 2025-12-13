@@ -39,11 +39,11 @@ argocd-examples/
 
 This setup uses **two separate Age keys** for enhanced security:
 
-### 1. Flux Age Key (`talos-gitops-flux.txt`)
+### 1. Flux Age Key (`gitops-flux.txt`)
 
 - **Purpose**: Flux uses this to decrypt Kubernetes manifests
 - **Usage**: Encrypts the ArgoCD SOPS Age key secret
-- **Location**: `~/.config/sops/age/talos-gitops-flux.txt`
+- **Location**: `~/.config/sops/age/gitops-flux.txt`
 
 ### 2. ArgoCD Age Key (`argocd-ksops.txt`)
 
