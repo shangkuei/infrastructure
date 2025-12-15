@@ -41,21 +41,30 @@ patches:
   - patch: |-
       - op: replace
         path: /spec/source/path
-        value: argocd/edatw-cloudflared/overlays/shangkuei-xyz-talos
+        value: argocd/edatw-cloudflared/overlays/edatw-cluster
+      - op: replace
+        path: /spec/source/targetRevision
+        value: v1.0.0
     target:
       kind: Application
       name: edatw-cloudflared
   - patch: |-
       - op: replace
         path: /spec/source/path
-        value: argocd/edatw-ed8/overlays/shangkuei-xyz-talos
+        value: argocd/edatw-ed8/overlays/edatw-cluster
+      - op: replace
+        path: /spec/source/targetRevision
+        value: v1.0.0
     target:
       kind: Application
       name: edatw-ed8
   - patch: |-
       - op: replace
         path: /spec/source/path
-        value: argocd/edatw-salary-mailman/overlays/shangkuei-xyz-talos
+        value: argocd/edatw-salary-mailman/overlays/edatw-cluster
+      - op: replace
+        path: /spec/source/targetRevision
+        value: v1.0.0
     target:
       kind: Application
       name: edatw-salary-mailman
