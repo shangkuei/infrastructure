@@ -1,0 +1,13 @@
+# Stash - Tailscale Raw Override (unencrypted)
+# Contains YAML syntax that cannot be encrypted (!reset)
+#
+# This file is used when running Tailscale-only mode to clear
+# the direct port binding from docker-compose.override.yml
+#
+# Usage: Only included with tailscale-only mode (make up-tailscale)
+
+services:
+  stash:
+    # Clear direct port binding when using Tailscale
+    ports: !reset
+    networks: !reset

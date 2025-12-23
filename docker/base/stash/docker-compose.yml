@@ -1,0 +1,34 @@
+# Stash - Adult media organizer and video streaming service
+# Base configuration - override with environment-specific settings
+#
+# Documentation: https://docs.stashapp.cc/
+# GitHub: https://github.com/stashapp/stash
+
+name: stash
+
+services:
+  stash:
+    image: stashapp/stash:${STASH_VERSION:-latest}
+    container_name: stash
+    restart: unless-stopped
+    environment:
+      - STASH_STASH=/data/
+      - STASH_GENERATED=/generated/
+      - STASH_METADATA=/metadata/
+      - STASH_CACHE=/cache/
+      - STASH_PORT=${STASH_PORT:-9999}
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - "${STASH_PORT:-9999}:9999"
+    logging:
+      driver: json-file
+      options:
+        max-file: "10"
+        max-size: "2m"
+    networks:
+      - stash
+
+networks:
+  stash:
+    name: stash-internal
