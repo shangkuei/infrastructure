@@ -1,4 +1,4 @@
-# Talos GitOps Shangkuei Dev Environment - Makefile
+# Talos GitOps Shangkuei Lab Environment - Makefile
 # Manages GitOps configuration with Flux and dual-key SOPS encryption
 
 .DEFAULT_GOAL := help
@@ -8,7 +8,7 @@
 # ============================================================================
 
 SOPS_DOMAIN := terraform
-SOPS_ENV_NAME := talos-gitops-shangkuei-dev
+SOPS_ENV_NAME := gitops-shangkuei-lab
 SOPS_KEY_STRATEGY := central
 
 # ============================================================================
@@ -28,8 +28,8 @@ include ../../../makefiles/terraform.mk
 
 # Flux age key (separate from Terraform key, for Kubernetes manifests)
 # NOTE: Must be defined AFTER includes so SOPS_AGE_DIR is available
-AGE_FLUX_PRIVATE_KEY := $(SOPS_AGE_DIR)/gitops-shangkuei-dev-flux.txt
-AGE_FLUX_PUBLIC_KEY := $(SOPS_AGE_DIR)/gitops-shangkuei-dev-flux.txt.pub
+AGE_FLUX_PRIVATE_KEY := $(SOPS_AGE_DIR)/gitops-shangkuei-lab-flux.txt
+AGE_FLUX_PUBLIC_KEY := $(SOPS_AGE_DIR)/gitops-shangkuei-lab-flux.txt.pub
 
 # ============================================================================
 # Dual Key Management (Terraform + Flux)

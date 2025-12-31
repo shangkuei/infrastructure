@@ -1,0 +1,49 @@
+# Terraform files
+*.tfstate
+*.tfstate.*
+*.tfvars
+!terraform.tfvars.example
+!*.enc.tfvars
+.terraform/
+.terraform.lock.hcl
+terraform.tfplan
+crash.log
+crash.*.log
+
+# Generated files
+generated/
+*.yaml
+!.sops.yaml
+!templates/*.yaml.tpl
+
+# Sensitive credentials
+*.key
+*.pem
+*.crt
+*-config
+talosconfig*
+kubeconfig*
+
+# SOPS encrypted files (safe to commit)
+# Unencrypted versions (gitignored above) should NEVER be committed
+# backend.enc.hcl is safe to commit (encrypted with SOPS)
+# terraform.enc.tfvars is safe to commit (encrypted with SOPS)
+backend.hcl
+!backend.enc.hcl
+!backend.hcl.example
+
+# Environment-specific
+.env
+.env.local
+secrets/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/

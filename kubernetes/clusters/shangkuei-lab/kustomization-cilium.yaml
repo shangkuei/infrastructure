@@ -1,0 +1,37 @@
+---
+# Flux Kustomization for Cilium CNI
+# Critical infrastructure - must be first for cluster networking
+# Gateway API support is optional and enabled when CRDs are available
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: cilium
+  namespace: flux-system
+spec:
+  interval: 30m
+  timeout: 10m
+  prune: true
+  wait: true
+
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+
+  path: ./kubernetes/base/cilium
+
+  # Dependencies: Gateway API CRDs required for Gateway API implementation
+  # Requires both standard and experimental CRDs (TLSRoute)
+  dependsOn:
+    - name: gateway-api-standard
+    - name: gateway-api-experimental
+
+  healthChecks:
+    - apiVersion: apps/v1
+      kind: DaemonSet
+      name: cilium
+      namespace: kube-system
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: cilium-operator
+      namespace: kube-system

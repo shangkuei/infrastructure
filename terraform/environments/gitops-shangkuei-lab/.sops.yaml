@@ -1,0 +1,20 @@
+# Local SOPS configuration for gitops-shangkuei-lab environment
+# This allows running SOPS commands from within this directory
+#
+# IMPORTANT: Replace the age public key below with your own key.
+# Generate a new key with: make age-keygen
+# The public key will be displayed after generation.
+creation_rules:
+  # Match input files for encryption (terraform.tfvars -> terraform.enc.tfvars)
+  - path_regex: .*\.tfvars$
+    age: age12rdack84gwnkeg20t5xqhe4pqvqvlzzle98qac4xdy3hhsmrtcksutv792
+
+  - path_regex: .*\.enc\.tfvars$
+    age: age12rdack84gwnkeg20t5xqhe4pqvqvlzzle98qac4xdy3hhsmrtcksutv792
+
+  # Match backend configuration files (backend.hcl -> backend.enc.hcl)
+  - path_regex: backend\.hcl$
+    age: age12rdack84gwnkeg20t5xqhe4pqvqvlzzle98qac4xdy3hhsmrtcksutv792
+
+  - path_regex: backend\.enc\.hcl$
+    age: age12rdack84gwnkeg20t5xqhe4pqvqvlzzle98qac4xdy3hhsmrtcksutv792

@@ -1,0 +1,8 @@
+# SOPS configuration for Flux instance secrets
+# Uses Flux age key for encryption (deployed to cluster by Terraform)
+# Naming convention: *.enc.yaml (encrypted files)
+
+creation_rules:
+  - path_regex: \.enc\.yaml$
+    encrypted_regex: '^(data|stringData)$'
+    age: age169cuuq59c5dzagy3j70h7ul0q5meeqvmdc84vx4ffwg6ptxsgdvshem39p
