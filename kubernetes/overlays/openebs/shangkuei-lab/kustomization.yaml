@@ -1,0 +1,104 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../../base/openebs
+  - storageclass-zfs.yaml
+  - storageclass-mayastor.yaml
+  - diskpools.yaml
+
+labels:
+  - pairs:
+      app.kubernetes.io/instance: shangkuei-lab
+      app.kubernetes.io/environment: lab
+
+# Enable both Mayastor and ZFS LocalPV for shangkuei-lab cluster
+# - worker-{1,2,3}: Mayastor (replicated NVMe storage) - labeled openebs.io/engine=mayastor
+# - worker-4: ZFS LocalPV (local ZFS storage) - labeled openebs.io/zfs=true
+#
+# Node labels are managed by Terraform:
+# - openebs.io/engine=mayastor: auto-added when openebs_storage=true
+# - openebs.io/zfs=true: auto-added when zfs_pools is configured
+patches:
+  - patch: |-
+      - op: replace
+        path: /spec/values/engines/local/zfs/enabled
+        value: true
+      - op: replace
+        path: /spec/values/engines/replicated/mayastor/enabled
+        value: true
+      - op: replace
+        path: /spec/values/ndm/enabled
+        value: true
+      - op: replace
+        path: /spec/values/ndmOperator/enabled
+        value: true
+      # ZFS LocalPV Configuration (worker-4)
+      # Note: StorageClass is created separately in storageclass-zfs.yaml
+      # (the umbrella chart doesn't pass zfsClass values to the subchart)
+      - op: add
+        path: /spec/values/zfs-localpv
+        value:
+          enabled: true
+          # Talos compatibility: use writable path for encryption keys
+          zfsNode:
+            encrKeysDir: "/var/openebs/encr-keys"
+            nodeSelector:
+              openebs.io/zfs: "true"
+          nodeSelector:
+            openebs.io/zfs: "true"
+          tolerations: []
+          resources:
+            limits:
+              cpu: 200m
+              memory: 256Mi
+            requests:
+              cpu: 100m
+              memory: 128Mi
+      # Mayastor Configuration (worker-1,2,3)
+      # Note: StorageClass and DiskPools are created separately
+      # (the umbrella chart doesn't pass these values to the subchart)
+      - op: add
+        path: /spec/values/mayastor
+        value:
+          enabled: true
+          # io-engine runs on labeled nodes with hugepages
+          io_engine:
+            # Required for VMs (Proxmox/KVM/VMware/UTM) - fixes DPDK IOVA allocation
+            envcontext: "iova-mode=pa"
+            nodeSelector:
+              openebs.io/engine: "mayastor"
+            resources:
+              limits:
+                cpu: "2"
+                memory: "2Gi"
+                hugepages-2Mi: "2Gi"
+              requests:
+                cpu: "1"
+                memory: "1Gi"
+                hugepages-2Mi: "2Gi"
+          # Control plane components
+          csi:
+            node:
+              nodeSelector:
+                openebs.io/engine: "mayastor"
+          etcd:
+            replicaCount: 3
+            nodeSelector:
+              openebs.io/engine: "mayastor"
+            persistence:
+              enabled: true
+              size: 2Gi
+            # LocalPV storage class for etcd - must match Terraform kubelet extraMount
+            localpvScConfig:
+              enabled: true
+              basePath: "/var/openebs/local/etcd"
+          # NATS for Mayastor communication
+          nats:
+            replicaCount: 3
+            nodeSelector:
+              openebs.io/engine: "mayastor"
+    target:
+      kind: HelmRelease
+      name: openebs

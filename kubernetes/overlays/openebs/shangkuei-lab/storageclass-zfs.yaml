@@ -1,0 +1,22 @@
+---
+# ZFS LocalPV StorageClass for worker-4
+# Uses the ZFS pool configured on the node with openebs.io/zfs=true label
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: openebs-zfs
+provisioner: zfs.csi.openebs.io
+allowVolumeExpansion: true
+reclaimPolicy: Delete
+volumeBindingMode: WaitForFirstConsumer
+parameters:
+  # ZFS pool name (must exist on the node)
+  poolname: "zpool"
+  # Filesystem type: zfs (native) or ext4/xfs (on zvol)
+  fstype: "zfs"
+  # Compression algorithm
+  compression: "lz4"
+  # Deduplication (disabled for performance)
+  dedup: "off"
+  # Record size for ZFS dataset
+  recordsize: "128k"

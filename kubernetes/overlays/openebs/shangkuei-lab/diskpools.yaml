@@ -1,0 +1,35 @@
+---
+# Mayastor DiskPools for shangkuei-lab cluster
+# Each DiskPool maps a physical disk to a Mayastor storage node
+#
+# Disk paths from Terraform openebs_disk configuration (by WWN for stability)
+---
+apiVersion: openebs.io/v1beta3
+kind: DiskPool
+metadata:
+  name: pool-worker-01
+  namespace: kube-system
+spec:
+  node: shangkuei-lab-worker-01
+  disks:
+    - uring:///dev/disk/by-id/wwn-0x500a0751e87dc1e7
+---
+apiVersion: openebs.io/v1beta3
+kind: DiskPool
+metadata:
+  name: pool-worker-02
+  namespace: kube-system
+spec:
+  node: shangkuei-lab-worker-02
+  disks:
+    - uring:///dev/disk/by-id/wwn-0x500a0751e87dc1d9
+---
+apiVersion: openebs.io/v1beta3
+kind: DiskPool
+metadata:
+  name: pool-worker-03
+  namespace: kube-system
+spec:
+  node: shangkuei-lab-worker-03
+  disks:
+    - uring:///dev/disk/by-id/wwn-0x500a0751e87dc1f5

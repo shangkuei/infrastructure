@@ -74,12 +74,15 @@ spec:
       enabled: true
 
       # Talos-specific hostpath configuration
+      # Path must match kubelet extraMount in Terraform talos-cluster module
       hostpathClass:
         enabled: true
         name: openebs-hostpath
         isDefaultClass: true
-        basePath: "/var/openebs/local"  # Talos persistent path
+        basePath: "/var/openebs/local"  # Must match Terraform openebs_hostpath_patch
         reclaimPolicy: Delete
+      # Base path for all localpv volumes (hostpath, device, etc.)
+      basePath: "/var/openebs/local"
 
       # Node selector for storage nodes (optional - adjust as needed)
       nodeSelector: {}

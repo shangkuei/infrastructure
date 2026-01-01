@@ -1,0 +1,37 @@
+---
+# Flux Kustomization for OpenEBS Storage
+# Provides dynamic storage provisioning for the cluster
+# This cluster enables both Mayastor and ZFS LocalPV via overlay:
+# - worker-{1,2,3}: Mayastor (replicated NVMe storage)
+# - worker-4: ZFS LocalPV (local ZFS storage)
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: openebs
+  namespace: flux-system
+spec:
+  interval: 30m
+  timeout: 15m
+  prune: true
+  wait: true
+
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+
+  path: ./kubernetes/overlays/openebs/shangkuei-lab
+
+  # Dependencies: CNI must be ready for pod networking
+  dependsOn:
+    - name: cilium
+
+  healthChecks:
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: openebs-localpv-provisioner
+      namespace: openebs
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: openebs-zfs-controller
+      namespace: openebs
