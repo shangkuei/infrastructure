@@ -88,11 +88,7 @@ worker_nodes = {}
 #     # }
 #
 #     # OpenEBS Mayastor storage configuration (optional)
-#     # Uses UserVolumeConfig - see: https://docs.siderolabs.com/talos/v1.11/reference/configuration/block/uservolumeconfig
-#     # NOTE: If disk has existing partitions (LVM, etc.), wipe first:
-#     #   1. Set openebs_storage = false, apply config
-#     #   2. Run: talosctl wipe disk <partition> --drop-partition
-#     #   3. Re-enable and apply
+#     # Mayastor uses raw block devices directly via SPDK - disk must be unpartitioned
 #     # openebs_storage       = true
 #     # openebs_disk          = "/dev/sdb"  # or /dev/disk/by-id/wwn-xxx
 #     # openebs_hugepages_2mi = 1024        # 2GiB hugepages for Mayastor

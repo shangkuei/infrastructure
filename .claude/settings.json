@@ -1,0 +1,7 @@
+{
+  "enabledPlugins": {
+    "kubernetes-operations@claude-code-workflows": true,
+    "systems-programming@claude-code-workflows": true,
+    "linear@claude-plugins-official": true
+  }
+}

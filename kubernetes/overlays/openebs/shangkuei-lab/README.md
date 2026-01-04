@@ -75,6 +75,61 @@ kubectl get storageclass
 
 ---
 
+## Storage Performance & Selection Guide
+
+### Benchmark Results (January 2026)
+
+| Storage Class | Disk Type | Sequential Write | Random 4K IOPS | Replication |
+|---------------|-----------|------------------|----------------|-------------|
+| `openebs-hostpath` | eMMC (60GB) | ~215 MB/s | ~8.4K | None |
+| `openebs-zfs` | SSD (1TB) | ~188 MB/s | ~1.4K | None |
+| `openebs-mayastor` | SSD (1TB) x3 | ~50 MB/s | ~5.5K | 3-way sync |
+
+> **Note**: Mayastor's lower throughput is due to synchronous 3-way replication across network. The trade-off is data durability - volumes survive node failures.
+
+### Workload Sizing Reference
+
+#### Prometheus Metrics
+
+| Size | Active Series | Scrape Targets | Ingestion Rate | IOPS Needed |
+|------|---------------|----------------|----------------|-------------|
+| **Small** | < 50K | 10-50 pods | ~2K samples/sec | < 500 |
+| **Medium** | 50K-500K | 50-200 pods | 2K-20K samples/sec | 500-2K |
+| **Large** | 500K-2M | 200-1000 pods | 20K-100K samples/sec | 2K-10K |
+| **High Cardinality** | > 2M | 1000+ pods | > 100K samples/sec | > 10K |
+
+#### Loki Logs
+
+| Size | Log Streams | Ingestion Rate | Retention | IOPS Needed |
+|------|-------------|----------------|-----------|-------------|
+| **Small** | < 100 | < 1 MB/s | 7 days | < 500 |
+| **Medium** | 100-500 | 1-10 MB/s | 14 days | 500-2K |
+| **Large** | 500-2000 | 10-50 MB/s | 30 days | 2K-5K |
+
+### Storage Selection Matrix
+
+| Use Case | Recommended | Why |
+|----------|-------------|-----|
+| Dev/Test environments | `openebs-hostpath` | Fast, simple, no HA needed |
+| Home lab with HA needs | `openebs-mayastor` | Data survives node failure |
+| High-performance (accept risk) | `openebs-hostpath` | 2x faster, but no replication |
+| Large capacity, single node | `openebs-zfs` | Compression, snapshots, 1TB available |
+| Prometheus/Loki (home lab) | `openebs-mayastor` | 5K IOPS sufficient for <100 pods |
+| Prometheus/Loki (high volume) | `openebs-hostpath` or external | Need >10K IOPS |
+
+### Capacity Summary
+
+| Node | Hostpath (eMMC) | Mayastor (SSD) | ZFS (SSD) |
+|------|-----------------|----------------|-----------|
+| worker-01 | ~50 GB | 930 GB (shared) | - |
+| worker-02 | ~50 GB | 930 GB (shared) | - |
+| worker-03 | ~50 GB | 930 GB (shared) | - |
+| worker-04 | ~24 GB | - | 1 TB |
+
+> **Mayastor capacity**: Total raw = 2.8 TB, usable with 3-way replication = ~930 GB
+
+---
+
 ## Testing Guide
 
 ### Prerequisites
@@ -352,7 +407,7 @@ metadata:
 spec:
   containers:
   - name: fio
-    image: nixery.dev/fio
+    image: ljishen/fio
     command: ["tail", "-f", "/dev/null"]
     volumeMounts:
     - name: data
@@ -370,7 +425,7 @@ metadata:
 spec:
   containers:
   - name: fio
-    image: nixery.dev/fio
+    image: ljishen/fio
     command: ["tail", "-f", "/dev/null"]
     volumeMounts:
     - name: data
@@ -388,7 +443,7 @@ metadata:
 spec:
   containers:
   - name: fio
-    image: nixery.dev/fio
+    image: ljishen/fio
     command: ["tail", "-f", "/dev/null"]
     volumeMounts:
     - name: data
