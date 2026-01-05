@@ -1,0 +1,49 @@
+---
+# Flux Kustomization for kube-prometheus-stack Monitoring
+# Complete Kubernetes monitoring with Prometheus, Grafana, and Alertmanager
+# Storage: Mayastor (3-replica NVMe-oF) for high-performance metrics
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: kube-prometheus-stack
+  namespace: flux-system
+spec:
+  interval: 30m
+  timeout: 15m
+  prune: true
+  wait: true
+
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+
+  path: ./kubernetes/overlays/kube-prometheus-stack/shangkuei-lab
+
+  # Dependencies: Storage must be ready for PVC provisioning
+  dependsOn:
+    - name: openebs
+
+  # SOPS decryption for encrypted secrets (Grafana admin credentials)
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
+
+  healthChecks:
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: prometheus-kube-prometheus-operator
+      namespace: monitoring
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: prometheus-grafana
+      namespace: monitoring
+    - apiVersion: apps/v1
+      kind: StatefulSet
+      name: alertmanager-prometheus-kube-prometheus-alertmanager
+      namespace: monitoring
+    - apiVersion: apps/v1
+      kind: StatefulSet
+      name: prometheus-prometheus-kube-prometheus-prometheus
+      namespace: monitoring

@@ -1,0 +1,12 @@
+---
+# Monitoring Namespace
+# Contains Prometheus, Grafana, Alertmanager, and related components
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: monitoring
+  labels:
+    app.kubernetes.io/name: monitoring
+    pod-security.kubernetes.io/enforce: privileged
+    pod-security.kubernetes.io/audit: privileged
+    pod-security.kubernetes.io/warn: privileged

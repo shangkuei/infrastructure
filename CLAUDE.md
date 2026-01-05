@@ -80,3 +80,13 @@ For complete documentation on:
 - **Ansible guide**: [ansible/README.md](ansible/README.md)
 - **Documentation standards**: [docs/README.md](docs/README.md)
 - **Technical specifications**: [specs/README.md](specs/README.md)
+
+### External Documentation
+
+Documentation for this infrastructure is managed in Notion:
+
+- **HomeLab**: [Notion - HomeLab](https://www.notion.so/5d38d50fbb864e39aba1ee2b64dd5d0d)
+- **Docs Hub**: [Notion - Docs](https://www.notion.so/2e013bb3c6b581fc8e53ea904259e4e5)
+  - Store all infrastructure documentation in this hub page
+  - Infrastructure decisions, storage configurations, and operational guides
+  - Use Notion MCP tools to read/update documentation as needed
