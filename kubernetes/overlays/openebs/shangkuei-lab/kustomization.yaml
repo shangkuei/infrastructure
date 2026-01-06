@@ -71,11 +71,11 @@ patches:
               openebs.io/engine: "mayastor"
             resources:
               limits:
-                cpu: "2"
+                cpu: "2.5"
                 memory: "2Gi"
                 hugepages-2Mi: "2Gi"
               requests:
-                cpu: "1"
+                cpu: "2"
                 memory: "1Gi"
                 hugepages-2Mi: "2Gi"
           # Control plane components
