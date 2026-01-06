@@ -21,6 +21,12 @@ labels:
 # - Grafana: 10Gi on Mayastor for dashboards and plugins
 patches:
   - patch: |-
+      # Add cluster label for multi-cluster dashboard compatibility
+      # externalLabels: Used for remote-write, federation, and alerts
+      - op: add
+        path: /spec/values/prometheus/prometheusSpec/externalLabels
+        value:
+          cluster: shangkuei-lab
       - op: add
         path: /spec/values/prometheus/prometheusSpec/storageSpec
         value:
@@ -85,6 +91,13 @@ patches:
       - op: add
         path: /spec/values/kubelet/serviceMonitor
         value:
+          # Add cluster label to all kubelet metrics (for multi-cluster support)
+          relabelings:
+            - targetLabel: cluster
+              replacement: shangkuei-lab
+          cAdvisorRelabelings:
+            - targetLabel: cluster
+              replacement: shangkuei-lab
           # cAdvisor metric relabelings - biggest contributor to cardinality
           cAdvisorMetricRelabelings:
             # Drop less useful container CPU metrics
@@ -193,6 +206,9 @@ patches:
         path: /spec/values/kube-state-metrics/prometheus
         value:
           monitor:
+            relabelings:
+              - targetLabel: cluster
+                replacement: shangkuei-lab
             metricRelabelings:
               # Drop kube_pod_labels and kube_pod_annotations (very high cardinality)
               - sourceLabels: [__name__]
@@ -213,6 +229,9 @@ patches:
       - op: add
         path: /spec/values/kubeApiServer/serviceMonitor
         value:
+          relabelings:
+            - targetLabel: cluster
+              replacement: shangkuei-lab
           metricRelabelings:
             # Drop deprecated metrics
             - sourceLabels: [__name__]
@@ -248,6 +267,9 @@ patches:
       - op: add
         path: /spec/values/coreDns/serviceMonitor
         value:
+          relabelings:
+            - targetLabel: cluster
+              replacement: shangkuei-lab
           metricRelabelings:
             - sourceLabels: [__name__]
               regex: coredns_(dns_request_size_bytes_bucket|dns_response_size_bytes_bucket)
@@ -277,22 +299,29 @@ patches:
             - --no-collector.zfs
           prometheus:
             monitor:
+              relabelings:
+                - targetLabel: cluster
+                  replacement: shangkuei-lab
               metricRelabelings:
                 # Drop node scrape collector metrics (~290 series) - internal
                 - sourceLabels: [__name__]
                   action: drop
                   regex: node_scrape_.*
 
-      # Grafana - drop self-monitoring histogram buckets (keep _sum/_count for overview)
+      # Grafana - drop self-monitoring histogram buckets (keep request duration for overview)
       - op: add
         path: /spec/values/grafana/serviceMonitor
         value:
           enabled: true
+          relabelings:
+            - targetLabel: cluster
+              replacement: shangkuei-lab
           metricRelabelings:
-            # Drop Grafana histogram buckets (~2,600 series) - keep _sum/_count
+            # Drop Grafana histogram buckets EXCEPT http_request_duration (needed for p50/p99)
+            # Keeps: grafana_http_request_duration_seconds_bucket (used in Overview dashboard)
             - sourceLabels: [__name__]
               action: drop
-              regex: grafana_.*_bucket
+              regex: grafana_(http_response_size_bytes|alerting_.*|plugins_.*|datasource_request_duration_seconds|live_.*|field_validation_.*|apiserver_.*)_bucket
             # Drop Grafana apiserver metrics (~700 series) - internal
             - sourceLabels: [__name__]
               action: drop
@@ -306,6 +335,9 @@ patches:
       - op: add
         path: /spec/values/alertmanager/serviceMonitor
         value:
+          relabelings:
+            - targetLabel: cluster
+              replacement: shangkuei-lab
           metricRelabelings:
             # Drop Alertmanager histogram buckets (~220 series)
             - sourceLabels: [__name__]
@@ -316,6 +348,9 @@ patches:
       - op: add
         path: /spec/values/prometheus/serviceMonitor
         value:
+          relabelings:
+            - targetLabel: cluster
+              replacement: shangkuei-lab
           metricRelabelings:
             # Drop Prometheus HTTP histogram buckets (~230 series)
             - sourceLabels: [__name__]
@@ -326,6 +361,9 @@ patches:
       - op: add
         path: /spec/values/prometheusOperator/serviceMonitor
         value:
+          relabelings:
+            - targetLabel: cluster
+              replacement: shangkuei-lab
           metricRelabelings:
             # Drop Prometheus Operator histogram buckets (~120 series)
             - sourceLabels: [__name__]
