@@ -1,0 +1,66 @@
+---
+# SeaweedFS Operator
+# Kubernetes operator for managing SeaweedFS clusters
+# Version: 0.1.9 (PINNED - latest stable release)
+#
+# The operator manages the Seaweed CRD which defines:
+# - Master servers: Cluster coordination and metadata
+# - Volume servers: Data storage nodes
+# - Filer services: File system interface with S3 API
+# - IAM services: Authentication for S3 access
+#
+# SeaweedFS cluster configuration is done via the Seaweed CR (see overlays)
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: seaweedfs-operator
+  namespace: seaweedfs
+spec:
+  interval: 30m
+  timeout: 10m
+  chart:
+    spec:
+      chart: seaweedfs-operator
+      version: 0.1.9  # PINNED: Latest stable release
+      sourceRef:
+        kind: HelmRepository
+        name: seaweedfs-operator
+        namespace: flux-system
+      interval: 12h
+
+  install:
+    createNamespace: false
+    remediation:
+      retries: 3
+
+  upgrade:
+    remediation:
+      retries: 3
+      remediateLastFailure: true
+    cleanupOnFail: true
+
+  driftDetection:
+    mode: warn
+    ignore:
+      - paths: ["/spec/replicas"]
+        target:
+          kind: Deployment
+
+  values:
+    # Operator configuration
+    # The operator watches for Seaweed CRs and manages SeaweedFS clusters
+    replicaCount: 1
+
+    # Resource limits for the operator pod
+    resources:
+      limits:
+        cpu: 200m
+        memory: 256Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi
+
+    # Service account
+    serviceAccount:
+      create: true
+      name: seaweedfs-operator

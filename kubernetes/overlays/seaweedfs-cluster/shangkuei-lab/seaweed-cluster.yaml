@@ -1,0 +1,74 @@
+---
+# SeaweedFS Cluster for shangkuei-lab
+# Provides S3-compatible object storage for observability stack (Loki, Thanos)
+#
+# Components:
+# - Master (3 replicas): Cluster coordination and metadata management
+# - Volume (3 replicas): Data storage nodes
+# - Filer (2 replicas): File system interface with S3 API
+#
+# Storage: Uses openebs-mayastor storage class (replicated NVMe on worker-1,2,3)
+# S3 Endpoint: seaweedfs-filer.seaweedfs.svc.cluster.local:8333
+apiVersion: seaweed.seaweedfs.com/v1
+kind: Seaweed
+metadata:
+  name: seaweedfs
+  namespace: seaweedfs
+spec:
+  # SeaweedFS image version
+  # PINNED: Stable release (chrislusf is the project creator/maintainer)
+  image: chrislusf/seaweedfs:4.04
+
+  # Number of volumes per volume server
+  volumeServerDiskCount: 1
+
+  # Master servers - cluster coordination
+  master:
+    replicas: 3
+    # Maximum volume size in MB
+    volumeSizeLimitMB: 30000  # 30GB per volume
+    # Resource limits
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+
+  # Volume servers - data storage
+  volume:
+    replicas: 3
+    storageClassName: openebs-mayastor
+    # Storage request for volume data
+    requests:
+      storage: 100Gi
+    # Resource limits
+    limits:
+      cpu: "1"
+      memory: 1Gi
+
+  # Filer servers - S3 API endpoint
+  filer:
+    replicas: 2
+    # Enable S3 API gateway
+    s3:
+      enabled: true
+    # Filer metadata store configuration (leveldb2 - embedded)
+    config: |
+      [leveldb2]
+      enabled = true
+      dir = "/data/filerldb2"
+    # Persistence for filer metadata
+    persistence:
+      enabled: true
+      storageClassName: openebs-mayastor
+      resources:
+        requests:
+          storage: 10Gi
+    # Resource limits
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 256Mi

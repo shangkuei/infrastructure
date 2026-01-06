@@ -1,0 +1,30 @@
+---
+# Flux Kustomization for SeaweedFS Operator
+# Deploys the operator which installs CRDs for managing SeaweedFS clusters
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: seaweedfs-operator
+  namespace: flux-system
+spec:
+  interval: 30m
+  timeout: 15m
+  prune: true
+  wait: true
+
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+
+  path: ./kubernetes/overlays/seaweedfs-operator/shangkuei-lab
+
+  # Dependencies: CNI must be ready for pod networking
+  dependsOn:
+    - name: cilium
+
+  healthChecks:
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: seaweedfs-operator
+      namespace: seaweedfs

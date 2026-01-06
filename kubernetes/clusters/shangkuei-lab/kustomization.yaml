@@ -11,9 +11,11 @@ kind: Kustomization
 # 2. cilium: CNI (depends on gateway-api, implements Gateway API)
 # 3. cert-manager: Certificates (depends on gateway-api for HTTP01/TLS challenges)
 # 4. openebs: Storage (depends on cilium)
-# 5. kube-prometheus-stack: Monitoring (depends on openebs for persistent storage)
-# 6. flux-operator: Foundation (depends on cilium, installed via Helm)
-# 7. flux-instance: Core Flux components (depends on flux-operator)
+# 5. seaweedfs-operator: Operator + CRDs (depends on cilium)
+# 6. seaweedfs-cluster: S3 object storage cluster (depends on operator + openebs)
+# 7. kube-prometheus-stack: Monitoring (depends on openebs for persistent storage)
+# 8. flux-operator: Foundation (depends on cilium, installed via Helm)
+# 9. flux-instance: Core Flux components (depends on flux-operator)
 
 resources:
   # Namespace configuration (kube-system with pod security labels for CSI)
@@ -32,6 +34,11 @@ resources:
 
   # Storage (depends on Cilium CNI)
   - kustomization-openebs.yaml
+
+  # S3 Object Storage - Operator (depends on Cilium for networking)
+  - kustomization-seaweedfs-operator.yaml
+  # S3 Object Storage - Cluster (depends on operator + OpenEBS)
+  - kustomization-seaweedfs-cluster.yaml
 
   # Monitoring (depends on Storage for persistent volumes)
   - kustomization-kube-prometheus-stack.yaml

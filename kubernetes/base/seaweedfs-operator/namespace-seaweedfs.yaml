@@ -1,0 +1,14 @@
+---
+# SeaweedFS Namespace
+# Used for both the operator and SeaweedFS cluster resources
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: seaweedfs
+  labels:
+    app.kubernetes.io/name: seaweedfs
+    app.kubernetes.io/managed-by: flux
+    # Pod Security Standards - privileged needed for volume mounts
+    pod-security.kubernetes.io/enforce: privileged
+    pod-security.kubernetes.io/audit: privileged
+    pod-security.kubernetes.io/warn: privileged

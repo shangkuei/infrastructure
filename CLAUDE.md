@@ -86,7 +86,8 @@ For complete documentation on:
 Documentation for this infrastructure is managed in Notion:
 
 - **HomeLab**: [Notion - HomeLab](https://www.notion.so/5d38d50fbb864e39aba1ee2b64dd5d0d)
-- **Docs Hub**: [Notion - Docs](https://www.notion.so/2e013bb3c6b581fc8e53ea904259e4e5)
-  - Store all infrastructure documentation in this hub page
-  - Infrastructure decisions, storage configurations, and operational guides
-  - Use Notion MCP tools to read/update documentation as needed
+- **Document Hub**: [Notion - Document Hub](https://www.notion.so/2e013bb3c6b58079966ff3f9d50646a2)
+  - Database for all infrastructure documentation
+  - Properties: Doc name (title), Category (multi-select)
+  - Categories: Proposal, Customer research, Strategy doc, Planning
+  - Use Notion MCP tools to create pages with `data_source_id: 2e013bb3-c6b5-80f0-a9a1-000bf8d80ef4`

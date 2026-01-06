@@ -1,0 +1,15 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - seaweed-cluster.yaml
+  # S3 credentials (SOPS encrypted) - generate with: make secret-s3-credentials
+  - secret-seaweedfs-s3-credentials.enc.yaml
+  # Admin UI for bucket and user management
+  - deployment-admin-ui.yaml
+
+labels:
+  - pairs:
+      app.kubernetes.io/instance: shangkuei-lab
+      app.kubernetes.io/environment: lab
