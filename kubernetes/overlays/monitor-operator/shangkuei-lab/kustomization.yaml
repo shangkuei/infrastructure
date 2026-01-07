@@ -426,6 +426,11 @@ patches:
 
   # Loki configuration - S3 storage with SeaweedFS backend
   - patch: |-
+      # Override cluster label for recording rules and dashboards
+      # Without this, recording rules use "loki" as cluster label
+      - op: add
+        path: /spec/values/clusterLabelOverride
+        value: shangkuei-lab
       - op: add
         path: /spec/values/loki
         value:
@@ -491,13 +496,14 @@ patches:
         path: /spec/values/minio
         value:
           enabled: false
-      # Retention: 30 days
+      # Retention: 30 days + deletion API enabled
       - op: add
         path: /spec/values/compactor
         value:
           retention_enabled: true
           retention_delete_delay: 2h
           delete_request_store: s3
+          deletion_mode: filter-and-delete
       # Limits
       - op: add
         path: /spec/values/limits_config
@@ -505,6 +511,39 @@ patches:
           retention_period: 720h
           max_query_parallelism: 32
           max_query_series: 10000
+      # Enable ServiceMonitor for Prometheus scraping (required for Loki dashboards)
+      # Note: Path is monitoring.serviceMonitor, not serviceMonitor
+      - op: add
+        path: /spec/values/monitoring/serviceMonitor
+        value:
+          enabled: true
+          labels:
+            release: kube-prometheus-stack
+          # Loki cardinality reduction (~9.9K → ~4K series)
+          # Preserve metrics used by Loki dashboards and alerts
+          metricRelabelings:
+            # Override cluster label from "loki" to "shangkuei-lab" for dashboard compatibility
+            - sourceLabels: [cluster]
+              targetLabel: cluster
+              replacement: shangkuei-lab
+            # Drop internal histogram buckets not used in dashboards (~5K series)
+            # Keep: loki_request_duration_seconds (recording rules), loki_s3_request_duration_seconds (S3 latency),
+            #       loki_ingester_chunk_*, loki_boltdb_shipper_*, loki_memcache_*
+            - sourceLabels: [__name__]
+              action: drop
+              regex: loki_(response_message_bytes|request_message_bytes|logql_querystats_.*|index_request_duration_seconds|kv_request_duration_seconds|cache_value_size_bytes|frontend_query_range_duration_seconds|ingester_client_request_duration_seconds|index_gateway_request_duration_seconds|cache_request_duration_seconds|tsdb_shipper_.*|log_flushes|bytes_per_line)_bucket
+            # Drop internal metrics not used in dashboards (~1K series)
+            - sourceLabels: [__name__]
+              action: drop
+              regex: loki_(ring_.*|inflight_requests|bloom_.*)
+      # Enable Loki recording rules (required for Loki dashboards to show data)
+      - op: add
+        path: /spec/values/monitoring/rules
+        value:
+          enabled: true
+          alerting: true
+          labels:
+            release: kube-prometheus-stack
       # Configure S3 credentials from secret
       - op: add
         path: /spec/valuesFrom
