@@ -68,7 +68,7 @@ patches:
           existingSecret: grafana-admin
           userKey: admin-user
           passwordKey: admin-password
-      # Add Loki datasource for log queries
+      # Add Loki datasource for log queries (multi-tenant mode)
       - op: add
         path: /spec/values/grafana/additionalDataSources
         value:
@@ -79,6 +79,9 @@ patches:
             isDefault: false
             jsonData:
               maxLines: 1000
+              httpHeaderName1: X-Scope-OrgID
+            secureJsonData:
+              httpHeaderValue1: shangkuei-lab
 
       # ============================================================
       # Cardinality Reduction - Drop high-cardinality metrics and labels

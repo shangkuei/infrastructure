@@ -85,9 +85,10 @@ data:
       }
     }
 
-    // Push logs to Loki
+    // Push logs to Loki (multi-tenant mode)
     loki.write "loki" {
       endpoint {
-        url = "http://loki-gateway.monitoring.svc.cluster.local/loki/api/v1/push"
+        url       = "http://loki-gateway.monitoring.svc.cluster.local/loki/api/v1/push"
+        tenant_id = "shangkuei-lab"
       }
     }
