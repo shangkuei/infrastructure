@@ -22,6 +22,14 @@ labels:
 # - Alertmanager: 5Gi on Mayastor for silences and notifications
 # - Grafana: 10Gi on Mayastor for dashboards and plugins
 patches:
+  # Pin to 80.12.1 to test if 80.13.0 has metric_relabel_configs regression
+  - patch: |-
+      - op: replace
+        path: /spec/chart/spec/version
+        value: "80.12.1"
+    target:
+      kind: HelmRelease
+      name: kube-prometheus-stack
   - patch: |-
       # Add cluster label for multi-cluster dashboard compatibility
       # externalLabels: Used for remote-write, federation, and alerts
@@ -86,11 +94,15 @@ patches:
       # ============================================================
       # Cardinality Reduction - Drop high-cardinality metrics and labels
       # Conservative approach: Preserve metrics needed by default dashboards
-      # Target: Reduce series count from ~64K to ~50K (~22% reduction)
+      # Target: Reduce series count from ~144K to ~70K (~50% reduction)
       #
       # Techniques used:
-      # 1. Drop unused metrics (~12,500 series):
-      #    - Histogram buckets: go_*, rest_client_*, grafana_*, prometheus_http_*
+      # 1. Drop unused metrics (~70K series):
+      #    - apiserver_request_duration_seconds (~17K) - not used, keep _sli_ variant
+      #    - etcd_request_duration_seconds (~9K) - not used
+      #    - apiserver histogram buckets (~12K)
+      #    - container_* metrics: tasks_state, memory_failures, blkio (~5K)
+      #    - kube_pod_* metrics: tolerations, status_reason, status_qos_class (~1K)
       #    - Internal metrics: apiserver_flowcontrol_*, apiserver_storage_*, kubelet_http_*
       #    - Unused features: dra_*, kubernetes_feature_enabled
       # 2. Drop high-cardinality labels (id, name, uid, created_by_name)
@@ -99,7 +111,6 @@ patches:
       # NOTE: This local Prometheus is the central metrics repository.
       # If Grafana Cloud integration is added later, only push critical
       # alerting metrics (~2-5K series) to control costs.
-      # See: ../../../base/kube-prometheus-stack/README.md#metrics-strategy
       # ============================================================
 
       # Kubelet - create serviceMonitor object first, then add relabelings
@@ -236,6 +247,10 @@ patches:
               - sourceLabels: [__name__]
                 regex: kube_(pod_annotations|pod_labels|configmap_annotations|secret_annotations|service_annotations|node_labels)
                 action: drop
+              # Drop high-cardinality pod metrics not used in alerts/dashboards (~1K series)
+              - sourceLabels: [__name__]
+                regex: kube_pod_(tolerations|status_reason|status_qos_class)
+                action: drop
               # ---- Label-based cardinality reduction ----
               # Drop 'uid' label (62 unique values) - rarely queried directly
               # Note: kube_pod_info retains uid for joining if needed via recording rules
@@ -259,14 +274,19 @@ patches:
             - sourceLabels: [__name__]
               action: drop
               regex: apiserver_(request_count|request_latencies|request_latencies_summary)
+            # Drop apiserver_request_duration_seconds entirely (~17K series)
+            # Not used in alerts or dashboards - apiserver_request_sli_duration_seconds IS used
+            - sourceLabels: [__name__]
+              action: drop
+              regex: apiserver_request_duration_seconds_(bucket|sum|count)
             # Drop excessively noisy apiserver buckets (keeps essential ones for percentiles)
             - sourceLabels: [__name__, le]
               action: drop
-              regex: (etcd_request|apiserver_request_slo|apiserver_request_sli|apiserver_request)_duration_seconds_bucket;(0.15|0.2|0.3|0.35|0.4|0.45|0.6|0.7|0.8|0.9|1.25|1.5|1.75|2|3|3.5|4|4.5|6|7|8|9|15|20|40|45|50)(\.0)?
+              regex: (etcd_request|apiserver_request_slo|apiserver_request_sli)_duration_seconds_bucket;(0.15|0.2|0.3|0.35|0.4|0.45|0.6|0.7|0.8|0.9|1.25|1.5|1.75|2|3|3.5|4|4.5|6|7|8|9|15|20|40|45|50)(\.0)?
             # Drop non-essential histogram buckets entirely
             - sourceLabels: [__name__]
               action: drop
-              regex: apiserver_(request_body_size_bytes_bucket|response_sizes_bucket|watch_events_sizes_bucket|watch_list_duration_seconds_bucket|watch_cache_read_wait_seconds_bucket)
+              regex: apiserver_(request_body_size_bytes_bucket|response_sizes_bucket|watch_events_sizes_bucket|watch_list_duration_seconds_bucket|watch_cache_read_wait_seconds_bucket|admission_controller_admission_duration_seconds_bucket)
             # Drop etcd metrics exposed via apiserver (etcd scraping is disabled)
             - sourceLabels: [__name__]
               action: drop
