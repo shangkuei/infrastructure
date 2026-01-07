@@ -50,9 +50,21 @@ spec:
         create: false
         name: alloy-config
         key: config.alloy
+      # Mount host paths into Alloy container
+      mounts:
+        extra:
+          - name: varlog
+            mountPath: /var/log
+            readOnly: true
 
     controller:
       type: daemonset
+      # Add host volumes for log collection
+      volumes:
+        extra:
+          - name: varlog
+            hostPath:
+              path: /var/log
 
     # Resource limits for collector pods
     resources:
@@ -62,21 +74,3 @@ spec:
       requests:
         cpu: 100m
         memory: 256Mi
-
-    # Mount hostPath for container logs
-    extraVolumes:
-      - name: varlog
-        hostPath:
-          path: /var/log
-      - name: varlibcontainers
-        hostPath:
-          path: /var/lib/containers
-          type: DirectoryOrCreate
-
-    extraVolumeMounts:
-      - name: varlog
-        mountPath: /var/log
-        readOnly: true
-      - name: varlibcontainers
-        mountPath: /var/lib/containers
-        readOnly: true
