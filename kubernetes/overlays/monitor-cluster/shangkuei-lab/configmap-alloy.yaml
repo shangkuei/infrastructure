@@ -12,13 +12,20 @@ data:
     // Grafana Alloy Configuration - Log Collection for shangkuei-lab
     // ============================================================
 
-    // Kubernetes pod log discovery
+    // Kubernetes pod log discovery using loki.source.kubernetes
+    // This component handles pod discovery and file path construction automatically
+    loki.source.kubernetes "pod_logs" {
+      targets    = discovery.relabel.pods.output
+      forward_to = [loki.process.pod_logs.receiver]
+    }
+
+    // Kubernetes pod discovery
     discovery.kubernetes "pods" {
       role = "pod"
     }
 
-    // Relabel discovered pods
-    discovery.relabel "pod_logs" {
+    // Relabel discovered pods - add labels for log queries
+    discovery.relabel "pods" {
       targets = discovery.kubernetes.pods.targets
 
       // Keep only running pods
@@ -52,39 +59,25 @@ data:
         target_label  = "node"
       }
 
-      // Add cluster label
+      // Add cluster label for multi-cluster support
       rule {
         target_label = "cluster"
         replacement  = "shangkuei-lab"
       }
 
-      // Set log file path
-      // Kubernetes pod log structure: /var/log/pods/<namespace>_<pod-name>_<pod-uid>/<container>/*.log
+      // Add job label
       rule {
-        source_labels = ["__meta_kubernetes_namespace", "__meta_kubernetes_pod_name", "__meta_kubernetes_pod_uid", "__meta_kubernetes_pod_container_name"]
-        target_label  = "__path__"
-        separator     = "/"
-        regex         = "(.*)/(.*)/(.*)/(.*)"
-        replacement   = "/var/log/pods/$1_$2_$3/$4/*.log"
+        target_label = "job"
+        replacement  = "kubernetes-pods"
       }
     }
 
-    // Read log files
-    loki.source.file "pod_logs" {
-      targets    = discovery.relabel.pod_logs.output
-      forward_to = [loki.process.pod_logs.receiver]
-    }
-
-    // Process logs - add labels
+    // Process logs - parse and enrich
     loki.process "pod_logs" {
       forward_to = [loki.write.loki.receiver]
 
-      // Add static labels
-      stage.static_labels {
-        values = {
-          job = "kubernetes-pods",
-        }
-      }
+      // Parse container runtime log format (CRI)
+      stage.cri {}
     }
 
     // Push logs to Loki (multi-tenant mode)
