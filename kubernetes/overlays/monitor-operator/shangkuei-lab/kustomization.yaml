@@ -259,6 +259,15 @@ patches:
               # Drop 'created_by_name' label (35 unique values) - rarely queried
               - regex: ^created_by_name$
                 action: labeldrop
+              # Drop 'container_id' label (187 unique values) - cgroup ID, not queried
+              - regex: ^container_id$
+                action: labeldrop
+              # Drop 'image_id' label - SHA256 digest, never queried directly
+              - regex: ^image_id$
+                action: labeldrop
+              # Drop 'image_spec' label - redundant with 'image' label
+              - regex: ^image_spec$
+                action: labeldrop
 
       # API Server - create serviceMonitor path first
       # Note: apiserver contributes ~58K series, mostly from histogram buckets
