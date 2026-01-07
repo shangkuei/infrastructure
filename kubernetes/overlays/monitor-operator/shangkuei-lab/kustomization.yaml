@@ -74,7 +74,7 @@ patches:
         value:
           - name: Loki
             type: loki
-            url: http://loki-gateway.monitoring.svc.cluster.local:3100
+            url: http://loki-gateway.monitoring.svc.cluster.local
             access: proxy
             isDefault: false
             jsonData:
@@ -91,7 +91,7 @@ patches:
       #    - Internal metrics: apiserver_flowcontrol_*, apiserver_storage_*, kubelet_http_*
       #    - Unused features: dra_*, kubernetes_feature_enabled
       # 2. Drop high-cardinality labels (id, name, uid, created_by_name)
-      # 3. Drop virtual network interfaces (ip6tnl, sit, teql, dummy)
+      # 3. Drop unused tunnel interfaces only (ip6tnl, sit, teql, dummy, lo)
       #
       # NOTE: This local Prometheus is the central metrics repository.
       # If Grafana Cloud integration is added later, only push critical
@@ -104,11 +104,16 @@ patches:
       - op: add
         path: /spec/values/kubelet/serviceMonitor
         value:
-          # Add cluster label to all kubelet metrics (for multi-cluster support)
+          # Add cluster label and metrics_path to all kubelet metrics
+          # metrics_path is required for KubeletDown alert rule
           relabelings:
+            - sourceLabels: [__metrics_path__]
+              targetLabel: metrics_path
             - targetLabel: cluster
               replacement: shangkuei-lab
           cAdvisorRelabelings:
+            - sourceLabels: [__metrics_path__]
+              targetLabel: metrics_path
             - targetLabel: cluster
               replacement: shangkuei-lab
           # cAdvisor metric relabelings - biggest contributor to cardinality
@@ -133,11 +138,12 @@ patches:
             - sourceLabels: [__name__, scope]
               action: drop
               regex: container_memory_failures_total;hierarchy
-            # Drop CNI-related and virtual network interfaces
-            # Extended to include tunnel/dummy interfaces (ip6tnl, sit, teql, dummy)
+            # Drop unused tunnel and virtual network interfaces only
+            # NOTE: Keeping CNI interfaces (veth, cali, etc.) as they contain actual pod network metrics
+            # Only dropping interfaces that don't carry real traffic
             - sourceLabels: [__name__, interface]
               action: drop
-              regex: container_network_.*;(veth|cali|cilium|cni|lxc|nodelocaldns|tunl|flannel|docker|ip6tnl|sit|teql|dummy).*
+              regex: container_network_.*;(ip6tnl|sit|teql|dummy|lo).*
             # Drop container spec metrics
             - sourceLabels: [__name__]
               action: drop
