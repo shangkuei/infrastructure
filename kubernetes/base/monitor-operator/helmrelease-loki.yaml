@@ -56,11 +56,17 @@ spec:
     test:
       enabled: false
 
-    # Disable self-monitoring (we use kube-prometheus-stack)
+    # Monitoring configuration
     monitoring:
+      # Disable self-monitoring agent (we use Alloy)
       selfMonitoring:
         enabled: false
         grafanaAgent:
           installOperator: false
       lokiCanary:
         enabled: false
+      # Enable Loki dashboards for Grafana
+      dashboards:
+        enabled: true
+        labels:
+          grafana_dashboard: "1"  # Picked up by kube-prometheus-stack sidecar
