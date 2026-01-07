@@ -1,0 +1,82 @@
+---
+# Grafana Alloy - Unified telemetry collector
+# Replaces Promtail for log collection, future metrics collection
+#
+# Features:
+# - Log collection from all pods (Kubernetes discovery)
+# - Push to Loki for centralized logging
+# - Future: Replace node-exporter metrics scraping
+#
+# Architecture:
+# - DaemonSet deployment (one per node)
+# - Discovers pods via Kubernetes API
+# - Tails container logs and pushes to Loki
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: alloy
+  namespace: monitoring
+spec:
+  interval: 30m
+  timeout: 10m
+  chart:
+    spec:
+      chart: alloy
+      version: ">=0.10.0 <1.0.0"
+      sourceRef:
+        kind: HelmRepository
+        name: grafana
+        namespace: flux-system
+      interval: 12h
+
+  install:
+    createNamespace: false
+    remediation:
+      retries: 3
+
+  upgrade:
+    remediation:
+      retries: 3
+      remediateLastFailure: true
+    cleanupOnFail: true
+
+  driftDetection:
+    mode: warn
+
+  values:
+    # Deploy as DaemonSet (one collector per node)
+    alloy:
+      configMap:
+        create: false
+        name: alloy-config
+        key: config.alloy
+
+    controller:
+      type: daemonset
+
+    # Resource limits for collector pods
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 100m
+        memory: 256Mi
+
+    # Mount hostPath for container logs
+    extraVolumes:
+      - name: varlog
+        hostPath:
+          path: /var/log
+      - name: varlibcontainers
+        hostPath:
+          path: /var/lib/containers
+          type: DirectoryOrCreate
+
+    extraVolumeMounts:
+      - name: varlog
+        mountPath: /var/log
+        readOnly: true
+      - name: varlibcontainers
+        mountPath: /var/lib/containers
+        readOnly: true

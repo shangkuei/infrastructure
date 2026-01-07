@@ -1,0 +1,93 @@
+---
+# Grafana Alloy configuration for log collection
+# Collects logs from all pods and pushes to Loki
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alloy-config
+  namespace: monitoring
+data:
+  config.alloy: |
+    // ============================================================
+    // Grafana Alloy Configuration - Log Collection for shangkuei-lab
+    // ============================================================
+
+    // Kubernetes pod log discovery
+    discovery.kubernetes "pods" {
+      role = "pod"
+    }
+
+    // Relabel discovered pods
+    discovery.relabel "pod_logs" {
+      targets = discovery.kubernetes.pods.targets
+
+      // Keep only running pods
+      rule {
+        source_labels = ["__meta_kubernetes_pod_phase"]
+        regex         = "Pending|Succeeded|Failed|Unknown"
+        action        = "drop"
+      }
+
+      // Set namespace label
+      rule {
+        source_labels = ["__meta_kubernetes_namespace"]
+        target_label  = "namespace"
+      }
+
+      // Set pod label
+      rule {
+        source_labels = ["__meta_kubernetes_pod_name"]
+        target_label  = "pod"
+      }
+
+      // Set container label
+      rule {
+        source_labels = ["__meta_kubernetes_pod_container_name"]
+        target_label  = "container"
+      }
+
+      // Set node label
+      rule {
+        source_labels = ["__meta_kubernetes_pod_node_name"]
+        target_label  = "node"
+      }
+
+      // Add cluster label
+      rule {
+        target_label = "cluster"
+        replacement  = "shangkuei-lab"
+      }
+
+      // Set log file path
+      rule {
+        source_labels = ["__meta_kubernetes_pod_uid", "__meta_kubernetes_pod_container_name"]
+        target_label  = "__path__"
+        separator     = "/"
+        replacement   = "/var/log/pods/*$1/*.log"
+      }
+    }
+
+    // Read log files
+    loki.source.file "pod_logs" {
+      targets    = discovery.relabel.pod_logs.output
+      forward_to = [loki.process.pod_logs.receiver]
+    }
+
+    // Process logs - add labels
+    loki.process "pod_logs" {
+      forward_to = [loki.write.loki.receiver]
+
+      // Add static labels
+      stage.static_labels {
+        values = {
+          job = "kubernetes-pods",
+        }
+      }
+    }
+
+    // Push logs to Loki
+    loki.write "loki" {
+      endpoint {
+        url = "http://loki-gateway.monitoring.svc.cluster.local:3100/loki/api/v1/push"
+      }
+    }

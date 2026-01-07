@@ -1,0 +1,16 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Grafana Alloy - unified telemetry collector
+# Collects logs from Kubernetes pods and sends to Loki
+# Note: Loki is deployed via monitor-operator overlay
+
+resources:
+  - helmrelease-alloy.yaml
+  - configmap-alloy.yaml
+
+labels:
+  - pairs:
+      app.kubernetes.io/instance: shangkuei-lab
+      app.kubernetes.io/environment: lab

@@ -3,9 +3,11 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
-  - ../../../base/kube-prometheus-stack
+  - ../../../base/monitor-operator
   # SOPS-encrypted secret for Grafana admin credentials
   - secret-grafana-admin.enc.yaml
+  # SOPS-encrypted secret for Loki S3 storage (SeaweedFS)
+  - secret-loki-s3.enc.yaml
 
 labels:
   - pairs:
@@ -66,6 +68,17 @@ patches:
           existingSecret: grafana-admin
           userKey: admin-user
           passwordKey: admin-password
+      # Add Loki datasource for log queries
+      - op: add
+        path: /spec/values/grafana/additionalDataSources
+        value:
+          - name: Loki
+            type: loki
+            url: http://loki-gateway.monitoring.svc.cluster.local:3100
+            access: proxy
+            isDefault: false
+            jsonData:
+              maxLines: 1000
 
       # ============================================================
       # Cardinality Reduction - Drop high-cardinality metrics and labels
@@ -372,3 +385,100 @@ patches:
     target:
       kind: HelmRelease
       name: kube-prometheus-stack
+
+  # Loki configuration - S3 storage with SeaweedFS backend
+  - patch: |-
+      - op: add
+        path: /spec/values/loki
+        value:
+          # Schema configuration
+          schemaConfig:
+            configs:
+              - from: "2024-01-01"
+                store: tsdb
+                object_store: s3
+                schema: v13
+                index:
+                  prefix: index_
+                  period: 24h
+          # S3 storage configuration (SeaweedFS)
+          storage:
+            type: s3
+            s3:
+              endpoint: http://seaweedfs-filer.seaweedfs.svc.cluster.local:8333
+              s3ForcePathStyle: true
+              insecure: true
+            bucketNames:
+              chunks: loki
+              ruler: loki
+              admin: loki
+          # Use existing secret for S3 credentials
+          storage_config:
+            aws:
+              s3forcepathstyle: true
+      # Configure read/write/backend replicas
+      - op: add
+        path: /spec/values/read
+        value:
+          replicas: 2
+          persistence:
+            storageClass: openebs-mayastor
+            size: 10Gi
+      - op: add
+        path: /spec/values/write
+        value:
+          replicas: 2
+          persistence:
+            storageClass: openebs-mayastor
+            size: 10Gi
+      - op: add
+        path: /spec/values/backend
+        value:
+          replicas: 2
+          persistence:
+            storageClass: openebs-mayastor
+            size: 10Gi
+      # Gateway configuration
+      - op: add
+        path: /spec/values/gateway
+        value:
+          replicas: 1
+      # Chunked encoding for S3
+      - op: add
+        path: /spec/values/chunksCache
+        value:
+          enabled: false
+      # Disable minio (we use SeaweedFS)
+      - op: add
+        path: /spec/values/minio
+        value:
+          enabled: false
+      # Retention: 30 days
+      - op: add
+        path: /spec/values/compactor
+        value:
+          retention_enabled: true
+          retention_delete_delay: 2h
+          delete_request_store: s3
+      # Limits
+      - op: add
+        path: /spec/values/limits_config
+        value:
+          retention_period: 720h
+          max_query_parallelism: 32
+          max_query_series: 10000
+      # Configure S3 credentials from secret
+      - op: add
+        path: /spec/valuesFrom
+        value:
+          - kind: Secret
+            name: loki-s3-credentials
+            valuesKey: access_key_id
+            targetPath: loki.storage.s3.accessKeyId
+          - kind: Secret
+            name: loki-s3-credentials
+            valuesKey: access_key_secret
+            targetPath: loki.storage.s3.secretAccessKey
+    target:
+      kind: HelmRelease
+      name: loki

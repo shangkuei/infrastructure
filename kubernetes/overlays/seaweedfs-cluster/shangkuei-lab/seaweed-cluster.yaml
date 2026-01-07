@@ -50,9 +50,14 @@ spec:
   # Filer servers - S3 API endpoint
   filer:
     replicas: 2
-    # Enable S3 API gateway
+    # Enable S3 API gateway with IAM identity configuration
     s3:
       enabled: true
+      # S3 identities configuration (admin + service users)
+      # Secret contains config.json with user credentials and permissions
+      configSecret:
+        name: seaweedfs-s3-credentials
+        key: config.json
     # Filer metadata store configuration (leveldb2 - embedded)
     config: |
       [leveldb2]

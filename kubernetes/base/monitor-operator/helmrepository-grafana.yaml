@@ -1,0 +1,12 @@
+---
+# Grafana Helm Repository
+# Source for loki-operator, alloy, and other Grafana ecosystem charts
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: grafana
+  namespace: flux-system
+spec:
+  url: https://grafana.github.io/helm-charts
+  interval: 24h
+  timeout: 60s

@@ -1,0 +1,31 @@
+---
+# Flux Kustomization for Monitor Cluster
+# Deploys Grafana Alloy (unified telemetry collector)
+# Loki is deployed via monitor-operator
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: monitor-cluster
+  namespace: flux-system
+spec:
+  interval: 30m
+  timeout: 10m
+  prune: true
+  wait: true
+
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+
+  path: ./kubernetes/overlays/monitor-cluster/shangkuei-lab
+
+  # Dependencies: monitor-operator must be ready (Loki available for log ingestion)
+  dependsOn:
+    - name: monitor-operator
+
+  healthChecks:
+    - apiVersion: apps/v1
+      kind: DaemonSet
+      name: alloy
+      namespace: monitoring

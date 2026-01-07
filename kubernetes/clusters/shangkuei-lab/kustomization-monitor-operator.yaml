@@ -1,11 +1,11 @@
 ---
-# Flux Kustomization for kube-prometheus-stack Monitoring
-# Complete Kubernetes monitoring with Prometheus, Grafana, and Alertmanager
-# Storage: Mayastor (3-replica NVMe-oF) for high-performance metrics
+# Flux Kustomization for Monitor Operators
+# Deploys kube-prometheus-stack and Loki (SimpleScalable mode)
+# Storage: Mayastor (3-replica NVMe-oF) for high-performance metrics/logs
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: kube-prometheus-stack
+  name: monitor-operator
   namespace: flux-system
 spec:
   interval: 30m
@@ -18,13 +18,14 @@ spec:
     name: flux-system
     namespace: flux-system
 
-  path: ./kubernetes/overlays/kube-prometheus-stack/shangkuei-lab
+  path: ./kubernetes/overlays/monitor-operator/shangkuei-lab
 
-  # Dependencies: Storage must be ready for PVC provisioning
+  # Dependencies: Storage and SeaweedFS must be ready for Loki S3 backend
   dependsOn:
     - name: openebs
+    - name: seaweedfs-cluster
 
-  # SOPS decryption for encrypted secrets (Grafana admin credentials)
+  # SOPS decryption for encrypted secrets (Grafana admin, Loki S3 credentials)
   decryption:
     provider: sops
     secretRef:
@@ -38,6 +39,19 @@ spec:
     - apiVersion: apps/v1
       kind: Deployment
       name: prometheus-grafana
+      namespace: monitoring
+    # Loki SimpleScalable mode components
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: loki-read
+      namespace: monitoring
+    - apiVersion: apps/v1
+      kind: StatefulSet
+      name: loki-write
+      namespace: monitoring
+    - apiVersion: apps/v1
+      kind: StatefulSet
+      name: loki-backend
       namespace: monitoring
     - apiVersion: apps/v1
       kind: StatefulSet
