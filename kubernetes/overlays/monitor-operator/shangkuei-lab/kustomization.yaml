@@ -188,10 +188,10 @@ patches:
             - sourceLabels: [__name__, le]
               action: drop
               regex: (csi_operations|storage_operation_duration)_seconds_bucket;(0.25|2.5|15|25|120|600)(\.0)?
-            # Drop verbose kubelet internal bucket metrics
+            # Drop verbose kubelet internal bucket metrics (keep pod_start for dashboard)
             - sourceLabels: [__name__]
               action: drop
-              regex: kubelet_(pod_worker_duration_seconds_bucket|pod_start_duration_seconds_bucket)
+              regex: kubelet_pod_worker_duration_seconds_bucket
             # ---- Safe metric drops (no dashboard impact) ----
             # Drop prober histogram buckets (~1,200 series) - not used in dashboards
             - sourceLabels: [__name__]
@@ -201,18 +201,12 @@ patches:
             - sourceLabels: [__name__]
               action: drop
               regex: kubernetes_feature_enabled
-            # Drop kubelet runtime operations histogram (~1,400 series) - internal
-            - sourceLabels: [__name__]
-              action: drop
-              regex: kubelet_runtime_operations_duration_seconds_bucket
+            # Note: kubelet_runtime_operations_duration_seconds_bucket kept for Operation Duration dashboard panel
             # Drop kubelet HTTP metrics (~340 series) - internal
             - sourceLabels: [__name__]
               action: drop
               regex: kubelet_http_.*
-            # Drop kubelet cgroup manager metrics (~210 series) - internal
-            - sourceLabels: [__name__]
-              action: drop
-              regex: kubelet_cgroup_manager_.*
+            # Note: kubelet_cgroup_manager_* kept for Cgroup Manager dashboard panels
             # Drop DRA metrics (~185 series) - unused feature
             - sourceLabels: [__name__]
               action: drop
@@ -221,10 +215,7 @@ patches:
             - sourceLabels: [__name__]
               action: drop
               regex: authentication_.*_bucket
-            # Drop rest_client histogram buckets (~1,400 series) - client-go internal
-            - sourceLabels: [__name__]
-              action: drop
-              regex: rest_client_.*_bucket
+            # Note: rest_client_request_duration_seconds_bucket kept for Request Duration dashboard panel
             # Drop Go runtime histogram buckets (~790 series) - rarely needed
             - sourceLabels: [__name__]
               action: drop

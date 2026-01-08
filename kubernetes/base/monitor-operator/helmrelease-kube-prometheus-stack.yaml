@@ -96,18 +96,6 @@ spec:
         # Enable remote write for VictoriaMetrics/Thanos (optional)
         # remoteWrite: []
 
-    # TODO: Metric optimization - consider adding metricRelabelings to reduce cardinality
-    # Default Kubernetes metrics can be verbose. High-cardinality metrics to consider dropping:
-    # - kubelet: container_* metrics with high label cardinality
-    # - kube-state-metrics: kube_pod_labels, kube_pod_annotations (if not needed)
-    # - apiserver: apiserver_request_* with high path/verb cardinality
-    # Example metricRelabelings in kubelet ServiceMonitor:
-    #   metricRelabelings:
-    #     - sourceLabels: [__name__]
-    #       regex: 'container_(network_tcp_usage_total|tasks_state|memory_failures_total)'
-    #       action: drop
-    # See: https://github.com/prometheus-community/helm-charts/issues/2133
-
     # Alertmanager
     alertmanager:
       enabled: true
