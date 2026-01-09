@@ -1,0 +1,35 @@
+---
+# Prometheus datasource for Grafana (grafana-operator managed)
+# Connects to kube-prometheus-stack Prometheus instance
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDatasource
+metadata:
+  name: prometheus
+  namespace: monitoring
+spec:
+  # Target Grafana instance by label
+  instanceSelector:
+    matchLabels:
+      datasources: grafana
+
+  # Allow this datasource to be referenced by Grafana instance
+  allowCrossNamespaceImport: true
+
+  datasource:
+    name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus-kube-prometheus-prometheus.monitoring.svc.cluster.local:9090
+    isDefault: true
+    editable: false
+    jsonData:
+      # Time interval for scraping
+      timeInterval: "30s"
+      # Enable exemplars for trace correlation
+      exemplarTraceIdDestinations:
+        - name: traceID
+          datasourceUid: tempo
+      # Query timeout
+      httpMethod: POST
+      # Prometheus type (version auto-detected)
+      prometheusType: Prometheus

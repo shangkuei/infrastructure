@@ -1,0 +1,76 @@
+---
+# Grafana Operator - Manages Grafana instances, dashboards, and datasources via CRDs
+# Version: 5.x (PINNED - stable releases)
+#
+# CRDs managed:
+# - Grafana: Grafana instance deployment
+# - GrafanaDashboard: Dashboard definitions
+# - GrafanaDatasource: Datasource configurations
+# - GrafanaFolder: Dashboard folder organization
+#
+# Storage configuration is done via Grafana CR in overlays
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: grafana-operator
+  namespace: monitoring
+spec:
+  interval: 30m
+  timeout: 15m
+  chart:
+    spec:
+      chart: grafana-operator
+      version: ">=5.0.0 <6.0.0"
+      sourceRef:
+        kind: HelmRepository
+        name: grafana
+        namespace: flux-system
+      interval: 12h
+
+  install:
+    crds: CreateReplace
+    createNamespace: false
+    remediation:
+      retries: 3
+
+  upgrade:
+    crds: CreateReplace
+    remediation:
+      retries: 3
+      remediateLastFailure: true
+    cleanupOnFail: true
+
+  driftDetection:
+    mode: warn
+    ignore:
+      - paths: ["/spec/replicas"]
+        target:
+          kind: Deployment
+
+  values:
+    # Single replica with leader election for stability
+    replicas: 1
+    leaderElect: true
+
+    # Watch all namespaces for Grafana CRs
+    namespaceScope: false
+    watchNamespaces: ""
+
+    # Logging configuration
+    logging:
+      level: info
+
+    # Enable ServiceMonitor for Prometheus metrics
+    serviceMonitor:
+      enabled: true
+      labels:
+        release: kube-prometheus-stack
+
+    # Resource limits
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 256Mi

@@ -29,3 +29,8 @@ spec:
       kind: DaemonSet
       name: alloy
       namespace: monitoring
+    # Grafana instance managed by grafana-operator
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: grafana-deployment
+      namespace: monitoring

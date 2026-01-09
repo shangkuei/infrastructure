@@ -9,6 +9,14 @@ kind: Kustomization
 resources:
   - helmrelease-alloy.yaml
   - configmap-alloy.yaml
+  # Grafana instance managed by grafana-operator
+  - grafana-instance.yaml
+  # Grafana datasources (Prometheus, Loki)
+  - grafana-datasource-prometheus.yaml
+  - grafana-datasource-loki.yaml
+  # Grafana dashboards (managed via grafana-operator CRs)
+  - grafana-dashboard-node-exporter.yaml
+  - grafana-dashboard-kubernetes-cluster.yaml
 
 labels:
   - pairs:

@@ -61,3 +61,8 @@ spec:
       kind: StatefulSet
       name: prometheus-prometheus-kube-prometheus-prometheus
       namespace: monitoring
+    # Grafana Operator
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: grafana-operator
+      namespace: monitoring

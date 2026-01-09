@@ -1,0 +1,29 @@
+---
+# Kubernetes Cluster Dashboard (grafana-operator managed)
+# Source: https://grafana.com/grafana/dashboards/7249
+# Provides overview of Kubernetes cluster health and resource utilization
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDashboard
+metadata:
+  name: kubernetes-cluster
+  namespace: monitoring
+spec:
+  # Target Grafana instance by label
+  instanceSelector:
+    matchLabels:
+      dashboards: grafana
+
+  # Allow cross-namespace references
+  allowCrossNamespaceImport: true
+
+  # Dashboard folder organization
+  folder: "Kubernetes"
+
+  # Cache duration for URL-sourced dashboards
+  resyncPeriod: 24h
+
+  # Import from grafana.com dashboard registry
+  # Dashboard ID: 7249 (Kubernetes Cluster)
+  grafanaCom:
+    id: 7249
+    revision: 1
