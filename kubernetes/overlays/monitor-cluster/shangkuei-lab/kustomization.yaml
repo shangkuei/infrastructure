@@ -15,8 +15,10 @@ resources:
   - grafana-datasource-prometheus.yaml
   - grafana-datasource-loki.yaml
   # Grafana dashboards (managed via grafana-operator CRs)
-  - grafana-dashboard-node-exporter.yaml
-  - grafana-dashboard-kubernetes-cluster.yaml
+  # Source 1: dotdc/grafana-dashboards-kubernetes + Node Exporter Full (grafana.com IDs)
+  - grafana-dashboards-kubernetes.yaml
+  # Source 2: kube-prometheus jsonnet (generated via: cd dashboards && make build)
+  - grafana-dashboards-kube-prometheus.yaml
 
 labels:
   - pairs:

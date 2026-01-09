@@ -1,0 +1,8 @@
+# Jsonnet vendor dependencies (installed via jb install)
+vendor/
+
+# Generated dashboard JSON files
+output/
+
+# Jsonnet lock file (regenerated on install)
+jsonnetfile.lock.json
