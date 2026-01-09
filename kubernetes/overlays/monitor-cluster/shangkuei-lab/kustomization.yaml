@@ -15,10 +15,12 @@ resources:
   - grafana-datasource-prometheus.yaml
   - grafana-datasource-loki.yaml
   # Grafana dashboards (managed via grafana-operator CRs)
-  # Source 1: dotdc/grafana-dashboards-kubernetes + Node Exporter Full (grafana.com IDs)
-  - grafana-dashboards-kubernetes.yaml
-  # Source 2: kube-prometheus jsonnet (generated via: cd dashboards && make build)
+  # Source: kube-prometheus jsonnet (generated via: cd dashboards && make build)
   - grafana-dashboards-kube-prometheus.yaml
+  # Loki mixin recording rules for dashboard compatibility
+  # The Loki helm chart generates rules without cluster dimension, but loki-mixin
+  # dashboards expect cluster_job:* and cluster_job_route:* rules
+  - loki-mixin-recording-rules.yaml
 
 labels:
   - pairs:

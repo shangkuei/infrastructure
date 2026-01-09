@@ -510,8 +510,15 @@ patches:
           enabled: true
           labels:
             release: kube-prometheus-stack
-          # Loki cardinality reduction (~9.9K → ~4K series)
-          # Preserve metrics used by Loki dashboards and alerts
+          # Relabelings to set cluster label for dashboard compatibility
+          # Note: job label is already in namespace/service format (e.g., monitoring/loki-backend)
+          #       from the ServiceMonitor, no modification needed
+          relabelings:
+            # Set cluster label for multi-cluster support
+            - targetLabel: cluster
+              replacement: shangkuei-lab
+          # Loki cardinality reduction (~9.9K → ~2K series)
+          # Preserve only metrics used by Loki dashboards (simple-scalable mode)
           metricRelabelings:
             # Override cluster label from "loki" to "shangkuei-lab" for dashboard compatibility
             - sourceLabels: [cluster]
@@ -519,22 +526,58 @@ patches:
               replacement: shangkuei-lab
             # Drop internal histogram buckets not used in dashboards (~5K series)
             # Keep: loki_request_duration_seconds (recording rules), loki_s3_request_duration_seconds (S3 latency),
-            #       loki_ingester_chunk_*, loki_boltdb_shipper_*, loki_memcache_*
+            #       loki_ingester_chunk_*, loki_boltdb_shipper_*
             - sourceLabels: [__name__]
               action: drop
               regex: loki_(response_message_bytes|request_message_bytes|logql_querystats_.*|index_request_duration_seconds|kv_request_duration_seconds|cache_value_size_bytes|frontend_query_range_duration_seconds|ingester_client_request_duration_seconds|index_gateway_request_duration_seconds|cache_request_duration_seconds|tsdb_shipper_.*|log_flushes|bytes_per_line)_bucket
-            # Drop internal metrics not used in dashboards (~1K series)
+            # Drop internal metrics not used in dashboards
             - sourceLabels: [__name__]
               action: drop
               regex: loki_(ring_.*|inflight_requests|bloom_.*)
-      # Enable Loki recording rules (required for Loki dashboards to show data)
+            # Drop canary metrics (testing only)
+            - sourceLabels: [__name__]
+              action: drop
+              regex: loki_canary_.*
+            # Drop memberlist/gossip metrics (internal)
+            - sourceLabels: [__name__]
+              action: drop
+              regex: loki_memberlist_.*
+            # Drop query frontend/scheduler internals (not in simple-scalable dashboards)
+            - sourceLabels: [__name__]
+              action: drop
+              regex: loki_(query_frontend_.*|query_scheduler_.*|querier_.*)
+            # Drop rate store metrics (rate limiting internals)
+            - sourceLabels: [__name__]
+              action: drop
+              regex: loki_rate_store_.*
+            # Drop index gateway metrics (internal)
+            - sourceLabels: [__name__]
+              action: drop
+              regex: loki_index_gateway_.*
+            # Drop WAL and checkpoint metrics (not used)
+            - sourceLabels: [__name__]
+              action: drop
+              regex: loki_ingester_(wal_.*|checkpoint_.*)
+            # Drop Kafka distributor metrics (not using Kafka)
+            - sourceLabels: [__name__]
+              action: drop
+              regex: loki_distributor_kafka_.*
+            # Drop store and cache metrics (internal)
+            - sourceLabels: [__name__]
+              action: drop
+              regex: loki_(store_.*|cache_.*|memcache_.*)
+            # Drop Azure blob metrics (not using Azure)
+            - sourceLabels: [__name__]
+              action: drop
+              regex: loki_azure_.*
+      # Disable Loki helm chart recording rules and alerts
+      # We deploy loki-mixin rules instead (monitor-cluster/loki-mixin-recording-rules.yaml)
+      # which include the cluster dimension required by loki-mixin dashboards
       - op: add
         path: /spec/values/monitoring/rules
         value:
-          enabled: true
-          alerting: true
-          labels:
-            release: kube-prometheus-stack
+          enabled: false
+          alerting: false
       # Configure S3 credentials from secret
       - op: add
         path: /spec/valuesFrom

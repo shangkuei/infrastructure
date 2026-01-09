@@ -13,6 +13,7 @@ echo "==> Installing jsonnet dependencies..."
 jb install
 
 echo "==> Building dashboards from jsonnet..."
+rm -rf "${OUTPUT_DIR}"
 mkdir -p "${OUTPUT_DIR}"
 jsonnet -J vendor -m "${OUTPUT_DIR}" dashboards.jsonnet
 
@@ -21,6 +22,23 @@ echo "==> Decoding dashboard JSON files..."
 for json_file in "${OUTPUT_DIR}"/*.json; do
   # Parse the JSON string and output proper JSON
   jq -r '.' "${json_file}" > "${json_file}.tmp" && mv "${json_file}.tmp" "${json_file}"
+done
+
+# Fix Loki dashboards for SSD mode
+# The loki-mixin doesn't properly replace container-based resource queries for SSD mode
+# In SSD mode, all containers are named 'loki', so we filter by pod name instead
+echo "==> Fixing Loki SSD mode resource queries..."
+for loki_dashboard in "${OUTPUT_DIR}"/loki-*.json; do
+  if [[ -f "${loki_dashboard}" ]]; then
+    # Replace container patterns with pod patterns for SSD mode
+    # distributor/ingester -> loki.*-write.*, querier -> loki.*-read.*, backend -> loki.*-backend.*
+    sed -e 's/container=~\\".*distributor.*\\"/pod=~\\"loki.*-write.*\\"/g' \
+        -e 's/container=~\\".*ingester.*\\"/pod=~\\"loki.*-write.*\\"/g' \
+        -e 's/container=~\\".*querier.*\\"/pod=~\\"loki.*-read.*\\"/g' \
+        -e 's/container=~\\".*backend.*\\"/pod=~\\"loki.*-backend.*\\"/g' \
+        "${loki_dashboard}" > "${loki_dashboard}.tmp" \
+      && mv "${loki_dashboard}.tmp" "${loki_dashboard}"
+  fi
 done
 
 echo "==> Generating GrafanaDashboard CRs..."
@@ -38,11 +56,15 @@ for json_file in "${OUTPUT_DIR}"/*.json; do
   name=$(echo "${filename}" | tr '[:upper:]' '[:lower:]' | tr '_' '-')
 
   # Determine folder based on dashboard name
-  folder="Kubernetes / kube-prometheus"
-  if [[ "${filename}" == *"node"* ]]; then
-    folder="Node Exporter / kube-prometheus"
-  elif [[ "${filename}" == *"prometheus"* ]] || [[ "${filename}" == *"alertmanager"* ]] || [[ "${filename}" == *"grafana"* ]]; then
-    folder="Prometheus / kube-prometheus"
+  folder="Kubernetes"
+  if [[ "${filename}" == loki-* ]]; then
+    folder="Loki"
+  elif [[ "${filename}" == *"grafana"* ]]; then
+    folder="Grafana"
+  elif [[ "${filename}" == node-* ]] || [[ "${filename}" == nodes ]]; then
+    folder="Node Exporter"
+  elif [[ "${filename}" == *"prometheus"* ]] || [[ "${filename}" == *"alertmanager"* ]]; then
+    folder="Prometheus"
   fi
 
   echo "  - ${name}"

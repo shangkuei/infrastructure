@@ -1,6 +1,6 @@
 # Grafana Dashboards from kube-prometheus
 
-This directory contains tooling to build Grafana dashboards from the [kube-prometheus](https://github.com/prometheus-operator/kube-prometheus) jsonnet source.
+This directory contains tooling to build Grafana dashboards from the [kube-prometheus](https://github.com/prometheus-operator/kube-prometheus) jsonnet source and additional mixins.
 
 ## Prerequisites
 
@@ -34,21 +34,24 @@ make update
 
 ## Dashboard Sources
 
-We use two dashboard sources for comparison:
+**kube-prometheus jsonnet** (Kubernetes monitoring)
 
-1. **dotdc/grafana-dashboards-kubernetes** (`grafana-dashboards-kubernetes.yaml`)
-   - Modern, actively maintained dashboards
-   - Published on grafana.com (IDs: 15757-15762, 19105, 1860)
-   - Simpler, more focused views
+- Official Prometheus Operator dashboards
+- Comprehensive kubernetes-mixin dashboards
+- Node Exporter dashboards (Linux only - Windows/AIX/Darwin filtered out)
 
-2. **kube-prometheus jsonnet** (`grafana-dashboards-kube-prometheus.yaml`)
-   - Official Prometheus Operator dashboards
-   - Comprehensive kubernetes-mixin dashboards
-   - Generated from jsonnet source
+**CoreDNS mixin** (DNS monitoring)
+
+- CoreDNS dashboard from [povilasv/coredns-mixin](https://github.com/povilasv/coredns-mixin)
+
+**Loki mixin** (Log monitoring)
+
+- Loki operational dashboards from [grafana/loki](https://github.com/grafana/loki)
+- Includes: reads, writes, chunks, retention, deletion, bloom, and more
 
 ## Updating Dashboards
 
-To update the kube-prometheus dashboards:
+To update the dashboards:
 
 ```bash
 cd dashboards
@@ -57,3 +60,11 @@ make build   # Rebuild dashboards
 ```
 
 Then commit the regenerated `grafana-dashboards-kube-prometheus.yaml`.
+
+## Customization
+
+Edit `dashboards.jsonnet` to:
+
+- Add new mixins
+- Filter dashboards by name pattern
+- Customize mixin configuration
