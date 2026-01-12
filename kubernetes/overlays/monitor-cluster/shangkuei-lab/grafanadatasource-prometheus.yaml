@@ -17,9 +17,10 @@ spec:
 
   datasource:
     name: Prometheus
+    uid: prometheus
     type: prometheus
     access: proxy
-    url: http://prometheus-prometheus.monitoring.svc.cluster.local:9090
+    url: http://prometheus.monitoring.svc.cluster.local:9090
     isDefault: true
     editable: false
     jsonData:
@@ -29,6 +30,8 @@ spec:
       exemplarTraceIdDestinations:
         - name: traceID
           datasourceUid: tempo
+      # Link to Loki for log volume correlation
+      lokiDatasourceUid: loki
       # Query timeout
       httpMethod: POST
       # Prometheus type (version auto-detected)

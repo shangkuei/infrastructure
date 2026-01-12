@@ -1,0 +1,43 @@
+---
+# Alertmanager self-monitoring ServiceMonitor
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  labels:
+    app.kubernetes.io/name: alertmanager
+    app.kubernetes.io/instance: cluster
+    app.kubernetes.io/part-of: monitoring
+    app.kubernetes.io/managed-by: kustomize
+  name: alertmanager
+  namespace: monitoring
+spec:
+  endpoints:
+    - enableHttp2: true
+      metricRelabelings:
+        - action: drop
+          regex: alertmanager_.*_bucket
+          sourceLabels:
+            - __name__
+      path: /metrics
+      port: http-web
+      relabelings:
+        - action: replace
+          replacement: shangkuei-lab
+          targetLabel: cluster
+    - metricRelabelings:
+        - action: drop
+          regex: alertmanager_.*_bucket
+          sourceLabels:
+            - __name__
+      path: /metrics
+      port: reloader-web
+      relabelings:
+        - action: replace
+          replacement: shangkuei-lab
+          targetLabel: cluster
+  namespaceSelector:
+    matchNames:
+      - monitoring
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: alertmanager

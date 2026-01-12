@@ -1,0 +1,162 @@
+---
+# Migrated from kube-prometheus-stack chart to explicit CR
+# This allows version control and customization of monitoring configuration
+# Original chart-managed resource: prometheus-kubelet
+
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  annotations: {}
+  labels:
+    app.kubernetes.io/instance: prometheus-operator
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/part-of: kube-prometheus-stack
+  name: prometheus-kubelet
+  namespace: monitoring
+spec:
+  attachMetadata:
+    node: false
+  endpoints:
+    - bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+      honorLabels: true
+      honorTimestamps: true
+      metricRelabelings:
+        - action: drop
+          regex: (csi_operations|storage_operation_duration)_seconds_bucket;(0.25|2.5|15|25|120|600)(\.0)?
+          sourceLabels:
+            - __name__
+            - le
+        - action: drop
+          regex: kubelet_pod_worker_duration_seconds_bucket
+          sourceLabels:
+            - __name__
+        - action: drop
+          regex: prober_probe_duration_seconds_bucket
+          sourceLabels:
+            - __name__
+        - action: drop
+          regex: kubernetes_feature_enabled
+          sourceLabels:
+            - __name__
+        - action: drop
+          regex: kubelet_http_.*
+          sourceLabels:
+            - __name__
+        - action: drop
+          regex: dra_.*
+          sourceLabels:
+            - __name__
+        - action: drop
+          regex: authentication_.*_bucket
+          sourceLabels:
+            - __name__
+        - action: drop
+          regex: go_(gc|sched)_.*_bucket
+          sourceLabels:
+            - __name__
+        - action: drop
+          regex: go_godebug_.*
+          sourceLabels:
+            - __name__
+      port: https-metrics
+      relabelings:
+        - action: replace
+          sourceLabels:
+            - __metrics_path__
+          targetLabel: metrics_path
+        - action: replace
+          replacement: shangkuei-lab
+          targetLabel: cluster
+      scheme: https
+      tlsConfig:
+        caFile: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        insecureSkipVerify: true
+    - bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+      honorLabels: true
+      honorTimestamps: true
+      interval: 10s
+      metricRelabelings:
+        - action: drop
+          regex: container_cpu_(cfs_throttled_seconds_total|load_average_10s|system_seconds_total|user_seconds_total)
+          sourceLabels:
+            - __name__
+        - action: drop
+          regex: container_fs_(io_current|io_time_seconds_total|io_time_weighted_seconds_total|reads_merged_total|sector_reads_total|sector_writes_total|writes_merged_total)
+          sourceLabels:
+            - __name__
+        - action: drop
+          regex: container_memory_(mapped_file|swap)
+          sourceLabels:
+            - __name__
+        - action: drop
+          regex: container_(file_descriptors|tasks_state|threads_max)
+          sourceLabels:
+            - __name__
+        - action: drop
+          regex: container_memory_failures_total;hierarchy
+          sourceLabels:
+            - __name__
+            - scope
+        - action: drop
+          regex: container_network_.*;(ip6tnl|sit|teql|dummy|lo).*
+          sourceLabels:
+            - __name__
+            - interface
+        - action: drop
+          regex: container_spec.*
+          sourceLabels:
+            - __name__
+        - action: drop
+          regex: .+;
+          sourceLabels:
+            - id
+            - pod
+        - action: drop
+          regex: container_accelerator_.*
+          sourceLabels:
+            - __name__
+        - action: drop
+          regex: container_blkio_device_usage_total
+          sourceLabels:
+            - __name__
+        - action: labeldrop
+          regex: ^id$
+        - action: labeldrop
+          regex: ^name$
+      path: /metrics/cadvisor
+      port: https-metrics
+      relabelings:
+        - action: replace
+          sourceLabels:
+            - __metrics_path__
+          targetLabel: metrics_path
+        - action: replace
+          replacement: shangkuei-lab
+          targetLabel: cluster
+      scheme: https
+      tlsConfig:
+        caFile: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        insecureSkipVerify: true
+      trackTimestampsStaleness: true
+    - bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+      honorLabels: true
+      honorTimestamps: true
+      path: /metrics/probes
+      port: https-metrics
+      relabelings:
+        - action: replace
+          sourceLabels:
+            - __metrics_path__
+          targetLabel: metrics_path
+      scheme: https
+      tlsConfig:
+        caFile: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        insecureSkipVerify: true
+  jobLabel: k8s-app
+  namespaceSelector:
+    matchNames:
+      - kube-system
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: kubelet
+      k8s-app: kubelet

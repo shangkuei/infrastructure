@@ -1,0 +1,18 @@
+---
+# Prometheus PVC - for new instance with correct operator-expected naming
+# Name pattern: prometheus-{CR_NAME}-db-prometheus-{CR_NAME}-{ordinal}
+# CR name: cluster → PVC name: prometheus-cluster-db-prometheus-cluster-0
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: prometheus-cluster-db-prometheus-cluster-0
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: openebs-mayastor
+  resources:
+    requests:
+      storage: 200Gi

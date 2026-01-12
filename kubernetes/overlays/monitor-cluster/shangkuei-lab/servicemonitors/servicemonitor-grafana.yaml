@@ -1,0 +1,26 @@
+---
+# ServiceMonitor for Grafana (grafana-operator managed)
+# Scrapes Grafana metrics for the Grafana Overview dashboard
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: grafana
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: grafana
+    app.kubernetes.io/part-of: monitoring
+    app.kubernetes.io/managed-by: kustomize
+spec:
+  endpoints:
+    - port: grafana
+      interval: 30s
+      path: /metrics
+      relabelings:
+        - targetLabel: cluster
+          replacement: shangkuei-lab
+  namespaceSelector:
+    matchNames:
+      - monitoring
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: grafana

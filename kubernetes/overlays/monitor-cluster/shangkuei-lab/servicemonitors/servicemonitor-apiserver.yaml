@@ -1,0 +1,70 @@
+---
+# Migrated from kube-prometheus-stack chart to explicit CR
+# This allows version control and customization of monitoring configuration
+# Original chart-managed resource: prometheus-apiserver
+
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  annotations: {}
+  labels:
+    app.kubernetes.io/instance: prometheus-operator
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/part-of: kube-prometheus-stack
+  name: prometheus-apiserver
+  namespace: monitoring
+spec:
+  endpoints:
+    - bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+      metricRelabelings:
+        - action: drop
+          regex: apiserver_(request_count|request_latencies|request_latencies_summary)
+          sourceLabels:
+            - __name__
+        - action: drop
+          regex: apiserver_request_duration_seconds_(bucket|sum|count)
+          sourceLabels:
+            - __name__
+        - action: drop
+          regex: (etcd_request|apiserver_request_slo|apiserver_request_sli)_duration_seconds_bucket;(0.15|0.2|0.3|0.35|0.4|0.45|0.6|0.7|0.8|0.9|1.25|1.5|1.75|2|3|3.5|4|4.5|6|7|8|9|15|20|40|45|50)(\.0)?
+          sourceLabels:
+            - __name__
+            - le
+        - action: drop
+          regex: apiserver_(request_body_size_bytes_bucket|response_sizes_bucket|watch_events_sizes_bucket|watch_list_duration_seconds_bucket|watch_cache_read_wait_seconds_bucket|admission_controller_admission_duration_seconds_bucket)
+          sourceLabels:
+            - __name__
+        - action: drop
+          regex: etcd_.*
+          sourceLabels:
+            - __name__
+        - action: drop
+          regex: apiserver_flowcontrol_.*
+          sourceLabels:
+            - __name__
+        - action: drop
+          regex: apiserver_watch_cache_.*
+          sourceLabels:
+            - __name__
+        - action: drop
+          regex: apiserver_storage_.*
+          sourceLabels:
+            - __name__
+      port: https
+      relabelings:
+        - action: replace
+          replacement: shangkuei-lab
+          targetLabel: cluster
+      scheme: https
+      tlsConfig:
+        caFile: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        insecureSkipVerify: false
+        serverName: kubernetes
+  jobLabel: component
+  namespaceSelector:
+    matchNames:
+      - default
+  selector:
+    matchLabels:
+      component: apiserver
+      provider: kubernetes

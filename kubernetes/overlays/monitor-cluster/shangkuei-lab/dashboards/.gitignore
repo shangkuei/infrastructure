@@ -4,5 +4,8 @@ vendor/
 # Generated dashboard JSON files
 output/
 
+# Generated alert JSON files
+output-alerts/
+
 # Jsonnet lock file (regenerated on install)
 jsonnetfile.lock.json

@@ -1,0 +1,157 @@
+---
+# prometheus-operator - Prometheus Operator Only
+# Using kube-prometheus-stack chart in operator-only mode
+# Version: 80.x (auto-updates minor/patch within major version)
+#
+# Enabled Components:
+# - Prometheus Operator: Manages Prometheus/Alertmanager CRs
+#
+# Disabled Components (managed separately):
+# - Prometheus CR: Explicit CR in monitor-cluster overlay
+# - Alertmanager CR: Explicit CR in monitor-cluster overlay
+# - Grafana: Managed by grafana-operator
+# - node-exporter: Standalone HelmRelease
+# - kube-state-metrics: Standalone HelmRelease
+#
+# Architecture: Chart provides operator, monitor-cluster provides CRs
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: prometheus-operator
+  namespace: monitoring
+spec:
+  interval: 30m
+  timeout: 15m
+  chart:
+    spec:
+      chart: kube-prometheus-stack
+      version: ">=80.0.0 <81.0.0"
+      sourceRef:
+        kind: HelmRepository
+        name: prometheus-community
+        namespace: flux-system
+      interval: 12h
+
+  install:
+    crds: CreateReplace
+    createNamespace: false
+    remediation:
+      retries: 3
+
+  upgrade:
+    crds: CreateReplace
+    remediation:
+      retries: 3
+      remediateLastFailure: true
+    cleanupOnFail: true
+
+  driftDetection:
+    mode: warn
+    ignore:
+      - paths: ["/spec/replicas"]
+        target:
+          kind: Deployment
+
+  values:
+    # Global settings
+    fullnameOverride: prometheus
+
+    # Prometheus Operator
+    prometheusOperator:
+      enabled: true
+      resources:
+        limits:
+          cpu: 200m
+          memory: 256Mi
+        requests:
+          cpu: 100m
+          memory: 128Mi
+      serviceMonitor:
+        enabled: false  # Now managed in monitor-cluster overlay
+
+    # Prometheus Server - disabled, managed via explicit CR in monitor-cluster overlay
+    prometheus:
+      enabled: false
+      serviceMonitor:
+        enabled: false  # Now managed in monitor-cluster overlay
+
+    # Alertmanager - disabled, managed via explicit CR in monitor-cluster overlay
+    alertmanager:
+      enabled: false
+      serviceMonitor:
+        enabled: false  # Now managed in monitor-cluster overlay
+
+    # Grafana
+    grafana:
+      enabled: true
+      adminPassword: admin  # Change via overlay or SOPS secret
+      defaultDashboardsEnabled: true
+      defaultDashboardsTimezone: utc
+
+      resources:
+        limits:
+          cpu: 500m
+          memory: 512Mi
+        requests:
+          cpu: 100m
+          memory: 256Mi
+
+      # Persistence - disabled by default
+      persistence:
+        enabled: false
+
+      # Sidecar for loading dashboards/datasources
+      sidecar:
+        dashboards:
+          enabled: true
+          searchNamespace: ALL
+        datasources:
+          enabled: true
+          searchNamespace: ALL
+
+      # Additional data sources can be added via overlay
+      additionalDataSources: []
+
+    # Node Exporter - host metrics
+    nodeExporter:
+      enabled: true
+      resources:
+        limits:
+          cpu: 100m
+          memory: 128Mi
+        requests:
+          cpu: 50m
+          memory: 64Mi
+
+    # kube-state-metrics - Kubernetes object metrics
+    kube-state-metrics:
+      enabled: true
+      resources:
+        limits:
+          cpu: 100m
+          memory: 256Mi
+        requests:
+          cpu: 50m
+          memory: 128Mi
+
+    # Prometheus rules and ServiceMonitors for Kubernetes components
+    # Disabled - now managed explicitly in monitor-cluster overlay for GitOps control
+    kubeApiServer:
+      enabled: false  # Now managed in monitor-cluster overlay
+    kubelet:
+      enabled: false  # Now managed in monitor-cluster overlay
+    kubeControllerManager:
+      enabled: false  # Not accessible on managed K8s
+    coreDns:
+      enabled: false  # Now managed in monitor-cluster overlay
+    kubeEtcd:
+      enabled: false  # Not accessible on Talos
+    kubeScheduler:
+      enabled: false  # Not accessible on managed K8s
+    kubeProxy:
+      enabled: false  # Using Cilium kube-proxy replacement
+
+    # Default rules - disabled, now managed explicitly in monitor-cluster overlay
+    # All PrometheusRules are version-controlled in monitor-cluster for GitOps
+    defaultRules:
+      create: false

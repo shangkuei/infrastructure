@@ -4,8 +4,6 @@ kind: Kustomization
 
 resources:
   - ../../../base/monitor-operator
-  # SOPS-encrypted secret for Grafana admin credentials
-  - secret-grafana-admin.enc.yaml
   # SOPS-encrypted secret for Loki S3 storage (SeaweedFS)
   - secret-loki-s3.enc.yaml
 
@@ -29,36 +27,12 @@ patches:
         value: "80.12.1"
     target:
       kind: HelmRelease
-      name: kube-prometheus-stack
+      name: prometheus-operator
   - patch: |-
-      # Add cluster label for multi-cluster dashboard compatibility
-      # externalLabels: Used for remote-write, federation, and alerts
-      - op: add
-        path: /spec/values/prometheus/prometheusSpec/externalLabels
-        value:
-          cluster: shangkuei-lab
-      - op: add
-        path: /spec/values/prometheus/prometheusSpec/storageSpec
-        value:
-          volumeClaimTemplate:
-            spec:
-              storageClassName: openebs-mayastor
-              accessModes:
-                - ReadWriteOnce
-              resources:
-                requests:
-                  storage: 200Gi
-      - op: add
-        path: /spec/values/alertmanager/alertmanagerSpec/storage
-        value:
-          volumeClaimTemplate:
-            spec:
-              storageClassName: openebs-mayastor
-              accessModes:
-                - ReadWriteOnce
-              resources:
-                requests:
-                  storage: 5Gi
+      # Note: Prometheus and Alertmanager configurations moved to explicit CRs
+      # in monitor-cluster overlay for full GitOps control
+
+      # Grafana persistence (will be disabled below, kept for reference)
       - op: replace
         path: /spec/values/grafana/persistence
         value:
@@ -91,329 +65,34 @@ patches:
             secureJsonData:
               httpHeaderValue1: shangkuei-lab
 
-      # ============================================================
-      # Cardinality Reduction - Drop high-cardinality metrics and labels
-      # Conservative approach: Preserve metrics needed by default dashboards
-      # Target: Reduce series count from ~144K to ~70K (~50% reduction)
-      #
-      # Techniques used:
-      # 1. Drop unused metrics (~70K series):
-      #    - apiserver_request_duration_seconds (~17K) - not used, keep _sli_ variant
-      #    - etcd_request_duration_seconds (~9K) - not used
-      #    - apiserver histogram buckets (~12K)
-      #    - container_* metrics: tasks_state, memory_failures, blkio (~5K)
-      #    - kube_pod_* metrics: tolerations, status_reason, status_qos_class (~1K)
-      #    - Internal metrics: apiserver_flowcontrol_*, apiserver_storage_*, kubelet_http_*
-      #    - Unused features: dra_*, kubernetes_feature_enabled
-      # 2. Drop high-cardinality labels (id, name, uid, created_by_name)
-      # 3. Drop unused tunnel interfaces only (ip6tnl, sit, teql, dummy, lo)
-      #
-      # NOTE: This local Prometheus is the central metrics repository.
-      # If Grafana Cloud integration is added later, only push critical
-      # alerting metrics (~2-5K series) to control costs.
-      # ============================================================
+      # Disable Grafana (now managed by grafana-operator)
+      - op: replace
+        path: /spec/values/grafana/enabled
+        value: false
 
-      # Kubelet - create serviceMonitor object first, then add relabelings
-      # Based on upstream kube-prometheus-stack recommended cardinality reduction
+      # Disable exporters (now managed by standalone HelmReleases)
+      - op: replace
+        path: /spec/values/nodeExporter/enabled
+        value: false
+      - op: replace
+        path: /spec/values/kube-state-metrics/enabled
+        value: false
+      # Force kube-state-metrics replicas to 0 as subchart doesn't respect enabled: false
       - op: add
-        path: /spec/values/kubelet/serviceMonitor
-        value:
-          # Add cluster label and metrics_path to all kubelet metrics
-          # metrics_path is required for KubeletDown alert rule
-          relabelings:
-            - sourceLabels: [__metrics_path__]
-              targetLabel: metrics_path
-            - targetLabel: cluster
-              replacement: shangkuei-lab
-          cAdvisorRelabelings:
-            - sourceLabels: [__metrics_path__]
-              targetLabel: metrics_path
-            - targetLabel: cluster
-              replacement: shangkuei-lab
-          # cAdvisor metric relabelings - biggest contributor to cardinality
-          cAdvisorMetricRelabelings:
-            # Drop less useful container CPU metrics
-            - sourceLabels: [__name__]
-              action: drop
-              regex: container_cpu_(cfs_throttled_seconds_total|load_average_10s|system_seconds_total|user_seconds_total)
-            # Drop low-value filesystem I/O metrics
-            - sourceLabels: [__name__]
-              action: drop
-              regex: container_fs_(io_current|io_time_seconds_total|io_time_weighted_seconds_total|reads_merged_total|sector_reads_total|sector_writes_total|writes_merged_total)
-            # Drop rarely queried memory metrics
-            - sourceLabels: [__name__]
-              action: drop
-              regex: container_memory_(mapped_file|swap)
-            # Drop process/thread metrics
-            - sourceLabels: [__name__]
-              action: drop
-              regex: container_(file_descriptors|tasks_state|threads_max)
-            # Drop memory failures with hierarchy scope
-            - sourceLabels: [__name__, scope]
-              action: drop
-              regex: container_memory_failures_total;hierarchy
-            # Drop unused tunnel and virtual network interfaces only
-            # NOTE: Keeping CNI interfaces (veth, cali, etc.) as they contain actual pod network metrics
-            # Only dropping interfaces that don't carry real traffic
-            - sourceLabels: [__name__, interface]
-              action: drop
-              regex: container_network_.*;(ip6tnl|sit|teql|dummy|lo).*
-            # Drop container spec metrics
-            - sourceLabels: [__name__]
-              action: drop
-              regex: container_spec.*
-            # Drop metrics for containers without pod (system containers)
-            - sourceLabels: [id, pod]
-              action: drop
-              regex: .+;
-            # Drop accelerator metrics if not using GPUs
-            - sourceLabels: [__name__]
-              action: drop
-              regex: container_accelerator_.*
-            # Drop blkio metrics
-            - sourceLabels: [__name__]
-              action: drop
-              regex: container_blkio_device_usage_total
-            # ---- Label-based cardinality reduction ----
-            # Drop 'id' label (cgroup ID) - 216 unique values, rarely queried
-            # Saves cardinality by reducing label combinations
-            - regex: ^id$
-              action: labeldrop
-            # Drop 'name' label - redundant with 'container' label
-            - regex: ^name$
-              action: labeldrop
-          # Kubelet metrics relabelings
-          metricRelabelings:
-            # Drop noisy storage operation histogram buckets (keep essential ones)
-            - sourceLabels: [__name__, le]
-              action: drop
-              regex: (csi_operations|storage_operation_duration)_seconds_bucket;(0.25|2.5|15|25|120|600)(\.0)?
-            # Drop verbose kubelet internal bucket metrics (keep pod_start for dashboard)
-            - sourceLabels: [__name__]
-              action: drop
-              regex: kubelet_pod_worker_duration_seconds_bucket
-            # ---- Safe metric drops (no dashboard impact) ----
-            # Drop prober histogram buckets (~1,200 series) - not used in dashboards
-            - sourceLabels: [__name__]
-              action: drop
-              regex: prober_probe_duration_seconds_bucket
-            # Drop kubernetes feature flags (~1,200 series) - static info, rarely queried
-            - sourceLabels: [__name__]
-              action: drop
-              regex: kubernetes_feature_enabled
-            # Note: kubelet_runtime_operations_duration_seconds_bucket kept for Operation Duration dashboard panel
-            # Drop kubelet HTTP metrics (~340 series) - internal
-            - sourceLabels: [__name__]
-              action: drop
-              regex: kubelet_http_.*
-            # Note: kubelet_cgroup_manager_* kept for Cgroup Manager dashboard panels
-            # Drop DRA metrics (~185 series) - unused feature
-            - sourceLabels: [__name__]
-              action: drop
-              regex: dra_.*
-            # Drop authentication token cache buckets (~140 series)
-            - sourceLabels: [__name__]
-              action: drop
-              regex: authentication_.*_bucket
-            # Note: rest_client_request_duration_seconds_bucket kept for Request Duration dashboard panel
-            # Drop Go runtime histogram buckets (~790 series) - rarely needed
-            - sourceLabels: [__name__]
-              action: drop
-              regex: go_(gc|sched)_.*_bucket
-            # Drop Go godebug metrics (~260 series) - debugging only
-            - sourceLabels: [__name__]
-              action: drop
-              regex: go_godebug_.*
-
-      # kube-state-metrics - create prometheus.monitor path first
+        path: /spec/values/kube-state-metrics/replicas
+        value: 0
+      # Disable kube-state-metrics ServiceMonitor (using standalone chart instead)
       - op: add
         path: /spec/values/kube-state-metrics/prometheus
         value:
           monitor:
-            relabelings:
-              - targetLabel: cluster
-                replacement: shangkuei-lab
-            metricRelabelings:
-              # Drop kube_pod_labels and kube_pod_annotations (very high cardinality)
-              - sourceLabels: [__name__]
-                regex: kube_(pod_annotations|pod_labels|configmap_annotations|secret_annotations|service_annotations|node_labels)
-                action: drop
-              # Drop high-cardinality pod metrics not used in alerts/dashboards (~1K series)
-              - sourceLabels: [__name__]
-                regex: kube_pod_(tolerations|status_reason|status_qos_class)
-                action: drop
-              # ---- Label-based cardinality reduction ----
-              # Drop 'uid' label (62 unique values) - rarely queried directly
-              # Note: kube_pod_info retains uid for joining if needed via recording rules
-              - regex: ^uid$
-                action: labeldrop
-              # Drop 'created_by_name' label (35 unique values) - rarely queried
-              - regex: ^created_by_name$
-                action: labeldrop
-              # Drop 'container_id' label (187 unique values) - cgroup ID, not queried
-              - regex: ^container_id$
-                action: labeldrop
-              # Drop 'image_id' label - SHA256 digest, never queried directly
-              - regex: ^image_id$
-                action: labeldrop
-              # Drop 'image_spec' label - redundant with 'image' label
-              - regex: ^image_spec$
-                action: labeldrop
+            enabled: false
 
-      # API Server - create serviceMonitor path first
-      # Note: apiserver contributes ~58K series, mostly from histogram buckets
-      # Uses selective bucket dropping from upstream recommendations
-      - op: add
-        path: /spec/values/kubeApiServer/serviceMonitor
-        value:
-          relabelings:
-            - targetLabel: cluster
-              replacement: shangkuei-lab
-          metricRelabelings:
-            # Drop deprecated metrics
-            - sourceLabels: [__name__]
-              action: drop
-              regex: apiserver_(request_count|request_latencies|request_latencies_summary)
-            # Drop apiserver_request_duration_seconds entirely (~17K series)
-            # Not used in alerts or dashboards - apiserver_request_sli_duration_seconds IS used
-            - sourceLabels: [__name__]
-              action: drop
-              regex: apiserver_request_duration_seconds_(bucket|sum|count)
-            # Drop excessively noisy apiserver buckets (keeps essential ones for percentiles)
-            - sourceLabels: [__name__, le]
-              action: drop
-              regex: (etcd_request|apiserver_request_slo|apiserver_request_sli)_duration_seconds_bucket;(0.15|0.2|0.3|0.35|0.4|0.45|0.6|0.7|0.8|0.9|1.25|1.5|1.75|2|3|3.5|4|4.5|6|7|8|9|15|20|40|45|50)(\.0)?
-            # Drop non-essential histogram buckets entirely
-            - sourceLabels: [__name__]
-              action: drop
-              regex: apiserver_(request_body_size_bytes_bucket|response_sizes_bucket|watch_events_sizes_bucket|watch_list_duration_seconds_bucket|watch_cache_read_wait_seconds_bucket|admission_controller_admission_duration_seconds_bucket)
-            # Drop etcd metrics exposed via apiserver (etcd scraping is disabled)
-            - sourceLabels: [__name__]
-              action: drop
-              regex: etcd_.*
-            # ---- Safe metric drops (no dashboard impact) ----
-            # Drop API Priority and Fairness metrics (~1,400 series) - APF internal
-            - sourceLabels: [__name__]
-              action: drop
-              regex: apiserver_flowcontrol_.*
-            # Drop watch cache metrics (~740 series) - internal debugging
-            - sourceLabels: [__name__]
-              action: drop
-              regex: apiserver_watch_cache_.*
-            # Drop storage metrics (~1,000 series) - internal
-            - sourceLabels: [__name__]
-              action: drop
-              regex: apiserver_storage_.*
-
-      # CoreDNS - create serviceMonitor path first
-      - op: add
-        path: /spec/values/coreDns/serviceMonitor
-        value:
-          relabelings:
-            - targetLabel: cluster
-              replacement: shangkuei-lab
-          metricRelabelings:
-            - sourceLabels: [__name__]
-              regex: coredns_(dns_request_size_bytes_bucket|dns_response_size_bytes_bucket)
-              action: drop
-
-      # Node exporter - disable collectors for unused subsystems
-      - op: add
-        path: /spec/values/prometheus-node-exporter
-        value:
-          extraArgs:
-            - --no-collector.arp
-            - --no-collector.bcache
-            - --no-collector.bonding
-            - --no-collector.btrfs
-            - --no-collector.dmi
-            - --no-collector.fibrechannel
-            - --no-collector.infiniband
-            - --no-collector.ipvs
-            - --no-collector.mdadm
-            - --no-collector.nfs
-            - --no-collector.nfsd
-            - --no-collector.powersupplyclass
-            - --no-collector.rapl
-            - --no-collector.selinux
-            - --no-collector.tapestats
-            - --no-collector.xfs
-            - --no-collector.zfs
-          prometheus:
-            monitor:
-              relabelings:
-                - targetLabel: cluster
-                  replacement: shangkuei-lab
-              metricRelabelings:
-                # Drop node scrape collector metrics (~290 series) - internal
-                - sourceLabels: [__name__]
-                  action: drop
-                  regex: node_scrape_.*
-
-      # Grafana - drop self-monitoring histogram buckets (keep request duration for overview)
-      - op: add
-        path: /spec/values/grafana/serviceMonitor
-        value:
-          enabled: true
-          relabelings:
-            - targetLabel: cluster
-              replacement: shangkuei-lab
-          metricRelabelings:
-            # Drop Grafana histogram buckets EXCEPT http_request_duration (needed for p50/p99)
-            # Keeps: grafana_http_request_duration_seconds_bucket (used in Overview dashboard)
-            - sourceLabels: [__name__]
-              action: drop
-              regex: grafana_(http_response_size_bytes|alerting_.*|plugins_.*|datasource_request_duration_seconds|live_.*|field_validation_.*|apiserver_.*)_bucket
-            # Drop Grafana apiserver metrics (~700 series) - internal
-            - sourceLabels: [__name__]
-              action: drop
-              regex: grafana_apiserver_.*
-            # Drop Grafana feature toggles info (~280 series) - static
-            - sourceLabels: [__name__]
-              action: drop
-              regex: grafana_feature_toggles_info
-
-      # Alertmanager - drop histogram buckets
-      - op: add
-        path: /spec/values/alertmanager/serviceMonitor
-        value:
-          relabelings:
-            - targetLabel: cluster
-              replacement: shangkuei-lab
-          metricRelabelings:
-            # Drop Alertmanager histogram buckets (~220 series)
-            - sourceLabels: [__name__]
-              action: drop
-              regex: alertmanager_.*_bucket
-
-      # Prometheus - drop self-monitoring histogram buckets
-      - op: add
-        path: /spec/values/prometheus/serviceMonitor
-        value:
-          relabelings:
-            - targetLabel: cluster
-              replacement: shangkuei-lab
-          metricRelabelings:
-            # Drop Prometheus HTTP histogram buckets (~230 series)
-            - sourceLabels: [__name__]
-              action: drop
-              regex: prometheus_http_.*_bucket
-
-      # Prometheus Operator - drop histogram buckets
-      - op: add
-        path: /spec/values/prometheusOperator/serviceMonitor
-        value:
-          relabelings:
-            - targetLabel: cluster
-              replacement: shangkuei-lab
-          metricRelabelings:
-            # Drop Prometheus Operator histogram buckets (~120 series)
-            - sourceLabels: [__name__]
-              action: drop
-              regex: prometheus_operator_.*_bucket
+      # Note: ServiceMonitors and PrometheusRules are now disabled in base configuration
+      # and managed explicitly as CRs in monitor-cluster overlay for full GitOps control
     target:
       kind: HelmRelease
-      name: kube-prometheus-stack
+      name: prometheus-operator
 
   # Loki configuration - S3 storage with SeaweedFS backend
   - patch: |-
@@ -510,6 +189,7 @@ patches:
           enabled: true
           labels:
             release: kube-prometheus-stack
+            prometheus.io/scrape-by: prometheus-cluster
           # Relabelings to set cluster label for dashboard compatibility
           # Note: job label is already in namespace/service format (e.g., monitoring/loki-backend)
           #       from the ServiceMonitor, no modification needed
@@ -593,3 +273,84 @@ patches:
     target:
       kind: HelmRelease
       name: loki
+
+  # Standalone prometheus-node-exporter configuration
+  - patch: |-
+      - op: add
+        path: /spec/values/prometheus/monitor/additionalLabels
+        value:
+          prometheus.io/scrape-by: prometheus-cluster
+      - op: add
+        path: /spec/values/prometheus/monitor/relabelings
+        value:
+          - targetLabel: cluster
+            replacement: shangkuei-lab
+          # Rename job to match kube-prometheus dashboards expectations
+          - targetLabel: job
+            replacement: node-exporter
+      - op: add
+        path: /spec/values/prometheus/monitor/metricRelabelings
+        value:
+          # Drop node scrape collector metrics (~290 series) - internal
+          - sourceLabels: [__name__]
+            action: drop
+            regex: node_scrape_.*
+    target:
+      kind: HelmRelease
+      name: prometheus-node-exporter
+
+  # Standalone kube-state-metrics configuration
+  - patch: |-
+      - op: add
+        path: /spec/values/prometheus/monitor/additionalLabels
+        value:
+          prometheus.io/scrape-by: prometheus-cluster
+      - op: add
+        path: /spec/values/prometheus/monitor/relabelings
+        value:
+          - targetLabel: cluster
+            replacement: shangkuei-lab
+      - op: add
+        path: /spec/values/prometheus/monitor/metricRelabelings
+        value:
+          # Drop kube_pod_labels and kube_pod_annotations (very high cardinality)
+          - sourceLabels: [__name__]
+            regex: kube_(pod_annotations|pod_labels|configmap_annotations|secret_annotations|service_annotations|node_labels)
+            action: drop
+          # Drop high-cardinality pod metrics not used in alerts/dashboards (~1K series)
+          - sourceLabels: [__name__]
+            regex: kube_pod_(tolerations|status_reason|status_qos_class)
+            action: drop
+          # Drop 'uid' label (62 unique values) - rarely queried directly
+          - regex: ^uid$
+            action: labeldrop
+          # Drop 'created_by_name' label (35 unique values) - rarely queried
+          - regex: ^created_by_name$
+            action: labeldrop
+          # Drop 'container_id' label (187 unique values) - cgroup ID, not queried
+          - regex: ^container_id$
+            action: labeldrop
+          # Drop 'image_id' label - SHA256 digest, never queried directly
+          - regex: ^image_id$
+            action: labeldrop
+          # Drop 'image_spec' label - redundant with 'image' label
+          - regex: ^image_spec$
+            action: labeldrop
+    target:
+      kind: HelmRelease
+      name: kube-state-metrics
+
+  # Grafana Operator ServiceMonitor configuration
+  - patch: |-
+      - op: add
+        path: /spec/values/serviceMonitor/labels
+        value:
+          prometheus.io/scrape-by: prometheus-cluster
+      - op: add
+        path: /spec/values/serviceMonitor/relabelings
+        value:
+          - targetLabel: cluster
+            replacement: shangkuei-lab
+    target:
+      kind: HelmRelease
+      name: grafana-operator

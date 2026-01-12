@@ -61,10 +61,9 @@ spec:
       level: info
 
     # Enable ServiceMonitor for Prometheus metrics
+    # Note: labels and relabelings configured in overlay for cluster-specific values
     serviceMonitor:
       enabled: true
-      labels:
-        release: kube-prometheus-stack
 
     # Resource limits
     resources:

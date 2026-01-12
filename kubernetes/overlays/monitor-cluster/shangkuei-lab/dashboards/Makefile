@@ -1,10 +1,11 @@
-# Makefile for building Grafana dashboards from kube-prometheus jsonnet
+# Makefile for building Grafana dashboards and PrometheusRules from kube-prometheus jsonnet
 # Prerequisites:
 #   - go install github.com/jsonnet-bundler/jsonnet-bundler/cmd/jb@latest
 #   - go install github.com/google/go-jsonnet/cmd/jsonnet@latest
 #   - jq (brew install jq)
+#   - yq (brew install yq)
 
-.PHONY: all build clean deps help
+.PHONY: all build clean deps help update
 
 # Default target
 all: build
@@ -14,18 +15,18 @@ deps:
 	@echo "==> Installing jsonnet dependencies..."
 	jb install
 
-# Build dashboards from jsonnet and generate GrafanaDashboard CRs
+# Build dashboards and rules from jsonnet
 build: deps
-	@echo "==> Building dashboards..."
+	@echo "==> Building dashboards and rules..."
 	./build-dashboards.sh
 
 # Clean generated files
 clean:
 	@echo "==> Cleaning generated files..."
 	rm -rf output/
+	rm -rf output-alerts/
 	rm -rf vendor/
 	rm -f jsonnetfile.lock.json
-	rm -f ../grafana-dashboards-kube-prometheus.yaml
 
 # Update jsonnet dependencies
 update:
@@ -34,8 +35,8 @@ update:
 
 help:
 	@echo "Available targets:"
-	@echo "  all     - Build dashboards (default)"
-	@echo "  build   - Build dashboards from jsonnet"
+	@echo "  all     - Build dashboards and rules (default)"
+	@echo "  build   - Build dashboards and rules from jsonnet"
 	@echo "  deps    - Install jsonnet dependencies"
 	@echo "  clean   - Remove generated files"
 	@echo "  update  - Update jsonnet dependencies"
@@ -44,3 +45,4 @@ help:
 	@echo "  go install github.com/jsonnet-bundler/jsonnet-bundler/cmd/jb@latest"
 	@echo "  go install github.com/google/go-jsonnet/cmd/jsonnet@latest"
 	@echo "  jq (brew install jq)"
+	@echo "  yq (brew install yq)"

@@ -1,0 +1,43 @@
+---
+# Migrated from kube-prometheus-stack chart to explicit CR
+# This allows version control and customization of monitoring configuration
+# Original chart-managed resource: prometheus-operator
+
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  annotations: {}
+  labels:
+    app.kubernetes.io/instance: prometheus-operator
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/part-of: kube-prometheus-stack
+  name: prometheus-operator
+  namespace: monitoring
+spec:
+  endpoints:
+    - honorLabels: true
+      metricRelabelings:
+        - action: drop
+          regex: prometheus_operator_.*_bucket
+          sourceLabels:
+            - __name__
+      port: https
+      relabelings:
+        - action: replace
+          replacement: shangkuei-lab
+          targetLabel: cluster
+      scheme: https
+      tlsConfig:
+        ca:
+          secret:
+            key: ca
+            name: prometheus-admission
+            optional: false
+        serverName: prometheus-operator
+  namespaceSelector:
+    matchNames:
+      - monitoring
+  selector:
+    matchLabels:
+      app: kube-prometheus-stack-operator
+      release: prometheus-operator

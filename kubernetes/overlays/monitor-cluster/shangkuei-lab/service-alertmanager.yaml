@@ -1,0 +1,27 @@
+---
+# Alertmanager Service - for ServiceMonitor discovery
+# Selects pods created by prometheus-operator for CR named "cluster"
+apiVersion: v1
+kind: Service
+metadata:
+  name: alertmanager
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: alertmanager
+    app.kubernetes.io/instance: cluster
+    app.kubernetes.io/part-of: monitoring
+    app.kubernetes.io/managed-by: kustomize
+spec:
+  type: ClusterIP
+  ports:
+    - name: http-web
+      port: 9093
+      targetPort: 9093
+      protocol: TCP
+    - name: reloader-web
+      port: 8080
+      targetPort: 8080
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: alertmanager
+    alertmanager: cluster
