@@ -1,0 +1,106 @@
+---
+# Kubernetes Scheduler metrics scraping for Talos Linux
+#
+# Talos runs control plane components as containers (not K8s pods), so we need:
+# 1. A headless Service pointing to the component
+# 2. Manual Endpoints with control plane node IPs
+# 3. A ServiceMonitor to configure Prometheus scraping
+#
+# Prerequisites:
+# - Talos machine config must set scheduler.extraArgs.bind-address = "0.0.0.0"
+#   (configured in terraform.tfvars: additional_control_plane_patches)
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: kube-scheduler
+  namespace: kube-system
+  labels:
+    app.kubernetes.io/name: kube-scheduler
+    k8s-app: kube-scheduler
+    app.kubernetes.io/part-of: kube-prometheus-stack
+    app.kubernetes.io/managed-by: kustomize
+spec:
+  clusterIP: None
+  ports:
+    - name: https-metrics
+      port: 10259
+      targetPort: 10259
+      protocol: TCP
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: kube-scheduler
+  namespace: kube-system
+  labels:
+    app.kubernetes.io/name: kube-scheduler
+    k8s-app: kube-scheduler
+    app.kubernetes.io/part-of: kube-prometheus-stack
+    app.kubernetes.io/managed-by: kustomize
+subsets:
+  - addresses:
+      # Control plane node Tailscale IP
+      # Update this list if adding more control plane nodes
+      - ip: 100.123.248.23
+    ports:
+      - name: https-metrics
+        port: 10259
+        protocol: TCP
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: prometheus-kube-scheduler
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: kube-scheduler
+    app.kubernetes.io/instance: prometheus-operator
+    app.kubernetes.io/part-of: kube-prometheus-stack
+    app.kubernetes.io/managed-by: kustomize
+spec:
+  jobLabel: app.kubernetes.io/name
+  namespaceSelector:
+    matchNames:
+      - kube-system
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: kube-scheduler
+  endpoints:
+    - port: https-metrics
+      scheme: https
+      bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+      tlsConfig:
+        # Scheduler uses self-signed certificates
+        insecureSkipVerify: true
+      relabelings:
+        - action: replace
+          replacement: shangkuei-lab
+          targetLabel: cluster
+      metricRelabelings:
+        # Drop high-cardinality histogram buckets
+        - action: drop
+          regex: scheduler_scheduling_attempt_duration_seconds_bucket;(0.001|0.002|0.004|0.008|0.016|0.032|0.064|0.128|0.256|0.512|1.024|2.048|4.096|8.192|16.384)(\.0)?
+          sourceLabels:
+            - __name__
+            - le
+        - action: drop
+          regex: workqueue_queue_duration_seconds_bucket;(0.01|0.1|0.25|0.5|2|5|20|100)(\.0)?
+          sourceLabels:
+            - __name__
+            - le
+        - action: drop
+          regex: workqueue_work_duration_seconds_bucket;(0.01|0.1|0.25|0.5|2|5|20|100)(\.0)?
+          sourceLabels:
+            - __name__
+            - le
+        # Drop go runtime metrics
+        - action: drop
+          regex: go_(gc|sched)_.*_bucket
+          sourceLabels:
+            - __name__
+        - action: drop
+          regex: go_godebug_.*
+          sourceLabels:
+            - __name__

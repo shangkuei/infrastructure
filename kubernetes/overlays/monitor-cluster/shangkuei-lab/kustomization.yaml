@@ -47,11 +47,13 @@ resources:
   # ServiceMonitors - Scrape configurations
   - servicemonitors/servicemonitor-alertmanager.yaml
   - servicemonitors/servicemonitor-apiserver.yaml
+  - servicemonitors/servicemonitor-controller-manager.yaml
   - servicemonitors/servicemonitor-coredns.yaml
   - servicemonitors/servicemonitor-grafana.yaml
   - servicemonitors/servicemonitor-kubelet.yaml
   - servicemonitors/servicemonitor-operator.yaml
   - servicemonitors/servicemonitor-prometheus.yaml
+  - servicemonitors/servicemonitor-scheduler.yaml
 
 labels:
   - pairs:
