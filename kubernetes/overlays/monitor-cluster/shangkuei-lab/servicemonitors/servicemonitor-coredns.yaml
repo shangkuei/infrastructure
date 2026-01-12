@@ -16,11 +16,6 @@ metadata:
 spec:
   endpoints:
     - bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
-      metricRelabelings:
-        - action: drop
-          regex: coredns_(dns_request_size_bytes_bucket|dns_response_size_bytes_bucket)
-          sourceLabels:
-            - __name__
       port: metrics
       relabelings:
         - action: replace
