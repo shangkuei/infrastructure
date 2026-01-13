@@ -9,6 +9,26 @@ local coredns = addMixin({
   mixin: import 'coredns-mixin/mixin.libsonnet',
 });
 
+// OpenEBS mixin for storage monitoring (ZFS LocalPV, Mayastor)
+local openebsMixin = (import 'openebs-mixin/mixin.libsonnet') {
+  _config+:: {
+    // Enable storage backends we use (LVM LocalPV disabled)
+    casTypes: {
+      lvmLocalPV: false,
+      zfsLocalPV: true,
+      mayastor: true,
+    },
+    // Disable NPD (Node Problem Detector) - not installed
+    alertRules+: {
+      npd: false,
+    },
+  },
+};
+local openebs = addMixin({
+  name: 'openebs',
+  mixin: openebsMixin,
+});
+
 // Loki mixin for log monitoring (configured for simple-scalable/SSD mode)
 local lokiMixin = (import 'loki-mixin/mixin.libsonnet') {
   _config+:: {
@@ -63,6 +83,7 @@ local kpRules =
 // The addMixin function returns prometheusRules as a single PrometheusRule object
 local corednsRules = { 'coredns.json': coredns.prometheusRules };
 local lokiRules = { 'loki.json': loki.prometheusRules };
+local openebsRules = { 'openebs.json': openebs.prometheusRules };
 
 // Combine all rules
-kpRules + corednsRules + lokiRules
+kpRules + corednsRules + lokiRules + openebsRules

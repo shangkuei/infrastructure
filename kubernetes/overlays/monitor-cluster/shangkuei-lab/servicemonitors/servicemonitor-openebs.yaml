@@ -1,0 +1,37 @@
+---
+# OpenEBS Mayastor metrics ServiceMonitor
+# Scrapes metrics from openebs-metrics-exporter-io-engine service
+# Metrics include: diskpool_*, replica_* (IOPS, throughput, latency)
+# Reference: https://openebs.io/docs/user-guides/replicated-storage-user-guide/replicated-pv-mayastor/advanced-operations/monitoring
+
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  annotations: {}
+  labels:
+    app.kubernetes.io/name: openebs
+    app.kubernetes.io/component: io-engine
+    app.kubernetes.io/part-of: monitoring
+    app.kubernetes.io/managed-by: kustomize
+  name: openebs
+  namespace: monitoring
+spec:
+  endpoints:
+    - port: metrics
+      interval: 30s
+      scrapeTimeout: 10s
+      relabelings:
+        - action: replace
+          replacement: shangkuei-lab
+          targetLabel: cluster
+        # Rename job to 'openebs' for consistency
+        - action: replace
+          replacement: openebs
+          targetLabel: job
+  jobLabel: app
+  namespaceSelector:
+    matchNames:
+      - kube-system
+  selector:
+    matchLabels:
+      app: metrics-exporter-io-engine

@@ -9,6 +9,26 @@ local coredns = addMixin({
   mixin: import 'coredns-mixin/mixin.libsonnet',
 });
 
+// OpenEBS mixin for storage monitoring (ZFS LocalPV, Mayastor)
+local openebsMixin = (import 'openebs-mixin/mixin.libsonnet') {
+  _config+:: {
+    // Enable storage backends we use (LVM LocalPV disabled)
+    casTypes: {
+      lvmLocalPV: false,
+      zfsLocalPV: true,
+      mayastor: true,
+    },
+    // Disable NPD (Node Problem Detector) - not installed
+    dashboards+: {
+      npd: false,
+    },
+  },
+};
+local openebs = addMixin({
+  name: 'openebs',
+  mixin: openebsMixin,
+});
+
 // Loki mixin for log monitoring (configured for simple-scalable/SSD mode)
 local lokiMixin = (import 'loki-mixin/mixin.libsonnet') {
   _config+:: {
@@ -151,5 +171,11 @@ local lokiDashboards = {
   if isIncludedDashboard(k)
 };
 
+// Extract dashboards from OpenEBS mixin
+local openebsDashboards = {
+  [k]: openebs.grafanaDashboards[k]
+  for k in std.objectFields(openebs.grafanaDashboards)
+};
+
 // Combine all dashboards
-kpDashboards + corednsDashboards + lokiDashboards
+kpDashboards + corednsDashboards + lokiDashboards + openebsDashboards

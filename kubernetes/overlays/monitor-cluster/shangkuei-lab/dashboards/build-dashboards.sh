@@ -88,6 +88,8 @@ for json_file in "${OUTPUT_DIR}"/*.json; do
     folder="Node Exporter"
   elif [[ "${filename}" == *"prometheus"* ]] || [[ "${filename}" == *"alertmanager"* ]]; then
     folder="Prometheus"
+  elif [[ "${filename}" == mayastor-* ]] || [[ "${filename}" == zfslocalpv* ]] || [[ "${filename}" == npd-* ]]; then
+    folder="OpenEBS"
   fi
 
   echo "  - ${name}"

@@ -27,6 +27,15 @@
         }
       },
       "version": "main"
+    },
+    {
+      "source": {
+        "git": {
+          "remote": "https://github.com/openebs/monitoring.git",
+          "subdir": "jsonnet/openebs-mixin"
+        }
+      },
+      "version": "monitoring-4.1.1"
     }
   ],
   "legacyImports": true
