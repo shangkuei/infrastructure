@@ -1,0 +1,26 @@
+---
+# PodMonitor for Flux CD controllers
+# Source: https://github.com/fluxcd/flux2-monitoring-example
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  labels:
+    app.kubernetes.io/name: flux
+    app.kubernetes.io/component: monitoring
+  name: flux-system
+  namespace: monitoring
+spec:
+  podMetricsEndpoints:
+    - port: http-prom
+      interval: 30s
+      scrapeTimeout: 10s
+      relabelings:
+        - action: replace
+          replacement: shangkuei-lab
+          targetLabel: cluster
+  namespaceSelector:
+    matchNames:
+      - flux-system
+  selector:
+    matchLabels:
+      app.kubernetes.io/part-of: flux

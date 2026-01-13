@@ -60,7 +60,9 @@ spec:
   logLevel: info
   paused: false
   podMonitorNamespaceSelector: {}
-  podMonitorSelector: {}
+  podMonitorSelector:
+    matchLabels:
+      prometheus.io/scrape-by: prometheus-cluster
   portName: http-web
   probeNamespaceSelector: {}
   probeSelector: {}

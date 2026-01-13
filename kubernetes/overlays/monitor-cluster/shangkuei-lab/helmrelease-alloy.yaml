@@ -59,6 +59,11 @@ spec:
 
     controller:
       type: daemonset
+      # Allow running on control plane nodes
+      tolerations:
+        - key: node-role.kubernetes.io/control-plane
+          operator: Exists
+          effect: NoSchedule
       # Add host volumes for log collection
       volumes:
         extra:

@@ -53,6 +53,18 @@ data:
         target_label  = "container"
       }
 
+      // Set app label from pod label (used by Flux dashboards)
+      rule {
+        source_labels = ["__meta_kubernetes_pod_label_app"]
+        target_label  = "app"
+      }
+
+      // Set stream label from container name (used by Flux logs dashboard)
+      rule {
+        source_labels = ["__meta_kubernetes_pod_container_name"]
+        target_label  = "stream"
+      }
+
       // Set node label
       rule {
         source_labels = ["__meta_kubernetes_pod_node_name"]

@@ -15,6 +15,7 @@ resources:
   - grafanadatasource-prometheus.yaml
   - grafanadatasource-loki.yaml
   - grafanadashboard-kube-prometheus.yaml
+  - grafanadashboard-flux.yaml
 
   # Prometheus - Metrics collection
   - prometheus-cluster.yaml
@@ -45,6 +46,9 @@ resources:
   - prometheusrules/prometheusrule-prometheus.yaml
   - prometheusrules/prometheusrule-prometheus-operator.yaml
 
+  # PodMonitors - Scrape configurations for pods without services
+  - podmonitors/podmonitor-flux.yaml
+
   # ServiceMonitors - Scrape configurations
   - servicemonitors/servicemonitor-alertmanager.yaml
   - servicemonitors/servicemonitor-apiserver.yaml
@@ -62,10 +66,16 @@ labels:
       app.kubernetes.io/instance: shangkuei-lab
       app.kubernetes.io/environment: lab
 
-# Add scrape label to ServiceMonitors and PrometheusRules for Prometheus selector
+# Add scrape label to ServiceMonitors, PodMonitors, and PrometheusRules for Prometheus selector
 patches:
   - target:
       kind: ServiceMonitor
+    patch: |-
+      - op: add
+        path: /metadata/labels/prometheus.io~1scrape-by
+        value: prometheus-cluster
+  - target:
+      kind: PodMonitor
     patch: |-
       - op: add
         path: /metadata/labels/prometheus.io~1scrape-by
