@@ -82,6 +82,8 @@ get_folder() {
     echo "OpenEBS"
   elif [[ "${filename}" == coredns* ]]; then
     echo "CoreDNS"
+  elif [[ "${filename}" == cilium-* ]] || [[ "${filename}" == hubble-* ]]; then
+    echo "Cilium"
   else
     echo "Kubernetes"
   fi

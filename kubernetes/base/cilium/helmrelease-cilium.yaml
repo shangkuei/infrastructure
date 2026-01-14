@@ -62,8 +62,35 @@ spec:
       enabled: true
       relay:
         enabled: true
+        prometheus:
+          enabled: true
+          serviceMonitor:
+            enabled: true
+            labels:
+              prometheus.io/scrape-by: prometheus-cluster
+            relabelings:
+              - action: replace
+                replacement: shangkuei-lab
+                targetLabel: cluster
       ui:
         enabled: true
+      # Hubble metrics for network flow observability
+      metrics:
+        enabled:
+          - dns
+          - drop
+          - tcp
+          - flow
+          - icmp
+          - http
+        serviceMonitor:
+          enabled: true
+          labels:
+            prometheus.io/scrape-by: prometheus-cluster
+          relabelings:
+            - action: replace
+              replacement: shangkuei-lab
+              targetLabel: cluster
 
     # IPAM Configuration
     ipam:
@@ -83,6 +110,28 @@ spec:
     # Operator Configuration
     operator:
       replicas: 1
+      prometheus:
+        enabled: true
+        serviceMonitor:
+          enabled: true
+          labels:
+            prometheus.io/scrape-by: prometheus-cluster
+          relabelings:
+            - action: replace
+              replacement: shangkuei-lab
+              targetLabel: cluster
+
+    # Prometheus metrics for Cilium agent
+    prometheus:
+      enabled: true
+      serviceMonitor:
+        enabled: true
+        labels:
+          prometheus.io/scrape-by: prometheus-cluster
+        relabelings:
+          - action: replace
+            replacement: shangkuei-lab
+            targetLabel: cluster
 
     # Security Context (Talos-specific capabilities)
     securityContext:

@@ -257,5 +257,21 @@ local alloyDashboards = {
   if isRelevantAlloyDashboard(k)
 };
 
+// Cilium mixin for CNI monitoring
+// Provides dashboards for Cilium agent, operator, Hubble, and networking components
+// Filter out enterprise-only dashboards we don't have deployed:
+// - hubble-timescape: Requires Hubble Enterprise (Timescape feature)
+// - cilium-external-fqdn-proxy: Requires Enterprise external FQDN proxy
+local ciliumMixin = (import 'cilium-enterprise-mixin/mixin.libsonnet');
+local isRelevantCiliumDashboard(filename) =
+  filename != 'hubble-timescape.json' &&
+  filename != 'cilium-external-fqdn-proxy.json';
+
+local ciliumDashboards = {
+  [k]: ciliumMixin.grafanaDashboards[k]
+  for k in std.objectFields(ciliumMixin.grafanaDashboards)
+  if isRelevantCiliumDashboard(k)
+};
+
 // Combine all dashboards
-kpDashboards + corednsDashboards + lokiDashboards + openebsDashboards + alloyDashboards
+kpDashboards + corednsDashboards + lokiDashboards + openebsDashboards + alloyDashboards + ciliumDashboards

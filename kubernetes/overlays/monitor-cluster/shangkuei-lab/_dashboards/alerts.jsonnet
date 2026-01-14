@@ -105,5 +105,24 @@ local alloyRules = {
   },
 };
 
+// Cilium mixin for CNI monitoring alerts
+// Note: cilium-enterprise-mixin.prometheusAlerts is just groups, not a full PrometheusRule CR
+local ciliumMixin = (import 'cilium-enterprise-mixin/mixin.libsonnet');
+local ciliumRules = {
+  'cilium.json': {
+    apiVersion: 'monitoring.coreos.com/v1',
+    kind: 'PrometheusRule',
+    metadata: {
+      name: 'cilium-rules',
+      namespace: 'default',
+      labels: {
+        'app.kubernetes.io/name': 'cilium',
+        'app.kubernetes.io/part-of': 'cilium',
+      },
+    },
+    spec: ciliumMixin.prometheusAlerts,
+  },
+};
+
 // Combine all rules
-kpRules + corednsRules + lokiRules + openebsRules + alloyRules
+kpRules + corednsRules + lokiRules + openebsRules + alloyRules + ciliumRules
