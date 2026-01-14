@@ -124,5 +124,24 @@ local ciliumRules = {
   },
 };
 
+// cert-manager mixin for certificate monitoring alerts
+// Note: cert-manager-mixin.prometheusAlerts is just groups, not a full PrometheusRule CR
+local certManagerMixin = (import 'cert-manager-mixin/mixin.libsonnet');
+local certManagerRules = {
+  'cert-manager.json': {
+    apiVersion: 'monitoring.coreos.com/v1',
+    kind: 'PrometheusRule',
+    metadata: {
+      name: 'cert-manager-rules',
+      namespace: 'default',
+      labels: {
+        'app.kubernetes.io/name': 'cert-manager',
+        'app.kubernetes.io/part-of': 'cert-manager',
+      },
+    },
+    spec: certManagerMixin.prometheusAlerts,
+  },
+};
+
 // Combine all rules
-kpRules + corednsRules + lokiRules + openebsRules + alloyRules + ciliumRules
+kpRules + corednsRules + lokiRules + openebsRules + alloyRules + ciliumRules + certManagerRules

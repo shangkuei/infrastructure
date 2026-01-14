@@ -273,5 +273,13 @@ local ciliumDashboards = {
   if isRelevantCiliumDashboard(k)
 };
 
+// cert-manager mixin for certificate monitoring
+// Provides dashboards for certificate expiry, issuance, and overall health
+local certManagerMixin = (import 'cert-manager-mixin/mixin.libsonnet');
+local certManagerDashboards = {
+  [k]: certManagerMixin.grafanaDashboards[k]
+  for k in std.objectFields(certManagerMixin.grafanaDashboards)
+};
+
 // Combine all dashboards
-kpDashboards + corednsDashboards + lokiDashboards + openebsDashboards + alloyDashboards + ciliumDashboards
+kpDashboards + corednsDashboards + lokiDashboards + openebsDashboards + alloyDashboards + ciliumDashboards + certManagerDashboards

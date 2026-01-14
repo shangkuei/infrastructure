@@ -84,6 +84,8 @@ get_folder() {
     echo "CoreDNS"
   elif [[ "${filename}" == cilium-* ]] || [[ "${filename}" == hubble-* ]]; then
     echo "Cilium"
+  elif [[ "${filename}" == cert-manager* ]]; then
+    echo "Cert Manager"
   else
     echo "Kubernetes"
   fi

@@ -54,6 +54,15 @@
         }
       },
       "version": "master"
+    },
+    {
+      "source": {
+        "git": {
+          "remote": "https://github.com/imusmanmalik/cert-manager-mixin.git",
+          "subdir": ""
+        }
+      },
+      "version": "main"
     }
   ],
   "legacyImports": true
