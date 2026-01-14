@@ -81,24 +81,34 @@ spec:
         isDefaultClass: true
         basePath: "/var/openebs/local"  # Must match Terraform openebs_hostpath_patch
         reclaimPolicy: Delete
-      # Base path for all localpv volumes (hostpath, device, etc.)
-      basePath: "/var/openebs/local"
 
-      # Node selector for storage nodes (optional - adjust as needed)
-      nodeSelector: {}
-        # kubernetes.io/hostname: worker-node
+      # localpv subchart values (note: nested under 'localpv' key)
+      localpv:
+        # Base path for all localpv volumes (hostpath, device, etc.)
+        basePath: "/var/openebs/local"
 
-      # Tolerations for storage nodes
-      tolerations: []
+        # Health check configuration
+        # Increased initialDelaySeconds to allow for API server connectivity
+        # during pod startup (helps with TLS handshake timeout issues)
+        healthCheck:
+          initialDelaySeconds: 60  # Give more time for initial API connection
+          periodSeconds: 60
 
-      # Resource limits
-      resources:
-        limits:
-          cpu: 100m
-          memory: 128Mi
-        requests:
-          cpu: 50m
-          memory: 64Mi
+        # Node selector for storage nodes (optional - adjust as needed)
+        nodeSelector: {}
+          # kubernetes.io/hostname: worker-node
+
+        # Tolerations for storage nodes
+        tolerations: []
+
+        # Resource limits for the provisioner pod
+        resources:
+          limits:
+            cpu: 100m
+            memory: 128Mi
+          requests:
+            cpu: 50m
+            memory: 64Mi
 
     # NDM (Node Disk Manager) Configuration
     # Required for Replicated Engine (Mayastor) and ZFS LocalPV
