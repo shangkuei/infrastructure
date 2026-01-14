@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 # Build Grafana dashboards from external sources (Flux, SeaweedFS)
+# Note: Alloy dashboards are built from jsonnet via build-dashboards.sh
 # Downloads dashboards from upstream repos and generates GrafanaDashboard CRs
 # Prerequisites: curl, jq
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 OUTPUT_DIR="${SCRIPT_DIR}/external-dashboards"
-MANIFEST_DIR="${SCRIPT_DIR}/.."
+MANIFEST_DIR="${SCRIPT_DIR}/../grafanadashboards"
 
 # Dashboard sources
 FLUX_REPO="https://raw.githubusercontent.com/fluxcd/flux2-monitoring-example/main/monitoring/configs/dashboards"

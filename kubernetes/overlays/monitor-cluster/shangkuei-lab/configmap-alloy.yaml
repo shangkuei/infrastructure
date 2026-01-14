@@ -101,6 +101,23 @@ data:
 
       // Parse container runtime log format (CRI)
       stage.cri {}
+
+      // Extract level label from Alloy logs using regex (more forgiving than logfmt)
+      // Alloy uses logfmt: ts=... level=info msg="..."
+      // This enables the alloy-logs dashboard for log level distribution
+      stage.match {
+        selector = "{container=\"alloy\"}"
+
+        stage.regex {
+          expression = "level=(?P<level>\\w+)"
+        }
+
+        stage.labels {
+          values = {
+            "level" = "",
+          }
+        }
+      }
     }
 
     // Push logs to Loki (multi-tenant mode)

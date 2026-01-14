@@ -154,14 +154,48 @@ local corednsDashboards = {
   for k in std.objectFields(coredns.grafanaDashboards)
 };
 
+// Patch loki-logs dashboard to filter container variable to loki containers only
+local patchLokiLogsContainerFilter(dashboard) =
+  dashboard {
+    templating+: {
+      list: [
+        if item.name == 'container' then
+          item { regex: 'loki.*', refresh: 1 }
+        else
+          item
+        for item in dashboard.templating.list
+      ],
+    },
+  };
+
+// Remove Disk Space Utilization panel from loki-resources-overview (not relevant for SSD mode)
+// Dashboard uses rows structure, so we need to filter panels within rows
+local removeDiskSpacePanel(dashboard) =
+  dashboard {
+    rows: [
+      row {
+        panels: [
+          panel
+          for panel in row.panels
+          if !std.objectHas(panel, 'title') || panel.title != 'Disk Space Utilization'
+        ],
+      }
+      for row in dashboard.rows
+    ],
+  };
+
 // Apply fixes to loki dashboards:
 // - fixLokiMetrics: correct metric name bugs
 // - fixNetworkMetrics: remove invalid container filter from network metrics
 // - removePromtailPanels: remove panels for promtail metrics (we use Alloy)
+// - patchLokiLogsContainerFilter: filter container dropdown to loki containers
+// - removeDiskSpacePanel: remove disk panel from resources overview
 local processLokiDashboard(name, dashboard) =
   local fixed = fixLokiMetrics(dashboard);
   if name == 'loki-logs.json' then
-    removePromtailPanels(fixNetworkMetrics(fixed))
+    patchLokiLogsContainerFilter(removePromtailPanels(fixNetworkMetrics(fixed)))
+  else if name == 'loki-resources-overview.json' then
+    removeDiskSpacePanel(fixed)
   else
     fixed;
 
@@ -177,5 +211,51 @@ local openebsDashboards = {
   for k in std.objectFields(openebs.grafanaDashboards)
 };
 
+// Alloy mixin for telemetry collector monitoring
+// Filter dashboards based on our log-collection-only setup:
+// - Exclude: cluster-* (requires clustering), opentelemetry (requires OTEL),
+//            prometheus-remote-write (not configured),
+//            loki (uses loki.source.file metrics, we use loki.source.kubernetes)
+// - Include: controller, resources, logs (level label parsed via stage.logfmt)
+local alloyMixin = (import 'alloy-mixin/mixin.libsonnet');
+local isRelevantAlloyDashboard(filename) =
+  // Exclude dashboards that require features we don't use
+  !std.startsWith(filename, 'alloy-cluster') &&
+  filename != 'alloy-opentelemetry.json' &&
+  filename != 'alloy-prometheus-remote-write.json' &&
+  // alloy-loki uses loki_source_file_* metrics which require loki.source.file
+  // We use loki.source.kubernetes which exposes different metrics
+  filename != 'alloy-loki.json';
+
+// Patch alloy-logs dashboard to filter by container=alloy
+// This ensures the dashboard only shows Alloy's own logs (which have level label)
+local patchAlloyLogsDashboard(dashboard) =
+  local json = std.manifestJsonEx(dashboard, '');
+  // Patch job variable query to filter by container=alloy
+  local patched1 = std.strReplace(
+    json,
+    '{cluster=~\\"$cluster\\", namespace=~\\"$namespace\\"}, job)',
+    '{cluster=~\\"$cluster\\", namespace=~\\"$namespace\\", container=\\"alloy\\"}, job)'
+  );
+  // Add container="alloy" filter to Loki queries (panel queries)
+  local patched2 = std.strReplace(
+    patched1,
+    '{cluster=~\\"$cluster\\", namespace=~\\"$namespace\\", job=~\\"$job\\"',
+    '{cluster=~\\"$cluster\\", namespace=~\\"$namespace\\", job=~\\"$job\\", container=\\"alloy\\"'
+  );
+  // Also patch the level variable query
+  local patched3 = std.strReplace(
+    patched2,
+    '{cluster=~\\"$cluster\\", namespace=~\\"$namespace\\", job=~\\"$job\\", instance=~\\"$instance\\"}, level)',
+    '{cluster=~\\"$cluster\\", namespace=~\\"$namespace\\", job=~\\"$job\\", instance=~\\"$instance\\", container=\\"alloy\\"}, level)'
+  );
+  std.parseJson(patched3);
+
+local alloyDashboards = {
+  [k]: if k == 'alloy-logs.json' then patchAlloyLogsDashboard(alloyMixin.grafanaDashboards[k]) else alloyMixin.grafanaDashboards[k]
+  for k in std.objectFields(alloyMixin.grafanaDashboards)
+  if isRelevantAlloyDashboard(k)
+};
+
 // Combine all dashboards
-kpDashboards + corednsDashboards + lokiDashboards + openebsDashboards
+kpDashboards + corednsDashboards + lokiDashboards + openebsDashboards + alloyDashboards

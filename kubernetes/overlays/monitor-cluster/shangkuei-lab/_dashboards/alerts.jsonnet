@@ -85,5 +85,25 @@ local corednsRules = { 'coredns.json': coredns.prometheusRules };
 local lokiRules = { 'loki.json': loki.prometheusRules };
 local openebsRules = { 'openebs.json': openebs.prometheusRules };
 
+// Alloy mixin for telemetry collector alerts
+// Note: alloy-mixin.prometheusAlerts is just groups, not a full PrometheusRule CR
+// We need to wrap it in the proper structure
+local alloyMixin = (import 'alloy-mixin/mixin.libsonnet');
+local alloyRules = {
+  'alloy.json': {
+    apiVersion: 'monitoring.coreos.com/v1',
+    kind: 'PrometheusRule',
+    metadata: {
+      name: 'alloy-rules',
+      namespace: 'default',
+      labels: {
+        'app.kubernetes.io/name': 'alloy',
+        'app.kubernetes.io/part-of': 'alloy',
+      },
+    },
+    spec: alloyMixin.prometheusAlerts,
+  },
+};
+
 // Combine all rules
-kpRules + corednsRules + lokiRules + openebsRules
+kpRules + corednsRules + lokiRules + openebsRules + alloyRules

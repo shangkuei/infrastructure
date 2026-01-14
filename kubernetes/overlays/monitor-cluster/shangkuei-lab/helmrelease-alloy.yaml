@@ -79,3 +79,14 @@ spec:
       requests:
         cpu: 100m
         memory: 256Mi
+
+    # Enable ServiceMonitor for Prometheus metrics scraping
+    serviceMonitor:
+      enabled: true
+      additionalLabels:
+        prometheus.io/scrape-by: prometheus-cluster
+      interval: 30s
+      relabelings:
+        - action: replace
+          replacement: shangkuei-lab
+          targetLabel: cluster

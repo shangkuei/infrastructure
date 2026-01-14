@@ -2,7 +2,7 @@
 vendor/
 
 # Generated dashboard JSON files
-output/
+output-dashboards/
 
 # Generated alert JSON files
 output-alerts/
