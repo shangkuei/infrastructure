@@ -6,6 +6,9 @@ resources:
   - namespace-seaweedfs.yaml
   - helmrepository-seaweedfs-operator.yaml
   - helmrelease-seaweedfs-operator.yaml
+  # Additional RBAC for monitoring (required when metricsPort is configured)
+  - clusterrole-seaweedfs-operator-monitoring.yaml
+  - clusterrolebinding-seaweedfs-operator-monitoring.yaml
 
 labels:
   - pairs:

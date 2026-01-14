@@ -1,0 +1,100 @@
+---
+# SeaweedFS metrics ServiceMonitor
+# Scrapes Prometheus metrics from SeaweedFS master, volume, and filer components
+# Metrics port must be enabled in Seaweed CR (metricsPort)
+# Reference: https://github.com/seaweedfs/seaweedfs/wiki/System-Metrics
+
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  labels:
+    app.kubernetes.io/name: seaweedfs
+    app.kubernetes.io/component: master
+    app.kubernetes.io/part-of: monitoring
+    app.kubernetes.io/managed-by: kustomize
+  name: seaweedfs-master
+  namespace: monitoring
+spec:
+  endpoints:
+    - port: master-metrics
+      interval: 30s
+      scrapeTimeout: 10s
+      relabelings:
+        - action: replace
+          replacement: shangkuei-lab
+          targetLabel: cluster
+        - action: replace
+          replacement: seaweedfs-master
+          targetLabel: job
+  jobLabel: app.kubernetes.io/component
+  namespaceSelector:
+    matchNames:
+      - seaweedfs
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: master
+      app.kubernetes.io/instance: seaweedfs
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  labels:
+    app.kubernetes.io/name: seaweedfs
+    app.kubernetes.io/component: volume
+    app.kubernetes.io/part-of: monitoring
+    app.kubernetes.io/managed-by: kustomize
+  name: seaweedfs-volume
+  namespace: monitoring
+spec:
+  endpoints:
+    - port: volume-metrics
+      interval: 30s
+      scrapeTimeout: 10s
+      relabelings:
+        - action: replace
+          replacement: shangkuei-lab
+          targetLabel: cluster
+        - action: replace
+          replacement: seaweedfs-volume
+          targetLabel: job
+  jobLabel: app.kubernetes.io/component
+  namespaceSelector:
+    matchNames:
+      - seaweedfs
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: volume
+      app.kubernetes.io/instance: seaweedfs
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  labels:
+    app.kubernetes.io/name: seaweedfs
+    app.kubernetes.io/component: filer
+    app.kubernetes.io/part-of: monitoring
+    app.kubernetes.io/managed-by: kustomize
+  name: seaweedfs-filer
+  namespace: monitoring
+spec:
+  endpoints:
+    - port: filer-metrics
+      interval: 30s
+      scrapeTimeout: 10s
+      relabelings:
+        - action: replace
+          replacement: shangkuei-lab
+          targetLabel: cluster
+        - action: replace
+          replacement: seaweedfs-filer
+          targetLabel: job
+  jobLabel: app.kubernetes.io/component
+  namespaceSelector:
+    matchNames:
+      - seaweedfs
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: filer
+      app.kubernetes.io/instance: seaweedfs

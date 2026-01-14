@@ -1,7 +1,6 @@
 ---
-# Grafana Dashboards for Flux CD
-# Source: https://github.com/fluxcd/flux2-monitoring-example
-# Do not edit manually
+# Grafana Dashboards for Flux CD - Source: https://github.com/fluxcd/flux2-monitoring-example
+# Do not edit manually - regenerate with: ./dashboards/build-external-dashboards.sh
 
 ---
 apiVersion: grafana.integreatly.org/v1beta1
@@ -48,7 +47,7 @@ spec:
           }
         ]
       },
-      "editable": true,
+      "editable": false,
       "fiscalYearStartMonth": 0,
       "graphTooltip": 0,
       "links": [],
@@ -1454,7 +1453,7 @@ spec:
           }
         ]
       },
-      "editable": true,
+      "editable": false,
       "fiscalYearStartMonth": 0,
       "graphTooltip": 0,
       "links": [],
@@ -3206,7 +3205,7 @@ spec:
         ]
       },
       "description": "Flux logs collected from Kubernetes, stored in Loki",
-      "editable": true,
+      "editable": false,
       "gnetId": null,
       "graphTooltip": 0,
       "iteration": 1653748775696,

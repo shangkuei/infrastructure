@@ -16,6 +16,7 @@ resources:
   - grafanadatasource-loki.yaml
   - grafanadashboard-kube-prometheus.yaml
   - grafanadashboard-flux.yaml
+  - grafanadashboard-seaweedfs.yaml
 
   # Prometheus - Metrics collection
   - prometheus-cluster.yaml
@@ -60,6 +61,7 @@ resources:
   - servicemonitors/servicemonitor-operator.yaml
   - servicemonitors/servicemonitor-prometheus.yaml
   - servicemonitors/servicemonitor-scheduler.yaml
+  - servicemonitors/servicemonitor-seaweedfs.yaml
 
 labels:
   - pairs:

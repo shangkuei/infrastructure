@@ -27,6 +27,8 @@ spec:
     replicas: 3
     # Maximum volume size in MB
     volumeSizeLimitMB: 30000  # 30GB per volume
+    # Prometheus metrics port
+    metricsPort: 9324
     # Resource limits
     limits:
       cpu: 500m
@@ -42,6 +44,8 @@ spec:
     # Storage request for volume data
     requests:
       storage: 100Gi
+    # Prometheus metrics port
+    metricsPort: 9325
     # Resource limits
     limits:
       cpu: "1"
@@ -70,6 +74,8 @@ spec:
       resources:
         requests:
           storage: 10Gi
+    # Prometheus metrics port
+    metricsPort: 9326
     # Resource limits
     limits:
       cpu: 500m
