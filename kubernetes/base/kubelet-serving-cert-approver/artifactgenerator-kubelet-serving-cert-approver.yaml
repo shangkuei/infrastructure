@@ -1,0 +1,22 @@
+---
+# ArtifactGenerator for kubelet-serving-cert-approver
+# Extracts the standalone-install.yaml manifest from the repository
+apiVersion: source.extensions.fluxcd.io/v1beta1
+kind: ArtifactGenerator
+metadata:
+  name: kubelet-serving-cert-approver
+  namespace: flux-system
+spec:
+  sources:
+    - alias: repo
+      kind: GitRepository
+      name: kubelet-serving-cert-approver
+      namespace: flux-system
+
+  artifacts:
+    # Standalone deployment manifest (includes all required resources)
+    - name: kubelet-serving-cert-approver
+      originRevision: "@repo"
+      copy:
+        - from: "@repo/deploy/standalone-install.yaml"
+          to: "@artifact/"

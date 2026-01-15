@@ -1,0 +1,61 @@
+---
+# metrics-server for Kubernetes resource metrics
+# Provides CPU/memory metrics for kubectl top, HPA, and VPA
+# Version: 3.13.0 (PINNED)
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: metrics-server
+  namespace: kube-system
+spec:
+  interval: 30m
+  timeout: 10m
+  chart:
+    spec:
+      chart: metrics-server
+      version: "3.13.0"  # PINNED
+      sourceRef:
+        kind: HelmRepository
+        name: metrics-server
+        namespace: flux-system
+      interval: 12h
+
+  install:
+    remediation:
+      retries: 3
+
+  upgrade:
+    remediation:
+      retries: 3
+      remediateLastFailure: true
+    cleanupOnFail: true
+
+  driftDetection:
+    mode: warn
+    ignore:
+      - paths: ["/spec/replicas"]
+        target:
+          kind: Deployment
+
+  values:
+    # Replicas for HA
+    replicas: 1
+
+    # Default args - NO --kubelet-insecure-tls needed with cert-approver
+    defaultArgs:
+      - --cert-dir=/tmp
+      - --kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname
+      - --kubelet-use-node-status-port
+      - --metric-resolution=15s
+
+    # Resources configured via cluster overlay
+
+    # Metrics (for monitoring metrics-server itself)
+    metrics:
+      enabled: true
+
+    # ServiceMonitor for Prometheus scraping
+    # Labels and relabelings configured via cluster overlay
+    serviceMonitor:
+      enabled: true
+      interval: 30s

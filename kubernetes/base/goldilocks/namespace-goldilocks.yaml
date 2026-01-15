@@ -1,0 +1,12 @@
+---
+# Goldilocks namespace
+# Dashboard isolation for VPA recommendations UI
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: goldilocks
+  labels:
+    app.kubernetes.io/name: goldilocks
+    app.kubernetes.io/managed-by: flux
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest

@@ -1,0 +1,40 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../../base/metrics-server
+
+labels:
+  - pairs:
+      app.kubernetes.io/instance: shangkuei-lab
+      app.kubernetes.io/environment: lab
+
+patches:
+  - patch: |-
+      # Resource limits
+      - op: add
+        path: /spec/values/resources
+        value:
+          requests:
+            cpu: 100m
+            memory: 200Mi
+          limits:
+            memory: 256Mi
+      # ServiceMonitor for Prometheus scraping
+      - op: add
+        path: /spec/values/serviceMonitor/additionalLabels
+        value:
+          prometheus.io/scrape-by: alloy
+      - op: add
+        path: /spec/values/serviceMonitor/relabelings
+        value:
+          - action: replace
+            replacement: shangkuei-lab
+            targetLabel: cluster
+          - action: replace
+            replacement: metrics-server
+            targetLabel: job
+    target:
+      kind: HelmRelease
+      name: metrics-server

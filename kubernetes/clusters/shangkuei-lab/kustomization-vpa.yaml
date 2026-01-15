@@ -1,0 +1,35 @@
+---
+# Flux Kustomization for Vertical Pod Autoscaler (VPA)
+# Provides resource recommendations for pods
+# Mode: Recommendation-only (updater disabled)
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: vpa
+  namespace: flux-system
+spec:
+  interval: 30m
+  timeout: 10m
+  prune: true
+  wait: true
+
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+
+  path: ./kubernetes/overlays/vpa/shangkuei-lab
+
+  # Dependencies: metrics-server for resource metrics
+  dependsOn:
+    - name: metrics-server
+
+  healthChecks:
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: vpa-recommender
+      namespace: kube-system
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: vpa-admission-controller
+      namespace: kube-system

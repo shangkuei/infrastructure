@@ -1,0 +1,59 @@
+---
+# Goldilocks
+# Dashboard and controller for VPA recommendations
+# Version: 9.0.1 (PINNED)
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: goldilocks
+  namespace: goldilocks
+spec:
+  interval: 30m
+  timeout: 10m
+  chart:
+    spec:
+      chart: goldilocks
+      version: "9.0.1"  # PINNED
+      sourceRef:
+        kind: HelmRepository
+        name: fairwinds-stable
+        namespace: flux-system
+      interval: 12h
+
+  install:
+    remediation:
+      retries: 3
+
+  upgrade:
+    remediation:
+      retries: 3
+      remediateLastFailure: true
+    cleanupOnFail: true
+
+  driftDetection:
+    mode: warn
+    ignore:
+      - paths: ["/spec/replicas"]
+        target:
+          kind: Deployment
+
+  values:
+    # Controller: Watches namespaces with goldilocks label
+    # Resources configured via cluster overlay
+    controller:
+      enabled: true
+
+    # Dashboard: Disabled (using Grafana dashboards instead)
+    dashboard:
+      enabled: false
+
+    # VPA subchart: DISABLED (VPA already installed in kube-system)
+    # Goldilocks will use the existing VPA installation
+    vpa:
+      enabled: false
+
+    # Metrics for monitoring Goldilocks itself
+    # ServiceMonitor labels configured via cluster overlay
+    metrics:
+      serviceMonitor:
+        enabled: true

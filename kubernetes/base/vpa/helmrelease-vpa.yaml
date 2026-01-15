@@ -1,0 +1,62 @@
+---
+# Vertical Pod Autoscaler (VPA)
+# Provides resource recommendations for pods
+# Mode: Recommendation-only (updater disabled)
+# Version: 4.10.1 (PINNED)
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: vpa
+  namespace: kube-system
+spec:
+  interval: 30m
+  timeout: 10m
+  chart:
+    spec:
+      chart: vpa
+      version: "4.10.1"  # PINNED
+      sourceRef:
+        kind: HelmRepository
+        name: fairwinds-stable
+        namespace: flux-system
+      interval: 12h
+
+  install:
+    crds: CreateReplace
+    remediation:
+      retries: 3
+
+  upgrade:
+    crds: CreateReplace
+    remediation:
+      retries: 3
+      remediateLastFailure: true
+    cleanupOnFail: true
+
+  driftDetection:
+    mode: warn
+    ignore:
+      - paths: ["/spec/replicas"]
+        target:
+          kind: Deployment
+
+  values:
+    # Recommender: Calculates resource recommendations
+    # Resources and Prometheus integration configured via cluster overlay
+    recommender:
+      enabled: true
+
+    # Admission Controller: Ready for future Auto mode
+    # Resources configured via cluster overlay
+    admissionController:
+      enabled: true
+
+    # Updater: DISABLED for recommendation-only mode
+    updater:
+      enabled: false
+
+    # Metrics for monitoring VPA itself
+    # ServiceMonitor labels configured via cluster overlay
+    metrics:
+      serviceMonitor:
+        enabled: true

@@ -1,0 +1,46 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../../base/goldilocks
+
+labels:
+  - pairs:
+      app.kubernetes.io/instance: shangkuei-lab
+      app.kubernetes.io/environment: lab
+
+patches:
+  - patch: |-
+      # Controller resources
+      - op: add
+        path: /spec/values/controller/resources
+        value:
+          requests:
+            cpu: 25m
+            memory: 128Mi
+          limits:
+            memory: 256Mi
+      # Dashboard resources (kept for future use if dashboard is re-enabled)
+      - op: add
+        path: /spec/values/dashboard/resources
+        value:
+          requests:
+            cpu: 25m
+            memory: 64Mi
+          limits:
+            memory: 128Mi
+      # ServiceMonitor configuration
+      - op: add
+        path: /spec/values/metrics/serviceMonitor/additionalLabels
+        value:
+          prometheus.io/scrape-by: alloy
+      - op: add
+        path: /spec/values/metrics/serviceMonitor/relabelings
+        value:
+          - action: replace
+            targetLabel: cluster
+            replacement: shangkuei-lab
+    target:
+      kind: HelmRelease
+      name: goldilocks

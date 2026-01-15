@@ -1,0 +1,15 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# metrics-server GitOps resources
+# Provides CPU/memory metrics for kubectl top, HPA, and VPA
+
+resources:
+  - helmrepository-metrics-server.yaml
+  - helmrelease-metrics-server.yaml
+
+labels:
+  - pairs:
+      app.kubernetes.io/name: metrics-server
+      app.kubernetes.io/managed-by: flux

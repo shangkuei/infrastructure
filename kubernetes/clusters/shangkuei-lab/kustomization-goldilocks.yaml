@@ -1,0 +1,30 @@
+---
+# Flux Kustomization for Goldilocks
+# Controller for VPA recommendations (dashboard disabled)
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: goldilocks
+  namespace: flux-system
+spec:
+  interval: 30m
+  timeout: 10m
+  prune: true
+  wait: true
+
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+
+  path: ./kubernetes/overlays/goldilocks/shangkuei-lab
+
+  # Dependencies: VPA for resource recommendations
+  dependsOn:
+    - name: vpa
+
+  healthChecks:
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: goldilocks-controller
+      namespace: goldilocks

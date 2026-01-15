@@ -10,13 +10,17 @@ kind: Kustomization
 # 1. gateway-api: CRDs (no dependencies)
 # 2. cilium: CNI (depends on gateway-api, implements Gateway API)
 # 3. cert-manager: Certificates (depends on gateway-api for HTTP01/TLS challenges)
-# 4. openebs: Storage (depends on cilium)
-# 5. seaweedfs-operator: Operator + CRDs (depends on cilium)
-# 6. seaweedfs-cluster: S3 object storage cluster (depends on operator + openebs)
-# 7. monitor-operator: Prometheus + Grafana + Loki (depends on openebs + seaweedfs-cluster)
-# 8. monitor-cluster: Alloy log collector (depends on monitor-operator)
-# 9. flux-operator: Foundation (depends on cilium, installed via Helm)
-# 10. flux-instance: Core Flux components (depends on flux-operator)
+# 4. kubelet-serving-cert-approver: CSR approval (depends on cilium)
+# 5. metrics-server: Resource metrics (depends on kubelet-serving-cert-approver)
+# 6. vpa: Vertical Pod Autoscaler (depends on metrics-server)
+# 7. goldilocks: VPA dashboard (depends on vpa)
+# 8. openebs: Storage (depends on cilium)
+# 9. seaweedfs-operator: Operator + CRDs (depends on cilium)
+# 10. seaweedfs-cluster: S3 object storage cluster (depends on operator + openebs)
+# 11. monitor-operator: Prometheus + Grafana + Loki (depends on openebs + seaweedfs-cluster)
+# 12. monitor-cluster: Alloy log collector (depends on monitor-operator)
+# 13. flux-operator: Foundation (depends on cilium, installed via Helm)
+# 14. flux-instance: Core Flux components (depends on flux-operator)
 
 resources:
   # Namespace configuration (kube-system with pod security labels for CSI)
@@ -24,6 +28,7 @@ resources:
 
   # Source repositories (must be created before Kustomizations that use them)
   - ../../base/gateway-api
+  - ../../base/kubelet-serving-cert-approver
 
   # Gateway API CRDs (standard + experimental)
   - kustomization-gateway-api-standard.yaml
@@ -32,6 +37,18 @@ resources:
   # CNI and certificate management (depend on Gateway API)
   - kustomization-cilium.yaml
   - kustomization-cert-manager.yaml
+
+  # Kubelet certificate management (depends on Cilium CNI)
+  - kustomization-kubelet-serving-cert-approver.yaml
+
+  # Resource metrics (depends on kubelet-serving-cert-approver)
+  - kustomization-metrics-server.yaml
+
+  # Vertical Pod Autoscaler (depends on metrics-server)
+  - kustomization-vpa.yaml
+
+  # Goldilocks VPA dashboard (depends on VPA)
+  - kustomization-goldilocks.yaml
 
   # Storage (depends on Cilium CNI)
   - kustomization-openebs.yaml
