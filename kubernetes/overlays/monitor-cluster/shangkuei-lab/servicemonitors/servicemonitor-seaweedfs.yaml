@@ -28,6 +28,16 @@ spec:
         - action: replace
           replacement: seaweedfs-operator
           targetLabel: job
+      metricRelabelings:
+        # Drop go runtime metrics
+        - action: drop
+          regex: go_(gc|sched)_.*_bucket
+          sourceLabels:
+            - __name__
+        - action: drop
+          regex: go_godebug_.*
+          sourceLabels:
+            - __name__
   jobLabel: app.kubernetes.io/name
   namespaceSelector:
     matchNames:
@@ -68,6 +78,16 @@ spec:
         - action: replace
           replacement: seaweedfs-master
           targetLabel: job
+      metricRelabelings:
+        # Drop go runtime metrics
+        - action: drop
+          regex: go_(gc|sched)_.*_bucket
+          sourceLabels:
+            - __name__
+        - action: drop
+          regex: go_godebug_.*
+          sourceLabels:
+            - __name__
   jobLabel: app.kubernetes.io/component
   namespaceSelector:
     matchNames:
@@ -103,6 +123,22 @@ spec:
         - action: replace
           replacement: seaweedfs-volume
           targetLabel: job
+      metricRelabelings:
+        # Drop go runtime metrics
+        - action: drop
+          regex: go_(gc|sched)_.*_bucket
+          sourceLabels:
+            - __name__
+        - action: drop
+          regex: go_godebug_.*
+          sourceLabels:
+            - __name__
+        # Drop sparse histogram buckets for request duration (1-32ms)
+        - action: drop
+          regex: SeaweedFS_(volumeServer|s3|filerStore)_request_seconds_bucket;(0.001|0.002|0.004|0.008|0.016|0.032)(\.0)?
+          sourceLabels:
+            - __name__
+            - le
   jobLabel: app.kubernetes.io/component
   namespaceSelector:
     matchNames:
@@ -138,6 +174,22 @@ spec:
         - action: replace
           replacement: seaweedfs-filer
           targetLabel: job
+      metricRelabelings:
+        # Drop go runtime metrics
+        - action: drop
+          regex: go_(gc|sched)_.*_bucket
+          sourceLabels:
+            - __name__
+        - action: drop
+          regex: go_godebug_.*
+          sourceLabels:
+            - __name__
+        # Drop sparse histogram buckets for request duration (1-32ms)
+        - action: drop
+          regex: SeaweedFS_(volumeServer|s3|filerStore)_request_seconds_bucket;(0.001|0.002|0.004|0.008|0.016|0.032)(\.0)?
+          sourceLabels:
+            - __name__
+            - le
   jobLabel: app.kubernetes.io/component
   namespaceSelector:
     matchNames:

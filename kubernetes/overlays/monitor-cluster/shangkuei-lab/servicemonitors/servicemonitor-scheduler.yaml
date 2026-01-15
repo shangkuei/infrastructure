@@ -105,3 +105,9 @@ spec:
           regex: go_godebug_.*
           sourceLabels:
             - __name__
+        # Drop sparse histogram buckets for rest_client_request_duration (1-32ms)
+        - action: drop
+          regex: rest_client_request_duration_seconds_bucket;(0.001|0.002|0.004|0.008|0.016|0.032)(\.0)?
+          sourceLabels:
+            - __name__
+            - le

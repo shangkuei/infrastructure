@@ -51,6 +51,16 @@ spec:
           regex: apiserver_storage_.*
           sourceLabels:
             - __name__
+        # Drop aggregator discovery metrics
+        - action: drop
+          regex: aggregator_discovery_aggregation_count_total
+          sourceLabels:
+            - __name__
+        # Drop field validation histogram buckets
+        - action: drop
+          regex: field_validation_request_duration_seconds_bucket
+          sourceLabels:
+            - __name__
       port: https
       relabelings:
         - action: replace

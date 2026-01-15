@@ -19,6 +19,21 @@ spec:
         - action: replace
           replacement: shangkuei-lab
           targetLabel: cluster
+      metricRelabelings:
+        # Drop go runtime metrics
+        - action: drop
+          regex: go_(gc|sched)_.*_bucket
+          sourceLabels:
+            - __name__
+        - action: drop
+          regex: go_godebug_.*
+          sourceLabels:
+            - __name__
+        # Drop histogram buckets (dashboard uses sum/count for rate, not buckets)
+        - action: drop
+          regex: gotk_reconcile_duration_seconds_bucket
+          sourceLabels:
+            - __name__
   namespaceSelector:
     matchNames:
       - flux-system
