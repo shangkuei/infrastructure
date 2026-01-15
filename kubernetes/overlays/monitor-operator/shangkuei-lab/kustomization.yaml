@@ -173,12 +173,12 @@ patches:
           retention_enabled: true
           retention_delete_delay: 2h
           delete_request_store: s3
-      # Limits: retention 30 days, deletion API, query tuning
+      # Limits: retention 31 days, deletion API, query tuning
       # Note: deletion_mode moved from compactor to limits_config in Loki 3.x
       - op: add
         path: /spec/values/loki/limits_config
         value:
-          retention_period: 720h
+          retention_period: 744h
           deletion_mode: filter-and-delete
           max_query_parallelism: 32
           max_query_series: 10000

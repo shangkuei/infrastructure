@@ -8,7 +8,7 @@
 # - Prometheus only stores metrics and evaluates rules (no direct scraping)
 #
 # Key Configuration:
-# - Storage: 200Gi on Mayastor (15 day retention, 45GB size limit)
+# - Storage: 200Gi on Mayastor (31 day retention, 100GB size limit)
 # - Resources: 1.5 CPU / 2Gi memory
 # - External labels: cluster=shangkuei-lab
 #
@@ -82,8 +82,8 @@ spec:
     requests:
       cpu: 300m
       memory: 512Mi
-  retention: 15d
-  retentionSize: 45GB
+  retention: 31d
+  retentionSize: 100GB
   routePrefix: /
   ruleNamespaceSelector: {}
   # Select PrometheusRules with prometheus scrape label
