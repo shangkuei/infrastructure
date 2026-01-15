@@ -19,7 +19,7 @@ spec:
     name: flux-system
     namespace: flux-system
 
-  path: ./kubernetes/base/flux-operator
+  path: ./kubernetes/overlays/flux-operator/shangkuei-lab
 
   # Dependencies: CNI must be ready for pod networking
   dependsOn:

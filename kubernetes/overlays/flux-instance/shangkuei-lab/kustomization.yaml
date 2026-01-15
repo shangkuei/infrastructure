@@ -27,11 +27,42 @@ patches:
     target:
       kind: FluxInstance
       name: flux
-  # Enable SOPS decryption for flux-system Kustomization
+  # Configure kustomize patches for Flux controllers
+  # Includes resource limits and SOPS decryption
   - patch: |-
       - op: add
         path: /spec/kustomize/patches
         value:
+          # Resource limits for controllers - tuned based on VPA recommendations
+          # kustomize-controller needs more CPU for reconciliation (VPA target: 126m)
+          - patch: |
+              - op: add
+                path: /spec/template/spec/containers/0/resources
+                value:
+                  limits:
+                    cpu: 1000m
+                    memory: 1Gi
+                  requests:
+                    cpu: 150m
+                    memory: 128Mi
+            target:
+              kind: Deployment
+              name: kustomize-controller
+          # Other controllers have lower CPU needs (VPA target: 15-23m)
+          - patch: |
+              - op: add
+                path: /spec/template/spec/containers/0/resources
+                value:
+                  limits:
+                    cpu: 1000m
+                    memory: 1Gi
+                  requests:
+                    cpu: 25m
+                    memory: 128Mi
+            target:
+              kind: Deployment
+              name: "(source-controller|helm-controller|notification-controller|source-watcher)"
+          # Enable SOPS decryption for flux-system Kustomization
           - patch: |
               - op: add
                 path: /spec/decryption

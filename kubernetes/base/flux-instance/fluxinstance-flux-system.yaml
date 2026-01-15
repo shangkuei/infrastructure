@@ -40,20 +40,5 @@ spec:
     ref: "refs/heads/main"
     path: "kubernetes/clusters/"
 
-  # Kustomize configuration
-  kustomize:
-    patches:
-      # Resource limits for controllers
-      - patch: |
-          - op: add
-            path: /spec/template/spec/containers/0/resources
-            value:
-              limits:
-                cpu: 1000m
-                memory: 1Gi
-              requests:
-                cpu: 100m
-                memory: 64Mi
-        target:
-          kind: Deployment
-          name: "(source-controller|kustomize-controller|helm-controller|notification-controller)"
+  # Kustomize configuration (patches configured via cluster overlay)
+  kustomize: {}
