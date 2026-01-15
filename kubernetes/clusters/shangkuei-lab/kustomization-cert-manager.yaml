@@ -19,6 +19,16 @@ spec:
 
   path: ./kubernetes/base/cert-manager
 
+  # Patch ServiceMonitor to use Alloy for scraping
+  patches:
+    - patch: |
+        - op: replace
+          path: /spec/values/prometheus/servicemonitor/labels/prometheus.io~1scrape-by
+          value: alloy
+      target:
+        kind: HelmRelease
+        name: cert-manager
+
   # Dependencies: Gateway API CRDs must be available for HTTP01/TLS challenges
   # Requires standard CRDs (experimental TLSRoute not needed by cert-manager)
   dependsOn:

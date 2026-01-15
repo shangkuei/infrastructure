@@ -94,6 +94,24 @@ spec:
     metrics:
       enabled: true
 
-    # Leader election
+    # Leader election - disabled for single replica deployment
+    # Eliminates lease renewal failures during API server slowdowns
     leaderElection:
-      enabled: true
+      enabled: false
+
+    # Probe configuration with increased tolerance for API server latency
+    livenessProbe:
+      httpGet:
+        path: /healthz
+        port: 8081
+      initialDelaySeconds: 30
+      periodSeconds: 20
+      failureThreshold: 5
+
+    readinessProbe:
+      httpGet:
+        path: /readyz
+        port: 8081
+      initialDelaySeconds: 10
+      periodSeconds: 10
+      failureThreshold: 3

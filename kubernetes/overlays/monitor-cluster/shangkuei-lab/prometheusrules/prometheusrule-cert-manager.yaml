@@ -9,6 +9,7 @@ metadata:
   labels:
     app.kubernetes.io/name: cert-manager
     app.kubernetes.io/part-of: cert-manager
+    prometheus.io/scrape-by: prometheus-cluster
   name: cert-manager-rules
   namespace: monitoring
 spec:

@@ -212,17 +212,17 @@ local openebsDashboards = {
 };
 
 // Alloy mixin for telemetry collector monitoring
-// Filter dashboards based on our log-collection-only setup:
-// - Exclude: cluster-* (requires clustering), opentelemetry (requires OTEL),
-//            prometheus-remote-write (not configured),
+// Current setup: DaemonSet with clustering for metrics + logs collection
+// - Metrics: ServiceMonitor/PodMonitor discovery via prometheus.operator components
+// - Logs: Pod log collection via loki.source.kubernetes
+// - Include: cluster-* (clustering enabled), prometheus-remote-write (metrics collection),
+//            controller, resources, logs
+// - Exclude: opentelemetry (requires OTEL),
 //            loki (uses loki.source.file metrics, we use loki.source.kubernetes)
-// - Include: controller, resources, logs (level label parsed via stage.logfmt)
 local alloyMixin = (import 'alloy-mixin/mixin.libsonnet');
 local isRelevantAlloyDashboard(filename) =
   // Exclude dashboards that require features we don't use
-  !std.startsWith(filename, 'alloy-cluster') &&
   filename != 'alloy-opentelemetry.json' &&
-  filename != 'alloy-prometheus-remote-write.json' &&
   // alloy-loki uses loki_source_file_* metrics which require loki.source.file
   // We use loki.source.kubernetes which exposes different metrics
   filename != 'alloy-loki.json';

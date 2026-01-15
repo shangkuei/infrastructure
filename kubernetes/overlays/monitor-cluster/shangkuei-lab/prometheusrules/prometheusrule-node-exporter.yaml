@@ -13,6 +13,7 @@ metadata:
     app.kubernetes.io/version: 1.10.2
     prometheus: k8s
     role: alert-rules
+    prometheus.io/scrape-by: prometheus-cluster
   name: node-exporter-rules
   namespace: monitoring
 spec:

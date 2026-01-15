@@ -64,3 +64,8 @@ spec:
     serviceAccount:
       create: true
       name: seaweedfs-operator
+
+    # ServiceMonitor for operator metrics (not the SeaweedFS components)
+    # Note: serviceMonitor.additionalLabels configured in overlay for cluster-specific values
+    serviceMonitor:
+      enabled: true

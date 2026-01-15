@@ -85,24 +85,3 @@ labels:
   - pairs:
       app.kubernetes.io/instance: shangkuei-lab
       app.kubernetes.io/environment: lab
-
-# Add scrape label to ServiceMonitors, PodMonitors, and PrometheusRules for Prometheus selector
-patches:
-  - target:
-      kind: ServiceMonitor
-    patch: |-
-      - op: add
-        path: /metadata/labels/prometheus.io~1scrape-by
-        value: prometheus-cluster
-  - target:
-      kind: PodMonitor
-    patch: |-
-      - op: add
-        path: /metadata/labels/prometheus.io~1scrape-by
-        value: prometheus-cluster
-  - target:
-      kind: PrometheusRule
-    patch: |-
-      - op: add
-        path: /metadata/labels/prometheus.io~1scrape-by
-        value: prometheus-cluster

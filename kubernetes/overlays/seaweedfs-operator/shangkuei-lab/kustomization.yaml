@@ -9,3 +9,14 @@ labels:
   - pairs:
       app.kubernetes.io/instance: shangkuei-lab
       app.kubernetes.io/environment: lab
+
+# Disable helm chart's ServiceMonitor - it doesn't support additionalLabels in template
+# Custom ServiceMonitor created in monitor-cluster overlay with correct labels for Alloy
+patches:
+  - patch: |-
+      - op: replace
+        path: /spec/values/serviceMonitor/enabled
+        value: false
+    target:
+      kind: HelmRelease
+      name: seaweedfs-operator

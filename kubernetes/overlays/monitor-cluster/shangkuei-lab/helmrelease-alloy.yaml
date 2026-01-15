@@ -1,16 +1,15 @@
 ---
 # Grafana Alloy - Unified telemetry collector
-# Replaces Promtail for log collection, future metrics collection
 #
 # Features:
-# - Log collection from all pods (Kubernetes discovery)
-# - Push to Loki for centralized logging
-# - Future: Replace node-exporter metrics scraping
+# - Metrics collection via ServiceMonitor/PodMonitor discovery (push to Prometheus)
+# - Log collection from all pods (push to Loki)
 #
 # Architecture:
 # - DaemonSet deployment (one per node)
-# - Discovers pods via Kubernetes API
-# - Tails container logs and pushes to Loki
+# - Discovers ServiceMonitors/PodMonitors via Kubernetes API
+# - Discovers pods for log collection via Kubernetes API
+# - Clustering enabled for distributed scraping
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
@@ -50,6 +49,10 @@ spec:
         create: false
         name: alloy-config
         key: config.alloy
+      # Enable clustering for distributed scraping (prevents duplicate scrapes)
+      # Clustering uses the default HTTP port (12345) for gossip communication
+      clustering:
+        enabled: true
       # Mount host paths into Alloy container
       mounts:
         extra:
@@ -71,20 +74,20 @@ spec:
             hostPath:
               path: /var/log
 
-    # Resource limits for collector pods
+    # Resource limits for collector pods (metrics + logs collection)
     resources:
       limits:
-        cpu: 500m
-        memory: 512Mi
+        cpu: 750m
+        memory: 1Gi
       requests:
-        cpu: 100m
-        memory: 256Mi
+        cpu: 150m
+        memory: 512Mi
 
-    # Enable ServiceMonitor for Prometheus metrics scraping
+    # Enable ServiceMonitor for Alloy self-monitoring
     serviceMonitor:
       enabled: true
       additionalLabels:
-        prometheus.io/scrape-by: prometheus-cluster
+        prometheus.io/scrape-by: alloy
       interval: 30s
       relabelings:
         - action: replace

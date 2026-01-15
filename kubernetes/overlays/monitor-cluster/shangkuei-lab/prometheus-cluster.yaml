@@ -1,11 +1,15 @@
 ---
-# Prometheus - Main metrics collection and storage
+# Prometheus - Metrics storage
 # CR name "cluster" for clean pod names: prometheus-cluster-0
+#
+# Architecture:
+# - Alloy scrapes all targets via ServiceMonitor/PodMonitor discovery
+# - Alloy pushes metrics to Prometheus via remote_write
+# - Prometheus only stores metrics and evaluates rules (no direct scraping)
 #
 # Key Configuration:
 # - Storage: 200Gi on Mayastor (15 day retention, 45GB size limit)
-# - Resources: 2 CPU / 4Gi memory
-# - Scrape interval: 30s
+# - Resources: 1.5 CPU / 2Gi memory
 # - External labels: cluster=shangkuei-lab
 #
 # Pod name: prometheus-cluster-0
@@ -48,6 +52,8 @@ spec:
   automountServiceAccountToken: true
   enableAdminAPI: false
   enableOTLPReceiver: false
+  # Enable remote write receiver for Alloy metrics ingestion
+  enableRemoteWriteReceiver: true
   evaluationInterval: 30s
   externalLabels:
     cluster: shangkuei-lab
@@ -60,6 +66,7 @@ spec:
   logLevel: info
   paused: false
   podMonitorNamespaceSelector: {}
+  # No targets match - all PodMonitors now use prometheus.io/scrape-by: alloy
   podMonitorSelector:
     matchLabels:
       prometheus.io/scrape-by: prometheus-cluster
@@ -67,13 +74,14 @@ spec:
   probeNamespaceSelector: {}
   probeSelector: {}
   replicas: 1
+  # Resources reduced - no longer scraping directly, only receives remote_write
   resources:
     limits:
-      cpu: "2"
-      memory: 4Gi
-    requests:
-      cpu: 500m
+      cpu: 1500m
       memory: 2Gi
+    requests:
+      cpu: 300m
+      memory: 512Mi
   retention: 15d
   retentionSize: 45GB
   routePrefix: /
@@ -94,7 +102,7 @@ spec:
       type: RuntimeDefault
   serviceAccountName: prometheus
   serviceMonitorNamespaceSelector: {}
-  # Select ServiceMonitors with prometheus scrape label
+  # No targets match - all ServiceMonitors now use prometheus.io/scrape-by: alloy
   serviceMonitorSelector:
     matchLabels:
       prometheus.io/scrape-by: prometheus-cluster

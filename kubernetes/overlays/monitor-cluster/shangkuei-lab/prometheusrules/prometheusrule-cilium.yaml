@@ -9,6 +9,7 @@ metadata:
   labels:
     app.kubernetes.io/name: cilium
     app.kubernetes.io/part-of: cilium
+    prometheus.io/scrape-by: prometheus-cluster
   name: cilium-rules
   namespace: monitoring
 spec:

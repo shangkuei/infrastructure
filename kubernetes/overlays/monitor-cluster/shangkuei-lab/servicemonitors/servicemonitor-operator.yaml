@@ -11,6 +11,7 @@ metadata:
     app.kubernetes.io/instance: prometheus-operator
     app.kubernetes.io/managed-by: kustomize
     app.kubernetes.io/part-of: kube-prometheus-stack
+    prometheus.io/scrape-by: alloy
   name: prometheus-operator
   namespace: monitoring
 spec:

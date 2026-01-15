@@ -14,6 +14,7 @@ metadata:
     app.kubernetes.io/version: 3.8.1
     prometheus: k8s
     role: alert-rules
+    prometheus.io/scrape-by: prometheus-cluster
   name: prometheus-k8s-prometheus-rules
   namespace: monitoring
 spec:

@@ -13,6 +13,7 @@ metadata:
     app.kubernetes.io/component: io-engine
     app.kubernetes.io/part-of: monitoring
     app.kubernetes.io/managed-by: kustomize
+    prometheus.io/scrape-by: alloy
   name: openebs
   namespace: monitoring
 spec:

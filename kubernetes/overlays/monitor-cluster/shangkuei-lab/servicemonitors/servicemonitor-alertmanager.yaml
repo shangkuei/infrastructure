@@ -8,6 +8,7 @@ metadata:
     app.kubernetes.io/instance: cluster
     app.kubernetes.io/part-of: monitoring
     app.kubernetes.io/managed-by: kustomize
+    prometheus.io/scrape-by: alloy
   name: alertmanager
   namespace: monitoring
 spec:

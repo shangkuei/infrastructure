@@ -1,6 +1,7 @@
 ---
-# Grafana Alloy configuration for log collection
-# Collects logs from all pods and pushes to Loki
+# Grafana Alloy configuration for unified telemetry collection
+# - Log collection: Discovers pods and pushes to Loki
+# - Metrics collection: Discovers ServiceMonitors/PodMonitors and pushes to Prometheus
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -9,7 +10,60 @@ metadata:
 data:
   config.alloy: |
     // ============================================================
-    // Grafana Alloy Configuration - Log Collection for shangkuei-lab
+    // Grafana Alloy Configuration - Unified Telemetry for shangkuei-lab
+    // ============================================================
+    //
+    // This configuration handles:
+    // 1. Metrics collection - ServiceMonitor/PodMonitor discovery, push to Prometheus
+    // 2. Log collection - Kubernetes pod discovery, push to Loki
+    //
+    // ============================================================
+
+    // ============================================================
+    // METRICS COLLECTION
+    // ============================================================
+    // Discover and scrape metrics from ServiceMonitor/PodMonitor CRs
+    // Replaces Prometheus Operator's direct scraping
+
+    // Remote write endpoint - push metrics to Prometheus
+    prometheus.remote_write "prometheus" {
+      endpoint {
+        url = "http://prometheus-operated.monitoring.svc.cluster.local:9090/api/v1/write"
+      }
+    }
+
+    // Discover and scrape ServiceMonitor CRs
+    prometheus.operator.servicemonitors "services" {
+      forward_to = [prometheus.remote_write.prometheus.receiver]
+
+      clustering {
+        enabled = true
+      }
+
+      selector {
+        match_labels = {
+          "prometheus.io/scrape-by" = "alloy",
+        }
+      }
+    }
+
+    // Discover and scrape PodMonitor CRs
+    prometheus.operator.podmonitors "pods" {
+      forward_to = [prometheus.remote_write.prometheus.receiver]
+
+      clustering {
+        enabled = true
+      }
+
+      selector {
+        match_labels = {
+          "prometheus.io/scrape-by" = "alloy",
+        }
+      }
+    }
+
+    // ============================================================
+    // LOG COLLECTION
     // ============================================================
 
     // Kubernetes pod log discovery using loki.source.kubernetes

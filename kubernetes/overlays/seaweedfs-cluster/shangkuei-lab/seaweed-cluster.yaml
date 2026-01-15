@@ -27,7 +27,8 @@ spec:
     replicas: 3
     # Maximum volume size in MB
     volumeSizeLimitMB: 30000  # 30GB per volume
-    # Prometheus metrics port
+    # Prometheus metrics port (creates ServiceMonitor in seaweedfs namespace)
+    # Note: Custom ServiceMonitors with alloy label are in monitor-cluster overlay
     metricsPort: 9324
     # Resource limits
     limits:

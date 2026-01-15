@@ -198,6 +198,9 @@ EOF
 
   # Fix namespace: all rules should be in monitoring namespace
   sed -i '' 's/namespace: default/namespace: monitoring/' "${output_file}"
+
+  # Add prometheus.io/scrape-by label for Prometheus rule selector
+  yq -i '.metadata.labels."prometheus.io/scrape-by" = "prometheus-cluster"' "${output_file}"
 done
 
 echo "==> Generated: ${RULES_DIR}/"

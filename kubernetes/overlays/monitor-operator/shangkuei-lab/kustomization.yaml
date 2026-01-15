@@ -190,7 +190,7 @@ patches:
           enabled: true
           labels:
             release: kube-prometheus-stack
-            prometheus.io/scrape-by: prometheus-cluster
+            prometheus.io/scrape-by: alloy
           # Relabelings to set cluster label for dashboard compatibility
           # Note: job label is already in namespace/service format (e.g., monitoring/loki-backend)
           #       from the ServiceMonitor, no modification needed
@@ -280,7 +280,7 @@ patches:
       - op: add
         path: /spec/values/prometheus/monitor/additionalLabels
         value:
-          prometheus.io/scrape-by: prometheus-cluster
+          prometheus.io/scrape-by: alloy
       - op: add
         path: /spec/values/prometheus/monitor/relabelings
         value:
@@ -308,7 +308,7 @@ patches:
       - op: add
         path: /spec/values/prometheus/monitor/additionalLabels
         value:
-          prometheus.io/scrape-by: prometheus-cluster
+          prometheus.io/scrape-by: alloy
       # Honor labels from kube-state-metrics to avoid exported_* prefix
       # This makes namespace/pod/container labels work correctly in dashboards
       - op: add
@@ -350,11 +350,12 @@ patches:
       name: kube-state-metrics
 
   # Grafana Operator ServiceMonitor configuration
+  # Note: grafana-operator Helm chart uses 'additionalLabels' not 'labels'
   - patch: |-
       - op: add
-        path: /spec/values/serviceMonitor/labels
+        path: /spec/values/serviceMonitor/additionalLabels
         value:
-          prometheus.io/scrape-by: prometheus-cluster
+          prometheus.io/scrape-by: alloy
       - op: add
         path: /spec/values/serviceMonitor/relabelings
         value:

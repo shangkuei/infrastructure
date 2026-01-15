@@ -1,7 +1,46 @@
 ---
+# SeaweedFS Operator metrics ServiceMonitor
+# Scrapes metrics from seaweedfs-operator controller
+# Note: Helm chart's ServiceMonitor template doesn't support additionalLabels, so we create our own
+# Reference: https://github.com/seaweedfs/seaweedfs-operator
+
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  labels:
+    app.kubernetes.io/name: seaweedfs-operator
+    app.kubernetes.io/component: operator
+    app.kubernetes.io/part-of: monitoring
+    app.kubernetes.io/managed-by: kustomize
+    prometheus.io/scrape-by: alloy
+  name: seaweedfs-operator
+  namespace: monitoring
+spec:
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 30s
+      scrapeTimeout: 10s
+      relabelings:
+        - action: replace
+          replacement: shangkuei-lab
+          targetLabel: cluster
+        - action: replace
+          replacement: seaweedfs-operator
+          targetLabel: job
+  jobLabel: app.kubernetes.io/name
+  namespaceSelector:
+    matchNames:
+      - seaweedfs
+  selector:
+    matchLabels:
+      app: seaweedfs-operator
+
+---
 # SeaweedFS metrics ServiceMonitor
 # Scrapes Prometheus metrics from SeaweedFS master, volume, and filer components
-# Metrics port must be enabled in Seaweed CR (metricsPort)
+# Uses dedicated metrics ports (created by operator when metricsPort is set in Seaweed CR)
+# Note: Operator also creates ServiceMonitors in seaweedfs namespace (without alloy label)
 # Reference: https://github.com/seaweedfs/seaweedfs/wiki/System-Metrics
 
 apiVersion: monitoring.coreos.com/v1
@@ -12,11 +51,14 @@ metadata:
     app.kubernetes.io/component: master
     app.kubernetes.io/part-of: monitoring
     app.kubernetes.io/managed-by: kustomize
+    prometheus.io/scrape-by: alloy
   name: seaweedfs-master
   namespace: monitoring
 spec:
   endpoints:
+    # Dedicated metrics port (9324) - same as operator-created ServiceMonitor
     - port: master-metrics
+      path: /metrics
       interval: 30s
       scrapeTimeout: 10s
       relabelings:
@@ -44,11 +86,14 @@ metadata:
     app.kubernetes.io/component: volume
     app.kubernetes.io/part-of: monitoring
     app.kubernetes.io/managed-by: kustomize
+    prometheus.io/scrape-by: alloy
   name: seaweedfs-volume
   namespace: monitoring
 spec:
   endpoints:
+    # Dedicated metrics port (9325) - same as operator-created ServiceMonitor
     - port: volume-metrics
+      path: /metrics
       interval: 30s
       scrapeTimeout: 10s
       relabelings:
@@ -76,11 +121,14 @@ metadata:
     app.kubernetes.io/component: filer
     app.kubernetes.io/part-of: monitoring
     app.kubernetes.io/managed-by: kustomize
+    prometheus.io/scrape-by: alloy
   name: seaweedfs-filer
   namespace: monitoring
 spec:
   endpoints:
+    # Dedicated metrics port (9326) - same as operator-created ServiceMonitor
     - port: filer-metrics
+      path: /metrics
       interval: 30s
       scrapeTimeout: 10s
       relabelings:

@@ -12,6 +12,7 @@ metadata:
     app.kubernetes.io/part-of: kube-prometheus
     prometheus: k8s
     role: alert-rules
+    prometheus.io/scrape-by: prometheus-cluster
   name: kube-prometheus-rules
   namespace: monitoring
 spec:

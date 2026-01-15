@@ -8,6 +8,7 @@ kind: PrometheusRule
 metadata:
   labels:
     prometheus: k8s
+    prometheus.io/scrape-by: prometheus-cluster
   name: openebs
   namespace: monitoring
 spec:
