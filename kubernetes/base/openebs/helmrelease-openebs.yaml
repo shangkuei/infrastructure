@@ -87,6 +87,10 @@ spec:
         # Base path for all localpv volumes (hostpath, device, etc.)
         basePath: "/var/openebs/local"
 
+        # Leader election - disabled for single replica deployment
+        # Eliminates lease renewal failures during API server slowdowns
+        enableLeaderElection: false
+
         # Health check configuration
         # Increased initialDelaySeconds to allow for API server connectivity
         # during pod startup (helps with TLS handshake timeout issues)
