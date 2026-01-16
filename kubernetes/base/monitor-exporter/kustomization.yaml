@@ -1,0 +1,14 @@
+---
+# Monitor Exporter - Metrics Sources
+# Contains kube-state-metrics and prometheus-node-exporter
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - helmrelease-kube-state-metrics.yaml
+  - helmrelease-prometheus-node-exporter.yaml
+
+labels:
+  - pairs:
+      app.kubernetes.io/name: monitor-exporter
+      app.kubernetes.io/managed-by: flux

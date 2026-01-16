@@ -1,0 +1,14 @@
+---
+# Monitor Cluster Base - Loki
+# Contains Loki HelmRelease (log aggregation)
+# Note: Requires HelmRepository from monitor-operator
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - helmrelease-loki.yaml
+
+labels:
+  - pairs:
+      app.kubernetes.io/name: monitor-cluster
+      app.kubernetes.io/managed-by: flux

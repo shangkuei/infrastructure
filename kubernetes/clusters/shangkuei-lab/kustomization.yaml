@@ -17,10 +17,11 @@ kind: Kustomization
 # 8. openebs: Storage (depends on cilium)
 # 9. seaweedfs-operator: Operator + CRDs (depends on cilium)
 # 10. seaweedfs-cluster: S3 object storage cluster (depends on operator + openebs)
-# 11. monitor-operator: Prometheus + Grafana + Loki (depends on openebs + seaweedfs-cluster)
-# 12. monitor-cluster: Alloy log collector (depends on monitor-operator)
-# 13. flux-operator: Foundation (depends on cilium, installed via Helm)
-# 14. flux-instance: Core Flux components (depends on flux-operator)
+# 11. monitor-operator: Prometheus Operator + Grafana Operator (depends on openebs)
+# 12. monitor-exporter: kube-state-metrics + node-exporter (depends on monitor-operator)
+# 13. monitor-cluster: Loki + Alloy + CRs (depends on monitor-operator + seaweedfs-cluster)
+# 14. flux-operator: Foundation (depends on cilium, installed via Helm)
+# 15. flux-instance: Core Flux components (depends on flux-operator)
 
 resources:
   # Namespace configuration (kube-system with pod security labels for CSI)
@@ -58,9 +59,11 @@ resources:
   # S3 Object Storage - Cluster (depends on operator + OpenEBS)
   - kustomization-seaweedfs-cluster.yaml
 
-  # Monitoring - Prometheus + Grafana + Loki (depends on Storage + SeaweedFS)
+  # Monitoring - Prometheus Operator + Grafana Operator (depends on Storage)
   - kustomization-monitor-operator.yaml
-  # Monitoring - Alloy log collector (depends on monitor-operator)
+  # Monitoring - Exporters (depends on monitor-operator)
+  - kustomization-monitor-exporter.yaml
+  # Monitoring - Loki + Alloy + CRs (depends on monitor-operator + SeaweedFS)
   - kustomization-monitor-cluster.yaml
 
   # Infrastructure applications (Flux Kustomization CRs)

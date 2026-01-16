@@ -1,0 +1,34 @@
+---
+# Flux Kustomization for Monitor Exporter
+# Deploys kube-state-metrics and prometheus-node-exporter
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: monitor-exporter
+  namespace: flux-system
+spec:
+  interval: 30m
+  timeout: 10m
+  prune: true
+  wait: true
+
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+
+  path: ./kubernetes/overlays/monitor-exporter/shangkuei-lab
+
+  # Dependencies: Operators must be ready (namespace exists)
+  dependsOn:
+    - name: monitor-operator
+
+  healthChecks:
+    - apiVersion: apps/v1
+      kind: DaemonSet
+      name: prometheus-node-exporter
+      namespace: monitoring
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: kube-state-metrics
+      namespace: monitoring

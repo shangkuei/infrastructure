@@ -75,58 +75,18 @@ spec:
       serviceMonitor:
         enabled: false  # Now managed in monitor-cluster overlay
 
-    # Grafana
+    # Grafana - disabled, managed by grafana-operator
     grafana:
-      enabled: true
-      adminPassword: admin  # Change via overlay or SOPS secret
-      defaultDashboardsEnabled: true
-      defaultDashboardsTimezone: utc
+      enabled: false
 
-      resources:
-        limits:
-          cpu: 500m
-          memory: 512Mi
-        requests:
-          cpu: 100m
-          memory: 256Mi
-
-      # Persistence - disabled by default
-      persistence:
-        enabled: false
-
-      # Sidecar for loading dashboards/datasources
-      sidecar:
-        dashboards:
-          enabled: true
-          searchNamespace: ALL
-        datasources:
-          enabled: true
-          searchNamespace: ALL
-
-      # Additional data sources can be added via overlay
-      additionalDataSources: []
-
-    # Node Exporter - host metrics
+    # Node Exporter - disabled, managed by monitor-exporter
     nodeExporter:
-      enabled: true
-      resources:
-        limits:
-          cpu: 100m
-          memory: 128Mi
-        requests:
-          cpu: 50m
-          memory: 64Mi
+      enabled: false
 
-    # kube-state-metrics - Kubernetes object metrics
+    # kube-state-metrics - disabled, managed by monitor-exporter
     kube-state-metrics:
-      enabled: true
-      resources:
-        limits:
-          cpu: 100m
-          memory: 256Mi
-        requests:
-          cpu: 50m
-          memory: 128Mi
+      enabled: false
+      replicas: 0
 
     # Prometheus rules and ServiceMonitors for Kubernetes components
     # Disabled - now managed explicitly in monitor-cluster overlay for GitOps control

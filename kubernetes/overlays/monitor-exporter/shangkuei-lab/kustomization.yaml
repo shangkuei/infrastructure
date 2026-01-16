@@ -1,0 +1,107 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../../base/monitor-exporter
+
+labels:
+  - pairs:
+      app.kubernetes.io/instance: shangkuei-lab
+      app.kubernetes.io/environment: lab
+
+# shangkuei-lab cluster overlay for metrics exporters
+patches:
+  # Standalone prometheus-node-exporter configuration
+  - patch: |-
+      # Resources based on actual usage (1-13m/9-26Mi)
+      - op: add
+        path: /spec/values/resources
+        value:
+          requests:
+            cpu: 25m
+            memory: 32Mi
+          limits:
+            cpu: 100m
+            memory: 64Mi
+      - op: add
+        path: /spec/values/prometheus/monitor/additionalLabels
+        value:
+          prometheus.io/scrape-by: alloy
+      - op: add
+        path: /spec/values/prometheus/monitor/relabelings
+        value:
+          - targetLabel: cluster
+            replacement: shangkuei-lab
+          # Rename job to match kube-prometheus dashboards expectations
+          - targetLabel: job
+            replacement: node-exporter
+          # Add node label for joining with kubelet/cadvisor metrics
+          - sourceLabels: [__meta_kubernetes_pod_node_name]
+            targetLabel: node
+      - op: add
+        path: /spec/values/prometheus/monitor/metricRelabelings
+        value:
+          # Drop node scrape collector metrics (~290 series) - internal
+          - sourceLabels: [__name__]
+            action: drop
+            regex: node_scrape_.*
+    target:
+      kind: HelmRelease
+      name: prometheus-node-exporter
+
+  # Standalone kube-state-metrics configuration
+  - patch: |-
+      # Resources based on actual usage (2m/46Mi)
+      - op: add
+        path: /spec/values/resources
+        value:
+          requests:
+            cpu: 25m
+            memory: 64Mi
+          limits:
+            cpu: 100m
+            memory: 128Mi
+      - op: add
+        path: /spec/values/prometheus/monitor/additionalLabels
+        value:
+          prometheus.io/scrape-by: alloy
+      # Honor labels from kube-state-metrics to avoid exported_* prefix
+      # This makes namespace/pod/container labels work correctly in dashboards
+      - op: add
+        path: /spec/values/prometheus/monitor/honorLabels
+        value: true
+      - op: add
+        path: /spec/values/prometheus/monitor/relabelings
+        value:
+          - targetLabel: cluster
+            replacement: shangkuei-lab
+      - op: add
+        path: /spec/values/prometheus/monitor/metricRelabelings
+        value:
+          # Drop kube_pod_labels and kube_pod_annotations (very high cardinality)
+          - sourceLabels: [__name__]
+            regex: kube_(pod_annotations|pod_labels|configmap_annotations|secret_annotations|service_annotations|node_labels)
+            action: drop
+          # Drop high-cardinality pod metrics not used in alerts/dashboards (~1K series)
+          - sourceLabels: [__name__]
+            regex: kube_pod_(tolerations|status_reason|status_qos_class)
+            action: drop
+          # Drop 'uid' label (62 unique values) - rarely queried directly
+          - regex: ^uid$
+            action: labeldrop
+          # Drop 'created_by_name' label (35 unique values) - rarely queried
+          - regex: ^created_by_name$
+            action: labeldrop
+          # Drop 'container_id' label (187 unique values) - cgroup ID, not queried
+          - regex: ^container_id$
+            action: labeldrop
+          # Drop 'image_id' label - SHA256 digest, never queried directly
+          - regex: ^image_id$
+            action: labeldrop
+          # Drop 'image_spec' label - redundant with 'image' label
+          - regex: ^image_spec$
+            action: labeldrop
+    target:
+      kind: HelmRelease
+      name: kube-state-metrics

@@ -1,4 +1,7 @@
 ---
+# Monitor Operator - CRD Providers
+# Contains Prometheus Operator and Grafana Operator (CRD providers only)
+# Exporters are in monitor-exporters, Loki is in monitor-cluster
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
@@ -7,9 +10,6 @@ resources:
   - helmrepository-prometheus-community.yaml
   - helmrepository-grafana.yaml
   - helmrelease-prometheus-operator.yaml
-  - helmrelease-prometheus-node-exporter.yaml
-  - helmrelease-kube-state-metrics.yaml
-  - helmrelease-loki.yaml
   - helmrelease-grafana-operator.yaml
 
 labels:
