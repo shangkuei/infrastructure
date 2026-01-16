@@ -2,6 +2,9 @@
 # Cilium CNI with Gateway API support
 # Configuration optimized for Talos Linux
 # Version: 1.18.3 (PINNED - compatible with Gateway API v1.3.0)
+#
+# Note: Resources and cluster-specific ServiceMonitor configuration
+# are configured via cluster overlays (e.g., overlays/cilium/shangkuei-lab/)
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
@@ -62,18 +65,17 @@ spec:
       enabled: true
       relay:
         enabled: true
+        # Resources and ServiceMonitor configured via overlay
         prometheus:
           enabled: true
           serviceMonitor:
             enabled: true
-            labels:
-              prometheus.io/scrape-by: prometheus-cluster
-            relabelings:
-              - action: replace
-                replacement: shangkuei-lab
-                targetLabel: cluster
+            # Labels and relabelings configured via overlay
       ui:
         enabled: true
+        # Resources configured via overlay
+        frontend: {}
+        backend: {}
       # Hubble metrics for network flow observability
       metrics:
         enabled:
@@ -85,12 +87,7 @@ spec:
           - http
         serviceMonitor:
           enabled: true
-          labels:
-            prometheus.io/scrape-by: prometheus-cluster
-          relabelings:
-            - action: replace
-              replacement: shangkuei-lab
-              targetLabel: cluster
+          # Labels and relabelings configured via overlay
 
     # IPAM Configuration
     ipam:
@@ -110,28 +107,22 @@ spec:
     # Operator Configuration
     operator:
       replicas: 1
+      # Resources and ServiceMonitor configured via overlay
       prometheus:
         enabled: true
         serviceMonitor:
           enabled: true
-          labels:
-            prometheus.io/scrape-by: prometheus-cluster
-          relabelings:
-            - action: replace
-              replacement: shangkuei-lab
-              targetLabel: cluster
+          # Labels and relabelings configured via overlay
 
     # Prometheus metrics for Cilium agent
     prometheus:
       enabled: true
       serviceMonitor:
         enabled: true
-        labels:
-          prometheus.io/scrape-by: prometheus-cluster
-        relabelings:
-          - action: replace
-            replacement: shangkuei-lab
-            targetLabel: cluster
+        # Labels and relabelings configured via overlay
+
+    # Cilium Agent and Envoy resources configured via overlay
+    envoy: {}
 
     # Security Context (Talos-specific capabilities)
     securityContext:

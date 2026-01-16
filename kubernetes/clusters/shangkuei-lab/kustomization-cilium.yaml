@@ -18,26 +18,7 @@ spec:
     name: flux-system
     namespace: flux-system
 
-  path: ./kubernetes/base/cilium
-
-  # Patch ServiceMonitors to use Alloy for scraping
-  patches:
-    - patch: |
-        - op: replace
-          path: /spec/values/hubble/relay/prometheus/serviceMonitor/labels/prometheus.io~1scrape-by
-          value: alloy
-        - op: replace
-          path: /spec/values/hubble/metrics/serviceMonitor/labels/prometheus.io~1scrape-by
-          value: alloy
-        - op: replace
-          path: /spec/values/operator/prometheus/serviceMonitor/labels/prometheus.io~1scrape-by
-          value: alloy
-        - op: replace
-          path: /spec/values/prometheus/serviceMonitor/labels/prometheus.io~1scrape-by
-          value: alloy
-      target:
-        kind: HelmRelease
-        name: cilium
+  path: ./kubernetes/overlays/cilium/shangkuei-lab
 
   # Dependencies: Gateway API CRDs required for Gateway API implementation
   # Requires both standard and experimental CRDs (TLSRoute)
