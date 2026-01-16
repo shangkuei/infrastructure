@@ -58,23 +58,14 @@ spec:
     extraArgs:
       - --enable-gateway-api=true
 
-    # Prometheus metrics
+    # Resources configured via cluster overlay
+
+    # Prometheus metrics (labels and relabelings configured via cluster overlay)
     prometheus:
       enabled: true
       servicemonitor:
         enabled: true
-        labels:
-          prometheus.io/scrape-by: prometheus-cluster
         prometheusInstance: default
         targetPort: 9402
         path: /metrics
         interval: 60s
-        endpointAdditionalProperties:
-          relabelings:
-            - action: replace
-              replacement: shangkuei-lab
-              targetLabel: cluster
-            # Set job label to match cert-manager-mixin alerts
-            - action: replace
-              replacement: cert-manager
-              targetLabel: job

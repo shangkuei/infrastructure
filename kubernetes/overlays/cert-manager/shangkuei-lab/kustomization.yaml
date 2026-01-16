@@ -1,0 +1,65 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../../base/cert-manager
+
+labels:
+  - pairs:
+      app.kubernetes.io/instance: shangkuei-lab
+      app.kubernetes.io/environment: lab
+
+patches:
+  - patch: |-
+      # cert-manager controller resources (actual usage: 2m/24Mi)
+      - op: add
+        path: /spec/values/resources
+        value:
+          requests:
+            cpu: 15m
+            memory: 32Mi
+          limits:
+            cpu: 100m
+            memory: 128Mi
+      # webhook resources (actual usage: 1m/14Mi)
+      - op: add
+        path: /spec/values/webhook
+        value:
+          resources:
+            requests:
+              cpu: 15m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
+      # cainjector resources (actual usage: 2m/50Mi)
+      - op: add
+        path: /spec/values/cainjector
+        value:
+          resources:
+            requests:
+              cpu: 15m
+              memory: 64Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
+      # ServiceMonitor configuration with cluster-specific relabelings
+      - op: add
+        path: /spec/values/prometheus/servicemonitor/labels
+        value:
+          prometheus.io/scrape-by: alloy
+      - op: add
+        path: /spec/values/prometheus/servicemonitor/endpointAdditionalProperties
+        value:
+          relabelings:
+            - action: replace
+              replacement: shangkuei-lab
+              targetLabel: cluster
+            # Set job label to match cert-manager-mixin alerts
+            - action: replace
+              replacement: cert-manager
+              targetLabel: job
+    target:
+      kind: HelmRelease
+      name: cert-manager
