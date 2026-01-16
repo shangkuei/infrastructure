@@ -57,15 +57,9 @@ spec:
     fullnameOverride: prometheus
 
     # Prometheus Operator
+    # Resources configured via cluster overlay
     prometheusOperator:
       enabled: true
-      resources:
-        limits:
-          cpu: 200m
-          memory: 256Mi
-        requests:
-          cpu: 100m
-          memory: 128Mi
       serviceMonitor:
         enabled: false  # Now managed in monitor-cluster overlay
 

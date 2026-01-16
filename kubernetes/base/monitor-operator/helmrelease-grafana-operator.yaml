@@ -65,14 +65,7 @@ spec:
     serviceMonitor:
       enabled: true
 
-    # Resource limits
-    resources:
-      requests:
-        cpu: 100m
-        memory: 128Mi
-      limits:
-        cpu: 500m
-        memory: 256Mi
+    # Resources configured via cluster overlay
 
     # Probe configuration
     # Increased initialDelaySeconds to allow for API server connectivity

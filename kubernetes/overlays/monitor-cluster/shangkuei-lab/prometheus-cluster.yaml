@@ -74,14 +74,14 @@ spec:
   probeNamespaceSelector: {}
   probeSelector: {}
   replicas: 1
-  # Resources reduced - no longer scraping directly, only receives remote_write
+  # Resources tuned based on actual usage (171m/592Mi)
   resources:
     limits:
       cpu: 1500m
       memory: 2Gi
     requests:
-      cpu: 300m
-      memory: 512Mi
+      cpu: 200m
+      memory: 768Mi
   retention: 31d
   retentionSize: 100GB
   routePrefix: /

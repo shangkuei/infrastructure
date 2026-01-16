@@ -32,6 +32,17 @@ patches:
       # Note: Prometheus and Alertmanager configurations moved to explicit CRs
       # in monitor-cluster overlay for full GitOps control
 
+      # Prometheus Operator resources (actual usage: 2m/21Mi)
+      - op: replace
+        path: /spec/values/prometheusOperator/resources
+        value:
+          requests:
+            cpu: 25m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 256Mi
+
       # Grafana persistence (will be disabled below, kept for reference)
       - op: replace
         path: /spec/values/grafana/persistence
@@ -129,7 +140,7 @@ patches:
           storage_config:
             aws:
               s3forcepathstyle: true
-      # Configure read/write/backend replicas
+      # Configure read/write/backend replicas with resources based on actual usage
       - op: add
         path: /spec/values/read
         value:
@@ -137,6 +148,14 @@ patches:
           persistence:
             storageClass: openebs-mayastor
             size: 10Gi
+          # Actual usage: 11-14m CPU, 209-214Mi memory
+          resources:
+            requests:
+              cpu: 25m
+              memory: 256Mi
+            limits:
+              cpu: 200m
+              memory: 512Mi
       - op: add
         path: /spec/values/write
         value:
@@ -144,6 +163,14 @@ patches:
           persistence:
             storageClass: openebs-mayastor
             size: 10Gi
+          # Actual usage: 20-22m CPU, 153-155Mi memory
+          resources:
+            requests:
+              cpu: 50m
+              memory: 256Mi
+            limits:
+              cpu: 200m
+              memory: 512Mi
       - op: add
         path: /spec/values/backend
         value:
@@ -151,21 +178,60 @@ patches:
           persistence:
             storageClass: openebs-mayastor
             size: 10Gi
+          # Actual usage: 5-6m CPU, 155-156Mi memory
+          resources:
+            requests:
+              cpu: 25m
+              memory: 256Mi
+            limits:
+              cpu: 200m
+              memory: 512Mi
       # Gateway configuration
       - op: add
         path: /spec/values/gateway
         value:
           replicas: 1
+          # Actual usage: 4m CPU, 18Mi memory
+          resources:
+            requests:
+              cpu: 25m
+              memory: 64Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
       # Chunked encoding for S3
       - op: add
         path: /spec/values/chunksCache
         value:
           enabled: false
+      # Results cache - reduced from 1024MB to 128MB (actual usage: 31Mi)
+      - op: add
+        path: /spec/values/resultsCache
+        value:
+          allocatedMemory: 128
+          resources:
+            requests:
+              cpu: 25m
+              memory: 256Mi
+            limits:
+              cpu: 200m
+              memory: 512Mi
       # Disable minio (we use SeaweedFS)
       - op: add
         path: /spec/values/minio
         value:
           enabled: false
+      # Loki Canary resources (VPA target: 15m/32Mi, actual: 1-7m/16-19Mi)
+      - op: add
+        path: /spec/values/lokiCanary
+        value:
+          resources:
+            requests:
+              cpu: 15m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
       # Compactor: enable retention processing
       - op: add
         path: /spec/values/loki/compactor
@@ -277,6 +343,16 @@ patches:
 
   # Standalone prometheus-node-exporter configuration
   - patch: |-
+      # Resources based on actual usage (1-13m/9-26Mi)
+      - op: add
+        path: /spec/values/resources
+        value:
+          requests:
+            cpu: 25m
+            memory: 32Mi
+          limits:
+            cpu: 100m
+            memory: 64Mi
       - op: add
         path: /spec/values/prometheus/monitor/additionalLabels
         value:
@@ -305,6 +381,16 @@ patches:
 
   # Standalone kube-state-metrics configuration
   - patch: |-
+      # Resources based on actual usage (2m/46Mi)
+      - op: add
+        path: /spec/values/resources
+        value:
+          requests:
+            cpu: 25m
+            memory: 64Mi
+          limits:
+            cpu: 100m
+            memory: 128Mi
       - op: add
         path: /spec/values/prometheus/monitor/additionalLabels
         value:
@@ -349,9 +435,19 @@ patches:
       kind: HelmRelease
       name: kube-state-metrics
 
-  # Grafana Operator ServiceMonitor configuration
+  # Grafana Operator configuration
   # Note: grafana-operator Helm chart uses 'additionalLabels' not 'labels'
   - patch: |-
+      # Resources (actual usage: 2m/25Mi)
+      - op: replace
+        path: /spec/values/resources
+        value:
+          requests:
+            cpu: 25m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 256Mi
       - op: add
         path: /spec/values/serviceMonitor/additionalLabels
         value:

@@ -59,6 +59,15 @@ spec:
           - name: varlog
             mountPath: /var/log
             readOnly: true
+      # Resource limits for collector pods (metrics + logs collection)
+      # Based on actual usage: 18-109m CPU, 265-501Mi memory
+      resources:
+        limits:
+          cpu: 500m
+          memory: 1Gi
+        requests:
+          cpu: 150m
+          memory: 512Mi
 
     controller:
       type: daemonset
@@ -73,15 +82,6 @@ spec:
           - name: varlog
             hostPath:
               path: /var/log
-
-    # Resource limits for collector pods (metrics + logs collection)
-    resources:
-      limits:
-        cpu: 750m
-        memory: 1Gi
-      requests:
-        cpu: 150m
-        memory: 512Mi
 
     # Enable ServiceMonitor for Alloy self-monitoring
     serviceMonitor:

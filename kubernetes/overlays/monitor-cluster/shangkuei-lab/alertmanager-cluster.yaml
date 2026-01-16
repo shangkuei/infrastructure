@@ -48,13 +48,14 @@ spec:
   paused: false
   portName: http-web
   replicas: 1
+  # Resources tuned based on actual usage (1m/30Mi)
   resources:
     limits:
       cpu: 100m
       memory: 128Mi
     requests:
-      cpu: 50m
-      memory: 64Mi
+      cpu: 25m
+      memory: 48Mi
   retention: 120h
   routePrefix: /
   securityContext:
