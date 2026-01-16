@@ -27,6 +27,20 @@ patches:
           requests:
             cpu: 25m
             memory: 64Mi
+      # Enable metrics endpoint (disabled by default: --metrics-bind-address=0)
+      # Required for ServiceMonitor in monitor-cluster to scrape operator metrics
+      - op: add
+        path: /spec/postRenderers
+        value:
+          - kustomize:
+              patches:
+                - target:
+                    kind: Deployment
+                    name: seaweedfs-operator
+                  patch: |-
+                    - op: add
+                      path: /spec/template/spec/containers/0/args/-
+                      value: --metrics-bind-address=:8080
     target:
       kind: HelmRelease
       name: seaweedfs-operator

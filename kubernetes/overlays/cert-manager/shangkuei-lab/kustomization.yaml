@@ -12,7 +12,7 @@ labels:
 
 patches:
   - patch: |-
-      # cert-manager controller resources (actual usage: 2m/24Mi)
+      # cert-manager controller resources (actual usage: 2m/24Mi, limit increased for burst)
       - op: add
         path: /spec/values/resources
         value:
@@ -20,9 +20,9 @@ patches:
             cpu: 15m
             memory: 32Mi
           limits:
-            cpu: 100m
+            cpu: 200m
             memory: 128Mi
-      # webhook resources (actual usage: 1m/14Mi)
+      # webhook resources (actual usage: 1m/14Mi, limit increased for burst)
       - op: add
         path: /spec/values/webhook
         value:
@@ -31,9 +31,9 @@ patches:
               cpu: 15m
               memory: 32Mi
             limits:
-              cpu: 100m
+              cpu: 200m
               memory: 64Mi
-      # cainjector resources (actual usage: 2m/50Mi)
+      # cainjector resources (actual usage: 2m/50Mi, limit increased for burst)
       - op: add
         path: /spec/values/cainjector
         value:
@@ -42,7 +42,7 @@ patches:
               cpu: 15m
               memory: 64Mi
             limits:
-              cpu: 100m
+              cpu: 200m
               memory: 128Mi
       # ServiceMonitor configuration with cluster-specific relabelings
       - op: add

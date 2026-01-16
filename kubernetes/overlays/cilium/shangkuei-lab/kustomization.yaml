@@ -66,7 +66,7 @@ patches:
           limits:
             cpu: 100m
             memory: 64Mi
-      # Hubble UI Backend resources
+      # Hubble UI Backend resources (limit increased for burst)
       - op: add
         path: /spec/values/hubble/ui/backend/resources
         value:
@@ -74,7 +74,7 @@ patches:
             cpu: 15m
             memory: 32Mi
           limits:
-            cpu: 100m
+            cpu: 200m
             memory: 64Mi
       # Hubble Metrics ServiceMonitor configuration
       - op: add

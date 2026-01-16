@@ -14,7 +14,7 @@ labels:
 patches:
   # Standalone prometheus-node-exporter configuration
   - patch: |-
-      # Resources based on actual usage (1-13m/9-26Mi)
+      # Resources: baseline 1-13m/9-26Mi, increased limit to 200m for scrape burst headroom
       - op: add
         path: /spec/values/resources
         value:
@@ -22,7 +22,7 @@ patches:
             cpu: 25m
             memory: 32Mi
           limits:
-            cpu: 100m
+            cpu: 200m
             memory: 64Mi
       - op: add
         path: /spec/values/prometheus/monitor/additionalLabels
@@ -52,7 +52,7 @@ patches:
 
   # Standalone kube-state-metrics configuration
   - patch: |-
-      # Resources based on actual usage (2m/46Mi)
+      # Resources based on actual usage (2m/46Mi, limit increased for burst)
       - op: add
         path: /spec/values/resources
         value:
@@ -60,7 +60,7 @@ patches:
             cpu: 25m
             memory: 64Mi
           limits:
-            cpu: 100m
+            cpu: 200m
             memory: 128Mi
       - op: add
         path: /spec/values/prometheus/monitor/additionalLabels

@@ -22,12 +22,12 @@ labels:
 # - openebs.io/zfs=true: auto-added when zfs_pools is configured
 patches:
   - patch: |-
-      # LocalPV Hostpath Provisioner resources (VPA target: 15m/32Mi)
+      # LocalPV Hostpath Provisioner resources (VPA target: 15m/32Mi, limit increased for burst)
       - op: replace
         path: /spec/values/localpv-provisioner/localpv/resources
         value:
           limits:
-            cpu: 100m
+            cpu: 200m
             memory: 128Mi
           requests:
             cpu: 25m
@@ -143,10 +143,10 @@ patches:
             node:
               nodeSelector:
                 openebs.io/engine: "mayastor"
-              # VPA target: 11m/16Mi
+              # VPA target: 11m/16Mi (limit increased for burst)
               resources:
                 limits:
-                  cpu: 100m
+                  cpu: 200m
                   memory: 128Mi
                 requests:
                   cpu: 25m
