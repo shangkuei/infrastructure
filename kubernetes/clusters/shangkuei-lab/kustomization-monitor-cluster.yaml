@@ -23,9 +23,11 @@ spec:
   # Dependencies:
   # - monitor-operator: Prometheus Operator and Grafana Operator must be ready
   # - seaweedfs-cluster: S3 backend for Loki storage
+  # - openebs: Storage classes for PVCs
   dependsOn:
     - name: monitor-operator
     - name: seaweedfs-cluster
+    - name: openebs
 
   # SOPS decryption for encrypted secrets (Loki S3 credentials)
   decryption:

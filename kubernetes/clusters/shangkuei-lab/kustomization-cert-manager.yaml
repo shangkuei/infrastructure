@@ -19,10 +19,12 @@ spec:
 
   path: ./kubernetes/overlays/cert-manager/shangkuei-lab
 
-  # Dependencies: Gateway API CRDs must be available for HTTP01/TLS challenges
-  # Requires standard CRDs (experimental TLSRoute not needed by cert-manager)
+  # Dependencies:
+  # - gateway-api-standard: Gateway API CRDs for HTTP01/TLS challenges
+  # - cilium: CNI must be ready for network connectivity
   dependsOn:
     - name: gateway-api-standard
+    - name: cilium
 
   healthChecks:
     - apiVersion: apps/v1

@@ -20,9 +20,9 @@ spec:
 
   path: ./kubernetes/overlays/monitor-operator/shangkuei-lab
 
-  # Dependencies: Storage must be ready for monitoring namespace
+  # Dependencies: CNI must be ready for network connectivity
   dependsOn:
-    - name: openebs
+    - name: cilium
 
   healthChecks:
     # Prometheus Operator - manages Prometheus/Alertmanager CRDs

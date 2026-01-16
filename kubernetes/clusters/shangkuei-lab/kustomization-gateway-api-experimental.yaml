@@ -20,10 +20,6 @@ spec:
 
   path: ./
 
-  # Depends on standard CRDs being installed first
-  dependsOn:
-    - name: gateway-api-standard
-
   # Force apply for CRDs
   force: true
 
