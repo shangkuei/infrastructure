@@ -51,14 +51,7 @@ spec:
     # The operator watches for Seaweed CRs and manages SeaweedFS clusters
     replicaCount: 1
 
-    # Resource limits for the operator pod
-    resources:
-      limits:
-        cpu: 200m
-        memory: 256Mi
-      requests:
-        cpu: 100m
-        memory: 128Mi
+    # Resources configured via cluster overlay
 
     # Service account
     serviceAccount:

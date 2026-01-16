@@ -33,13 +33,14 @@ spec:
             - name: http
               containerPort: 23646
               protocol: TCP
+          # Resources based on VPA recommendations (target: 15m/32Mi)
           resources:
             limits:
               cpu: 200m
               memory: 256Mi
             requests:
-              cpu: 50m
-              memory: 128Mi
+              cpu: 25m
+              memory: 64Mi
           livenessProbe:
             httpGet:
               path: /

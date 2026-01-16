@@ -17,6 +17,16 @@ patches:
       - op: replace
         path: /spec/values/serviceMonitor/enabled
         value: false
+      # Resources based on VPA recommendations (target: 15m/34Mi)
+      - op: replace
+        path: /spec/values/resources
+        value:
+          limits:
+            cpu: 200m
+            memory: 256Mi
+          requests:
+            cpu: 25m
+            memory: 64Mi
     target:
       kind: HelmRelease
       name: seaweedfs-operator

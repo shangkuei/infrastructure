@@ -30,27 +30,30 @@ spec:
     # Prometheus metrics port (creates ServiceMonitor in seaweedfs namespace)
     # Note: Custom ServiceMonitors with alloy label are in monitor-cluster overlay
     metricsPort: 9324
-    # Resource limits
+    # Resources based on VPA recommendations (target: 15m/47Mi)
     limits:
       cpu: 500m
       memory: 512Mi
     requests:
-      cpu: 100m
-      memory: 256Mi
+      cpu: 25m
+      memory: 64Mi
 
   # Volume servers - data storage
   volume:
     replicas: 3
     storageClassName: openebs-mayastor
     # Storage request for volume data
+    # Resources based on VPA recommendations (target: 15m/47Mi)
     requests:
       storage: 100Gi
+      cpu: 50m
+      memory: 128Mi
     # Prometheus metrics port
     metricsPort: 9325
-    # Resource limits
+    # Resource limits (headroom for burst I/O)
     limits:
-      cpu: "1"
-      memory: 1Gi
+      cpu: 500m
+      memory: 512Mi
 
   # Filer servers - S3 API endpoint
   filer:
@@ -77,10 +80,10 @@ spec:
           storage: 10Gi
     # Prometheus metrics port
     metricsPort: 9326
-    # Resource limits
+    # Resources based on VPA recommendations (target: 15m/137Mi)
     limits:
       cpu: 500m
       memory: 512Mi
     requests:
-      cpu: 100m
+      cpu: 25m
       memory: 256Mi
