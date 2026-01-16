@@ -105,14 +105,7 @@ spec:
         # Tolerations for storage nodes
         tolerations: []
 
-        # Resource limits for the provisioner pod
-        resources:
-          limits:
-            cpu: 100m
-            memory: 128Mi
-          requests:
-            cpu: 50m
-            memory: 64Mi
+        # Resources configured via cluster overlay
 
     # NDM (Node Disk Manager) Configuration
     # Required for Replicated Engine (Mayastor) and ZFS LocalPV

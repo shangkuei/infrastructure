@@ -22,6 +22,16 @@ labels:
 # - openebs.io/zfs=true: auto-added when zfs_pools is configured
 patches:
   - patch: |-
+      # LocalPV Hostpath Provisioner resources (VPA target: 15m/32Mi)
+      - op: replace
+        path: /spec/values/localpv-provisioner/localpv/resources
+        value:
+          limits:
+            cpu: 100m
+            memory: 128Mi
+          requests:
+            cpu: 25m
+            memory: 32Mi
       - op: replace
         path: /spec/values/engines/local/zfs/enabled
         value: true
@@ -46,16 +56,25 @@ patches:
             encrKeysDir: "/var/openebs/encr-keys"
             nodeSelector:
               openebs.io/zfs: "true"
-          nodeSelector:
-            openebs.io/zfs: "true"
-          tolerations: []
-          resources:
-            limits:
-              cpu: 200m
-              memory: 256Mi
-            requests:
-              cpu: 100m
-              memory: 128Mi
+            # Resources based on VPA recommendations (target: 11m/16Mi)
+            resources:
+              limits:
+                cpu: 100m
+                memory: 128Mi
+              requests:
+                cpu: 25m
+                memory: 32Mi
+          zfsController:
+            nodeSelector:
+              openebs.io/zfs: "true"
+            # Resources based on VPA recommendations (target: 11m/22Mi)
+            resources:
+              limits:
+                cpu: 200m
+                memory: 256Mi
+              requests:
+                cpu: 25m
+                memory: 64Mi
       # Mayastor Configuration (worker-1,2,3)
       # Note: StorageClass and DiskPools are created separately
       # (the umbrella chart doesn't pass these values to the subchart)
@@ -64,6 +83,7 @@ patches:
         value:
           enabled: true
           # io-engine runs on labeled nodes with hugepages
+          # Resources based on VPA (target: 2406m/35Mi) - CPU kept high for NVMe I/O
           io_engine:
             # Required for VMs (Proxmox/KVM/VMware/UTM) - fixes DPDK IOVA allocation
             envcontext: "iova-mode=pa"
@@ -72,17 +92,86 @@ patches:
             resources:
               limits:
                 cpu: "2.5"
-                memory: "2Gi"
+                memory: "512Mi"
                 hugepages-2Mi: "2Gi"
               requests:
                 cpu: "2"
-                memory: "1Gi"
+                memory: "128Mi"
                 hugepages-2Mi: "2Gi"
+          # Agent components - resources based on VPA recommendations
+          agents:
+            core:
+              # VPA target: 11m/16Mi
+              resources:
+                limits:
+                  cpu: 500m
+                  memory: 128Mi
+                requests:
+                  cpu: 50m
+                  memory: 32Mi
+            ha:
+              node:
+                # VPA target: 15m/32Mi
+                resources:
+                  limits:
+                    cpu: 100m
+                    memory: 64Mi
+                  requests:
+                    cpu: 25m
+                    memory: 32Mi
+          # REST API - resources based on VPA (target: 7m/16Mi)
+          apis:
+            rest:
+              resources:
+                limits:
+                  cpu: 100m
+                  memory: 64Mi
+                requests:
+                  cpu: 25m
+                  memory: 32Mi
           # Control plane components
           csi:
+            controller:
+              # VPA target: 11m/11Mi
+              resources:
+                limits:
+                  cpu: 100m
+                  memory: 128Mi
+                requests:
+                  cpu: 25m
+                  memory: 64Mi
             node:
               nodeSelector:
                 openebs.io/engine: "mayastor"
+              # VPA target: 11m/16Mi
+              resources:
+                limits:
+                  cpu: 100m
+                  memory: 128Mi
+                requests:
+                  cpu: 25m
+                  memory: 64Mi
+          # Diskpool operator - VPA target: 15m/32Mi
+          operators:
+            pool:
+              resources:
+                limits:
+                  cpu: 100m
+                  memory: 64Mi
+                requests:
+                  cpu: 25m
+                  memory: 32Mi
+          # Observability callhome - VPA target: 11m/16Mi
+          obs:
+            callhome:
+              resources:
+                limits:
+                  cpu: 100m
+                  memory: 64Mi
+                requests:
+                  cpu: 25m
+                  memory: 32Mi
+          # etcd - resources based on VPA (target: 23m/35Mi)
           etcd:
             replicaCount: 3
             nodeSelector:
@@ -94,11 +183,26 @@ patches:
             localpvScConfig:
               enabled: true
               basePath: "/var/openebs/local/etcd"
-          # NATS for Mayastor communication
+            resources:
+              limits:
+                cpu: 200m
+                memory: 256Mi
+              requests:
+                cpu: 50m
+                memory: 64Mi
+          # NATS for Mayastor communication - VPA target: 11m/11Mi
           nats:
             replicaCount: 3
             nodeSelector:
               openebs.io/engine: "mayastor"
+            nats:
+              resources:
+                limits:
+                  cpu: 100m
+                  memory: 64Mi
+                requests:
+                  cpu: 25m
+                  memory: 32Mi
     target:
       kind: HelmRelease
       name: openebs
