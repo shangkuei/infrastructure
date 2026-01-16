@@ -1,6 +1,19 @@
 // Build PrometheusRule alerts from kube-prometheus and additional mixins
 // Run: jsonnet -J vendor -m output-alerts alerts.jsonnet
-local kp = (import 'kube-prometheus/main.libsonnet');
+local kp = (import 'kube-prometheus/main.libsonnet') {
+  // Customize node-exporter alert thresholds
+  values+:: {
+    nodeExporter+: {
+      mixin+: {
+        _config+: {
+          // Increase NodeSystemSaturation threshold from 2 to 4
+          // (load per core before alerting)
+          systemSaturationPerCoreThreshold: 4,
+        },
+      },
+    },
+  },
+};
 local addMixin = (import 'kube-prometheus/lib/mixin.libsonnet');
 
 // CoreDNS mixin for DNS monitoring

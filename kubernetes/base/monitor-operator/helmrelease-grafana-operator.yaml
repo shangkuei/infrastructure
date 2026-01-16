@@ -48,9 +48,10 @@ spec:
           kind: Deployment
 
   values:
-    # Single replica with leader election for stability
+    # Single replica - leader election disabled (unnecessary with 1 replica)
+    # Eliminates lease renewal failures during API server slowdowns
     replicas: 1
-    leaderElect: true
+    leaderElect: false
 
     # Watch all namespaces for Grafana CRs
     namespaceScope: false
