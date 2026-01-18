@@ -21,8 +21,9 @@ kind: Kustomization
 # 12. monitor-exporter: kube-state-metrics + node-exporter (depends on monitor-operator)
 # 13. monitor-cluster: Loki + Alloy + CRs (depends on monitor-operator + seaweedfs-cluster)
 # 14. tailscale-operator: Tailscale connectivity (depends on cilium)
-# 15. flux-operator: Foundation (depends on cilium, installed via Helm)
-# 16. flux-instance: Core Flux components (depends on flux-operator)
+# 15. tailscale-cluster: Tailscale services (depends on tailscale-operator + monitor-cluster)
+# 16. flux-operator: Foundation (depends on cilium, installed via Helm)
+# 17. flux-instance: Core Flux components (depends on flux-operator)
 
 resources:
   # Namespace configuration (kube-system with pod security labels for CSI)
@@ -69,6 +70,8 @@ resources:
 
   # Tailscale - Expose services to Tailscale network (depends on Cilium)
   - kustomization-tailscale-operator.yaml
+  # Tailscale - Services exposed via Tailscale (depends on tailscale-operator + monitor-cluster)
+  - kustomization-tailscale-cluster.yaml
 
   # Infrastructure applications (Flux Kustomization CRs)
   # Flux foundation (installed via Helm)

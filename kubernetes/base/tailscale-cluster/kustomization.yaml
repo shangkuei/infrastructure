@@ -1,0 +1,13 @@
+---
+# Tailscale Cluster - Services exposed via Tailscale
+# Contains Tailscale-annotated services that expose internal K8s services
+# to the Tailscale network
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# No base resources - all services are cluster-specific in overlays
+
+labels:
+  - pairs:
+      app.kubernetes.io/name: tailscale-cluster
+      app.kubernetes.io/managed-by: flux

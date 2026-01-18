@@ -1,0 +1,37 @@
+---
+# Flux Kustomization for Tailscale Cluster Services
+# Deploys services that are exposed via Tailscale to the tailnet
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: tailscale-cluster
+  namespace: flux-system
+spec:
+  interval: 30m
+  timeout: 15m
+  prune: true
+  wait: true
+
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+
+  path: ./kubernetes/overlays/tailscale-cluster/shangkuei-lab
+
+  # Dependencies: Tailscale operator must be ready, and target services must exist
+  dependsOn:
+    - name: tailscale-operator
+    - name: monitor-cluster
+
+  healthChecks:
+    # Prometheus Tailscale service
+    - apiVersion: v1
+      kind: Service
+      name: prometheus-tailscale
+      namespace: monitoring
+    # Loki Tailscale service
+    - apiVersion: v1
+      kind: Service
+      name: loki-tailscale
+      namespace: monitoring
