@@ -1,0 +1,15 @@
+---
+# Tailscale Operator - Kubernetes connectivity to Tailscale network
+# Enables exposing services via Tailscale without public internet exposure
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - namespace-tailscale.yaml
+  - helmrepository-tailscale.yaml
+  - helmrelease-tailscale-operator.yaml
+
+labels:
+  - pairs:
+      app.kubernetes.io/name: tailscale-operator
+      app.kubernetes.io/managed-by: flux

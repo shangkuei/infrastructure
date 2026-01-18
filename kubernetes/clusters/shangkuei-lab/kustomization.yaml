@@ -20,8 +20,9 @@ kind: Kustomization
 # 11. monitor-operator: Prometheus Operator + Grafana Operator (depends on openebs)
 # 12. monitor-exporter: kube-state-metrics + node-exporter (depends on monitor-operator)
 # 13. monitor-cluster: Loki + Alloy + CRs (depends on monitor-operator + seaweedfs-cluster)
-# 14. flux-operator: Foundation (depends on cilium, installed via Helm)
-# 15. flux-instance: Core Flux components (depends on flux-operator)
+# 14. tailscale-operator: Tailscale connectivity (depends on cilium)
+# 15. flux-operator: Foundation (depends on cilium, installed via Helm)
+# 16. flux-instance: Core Flux components (depends on flux-operator)
 
 resources:
   # Namespace configuration (kube-system with pod security labels for CSI)
@@ -65,6 +66,9 @@ resources:
   - kustomization-monitor-exporter.yaml
   # Monitoring - Loki + Alloy + CRs (depends on monitor-operator + SeaweedFS)
   - kustomization-monitor-cluster.yaml
+
+  # Tailscale - Expose services to Tailscale network (depends on Cilium)
+  - kustomization-tailscale-operator.yaml
 
   # Infrastructure applications (Flux Kustomization CRs)
   # Flux foundation (installed via Helm)

@@ -1,0 +1,33 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../../base/tailscale-operator
+  # SOPS-encrypted secret for Tailscale OAuth credentials
+  # Named 'operator-oauth' with keys 'client_id' and 'client_secret' as expected by chart
+  - secret-operator-oauth.enc.yaml
+
+labels:
+  - pairs:
+      app.kubernetes.io/instance: shangkuei-lab
+      app.kubernetes.io/environment: lab
+
+# shangkuei-lab cluster overlay for Tailscale Operator
+# Note: OAuth secret (operator-oauth) is pre-created with client_id and client_secret keys
+# The chart automatically uses this secret when oauth.clientId/clientSecret are not set
+patches:
+  - patch: |-
+      # Resource limits (conservative for home lab)
+      - op: add
+        path: /spec/values/resources
+        value:
+          requests:
+            cpu: 25m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 256Mi
+    target:
+      kind: HelmRelease
+      name: tailscale-operator

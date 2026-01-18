@@ -1,0 +1,64 @@
+---
+# Tailscale Operator - Manages Tailscale connectivity for Kubernetes services
+# Version: 1.x (stable releases)
+#
+# Features:
+# - Expose Kubernetes services to Tailscale network
+# - Ingress controller for Tailscale funnel
+# - Egress connectivity for pods
+#
+# OAuth credentials are configured via overlay secrets
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: tailscale-operator
+  namespace: tailscale
+spec:
+  interval: 30m
+  timeout: 15m
+  chart:
+    spec:
+      chart: tailscale-operator
+      version: ">=1.0.0 <2.0.0"
+      sourceRef:
+        kind: HelmRepository
+        name: tailscale
+        namespace: flux-system
+      interval: 12h
+
+  install:
+    crds: CreateReplace
+    createNamespace: false
+    remediation:
+      retries: 3
+
+  upgrade:
+    crds: CreateReplace
+    remediation:
+      retries: 3
+      remediateLastFailure: true
+    cleanupOnFail: true
+
+  driftDetection:
+    mode: warn
+    ignore:
+      - paths: ["/spec/replicas"]
+        target:
+          kind: Deployment
+
+  values:
+    # Operator configuration
+    # OAuth credentials provided via valuesFrom in overlay
+
+    # Operator namespace (proxies may be created in other namespaces)
+    operatorConfig:
+      # Enable logging for troubleshooting
+      logging: info
+
+    # Proxy configuration defaults
+    proxyConfig:
+      # Default tags for proxies created by the operator
+      # Note: This is a comma-separated string, NOT an array
+      defaultTags: "tag:k8s-service"
+
+    # Resources configured via cluster overlay

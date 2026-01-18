@@ -1,0 +1,10 @@
+---
+# Tailscale namespace
+# Contains the Tailscale operator and any Tailscale proxy pods
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: tailscale
+  labels:
+    app.kubernetes.io/name: tailscale-operator
+    app.kubernetes.io/managed-by: flux
