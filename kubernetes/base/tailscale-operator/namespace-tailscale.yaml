@@ -1,6 +1,7 @@
 ---
 # Tailscale namespace
 # Contains the Tailscale operator and any Tailscale proxy pods
+# Pod Security: privileged required for proxy containers (network setup)
 apiVersion: v1
 kind: Namespace
 metadata:
@@ -8,3 +9,7 @@ metadata:
   labels:
     app.kubernetes.io/name: tailscale-operator
     app.kubernetes.io/managed-by: flux
+    # Pod Security Standards - privileged required for Tailscale proxies
+    pod-security.kubernetes.io/enforce: privileged
+    pod-security.kubernetes.io/audit: privileged
+    pod-security.kubernetes.io/warn: privileged

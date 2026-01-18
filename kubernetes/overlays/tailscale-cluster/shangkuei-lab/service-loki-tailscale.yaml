@@ -1,7 +1,7 @@
 ---
 # Tailscale Service for Loki Gateway
 # Exposes Loki to Tailscale network for log push from external clients
-# Endpoint: http://loki-lab/loki/api/v1/push
+# Endpoint: http://loki/loki/api/v1/push
 # Tenant ID: shangkuei-lab (X-Scope-OrgID header)
 apiVersion: v1
 kind: Service
@@ -10,7 +10,7 @@ metadata:
   namespace: monitoring
   annotations:
     tailscale.com/expose: "true"
-    tailscale.com/hostname: "loki-lab"
+    tailscale.com/hostname: "loki"
   labels:
     app.kubernetes.io/name: loki
     app.kubernetes.io/component: tailscale-proxy

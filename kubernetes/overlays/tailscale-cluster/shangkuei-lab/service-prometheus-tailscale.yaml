@@ -1,7 +1,7 @@
 ---
 # Tailscale Service for Prometheus
 # Exposes Prometheus to Tailscale network for remote_write from external clients
-# Endpoint: http://prometheus-lab:9090/api/v1/write
+# Endpoint: http://prometheus:9090/api/v1/write
 apiVersion: v1
 kind: Service
 metadata:
@@ -9,7 +9,7 @@ metadata:
   namespace: monitoring
   annotations:
     tailscale.com/expose: "true"
-    tailscale.com/hostname: "prometheus-lab"
+    tailscale.com/hostname: "prometheus"
   labels:
     app.kubernetes.io/name: prometheus
     app.kubernetes.io/component: tailscale-proxy
