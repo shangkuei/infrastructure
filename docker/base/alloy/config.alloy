@@ -1,0 +1,126 @@
+// ============================================================
+// Grafana Alloy Configuration - Unified Telemetry for Unraid
+// ============================================================
+//
+// This configuration handles:
+// 1. Log collection - Docker containers, push to Loki
+// 2. Metrics collection - Node/container metrics, push to Prometheus
+//
+// Environment variables (from docker-compose):
+// - CLUSTER_NAME: Cluster identifier (e.g., shangkuei-unraid)
+// - LOKI_URL: Loki push endpoint (e.g., http://loki/loki/api/v1/push)
+// - LOKI_TENANT_ID: Loki tenant ID (e.g., shangkuei-lab)
+// - PROMETHEUS_URL: Prometheus remote_write endpoint
+// - HOSTNAME: Host identifier
+//
+// ============================================================
+
+// ============================================================
+// LOG COLLECTION - Docker Containers
+// ============================================================
+
+// Discover Docker containers
+discovery.docker "containers" {
+  host = "unix:///var/run/docker.sock"
+}
+
+// Relabel discovered containers - add labels for log queries
+discovery.relabel "docker_logs" {
+  targets = discovery.docker.containers.targets
+
+  // Set container name
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(.*)"
+    target_label  = "container"
+  }
+
+  // Set compose project (if using docker-compose)
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_project"]
+    target_label  = "compose_project"
+  }
+
+  // Set compose service (if using docker-compose)
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    target_label  = "compose_service"
+  }
+
+  // Set job label as compose_project/compose_service or just container name
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_project", "__meta_docker_container_label_com_docker_compose_service"]
+    separator     = "/"
+    regex         = "(.+/.+)"
+    target_label  = "job"
+  }
+
+  // Fallback job label for non-compose containers
+  rule {
+    source_labels = ["__meta_docker_container_name", "job"]
+    regex         = "/(.+);"
+    target_label  = "job"
+  }
+
+  // Set image name
+  rule {
+    source_labels = ["__meta_docker_container_image"]
+    target_label  = "image"
+  }
+
+  // Add cluster label for multi-cluster support
+  rule {
+    target_label = "cluster"
+    replacement  = env("CLUSTER_NAME")
+  }
+
+  // Add host label
+  rule {
+    target_label = "host"
+    replacement  = env("HOSTNAME")
+  }
+}
+
+// Collect Docker container logs
+loki.source.docker "containers" {
+  host             = "unix:///var/run/docker.sock"
+  targets          = discovery.relabel.docker_logs.output
+  forward_to       = [loki.process.docker_logs.receiver]
+  relabel_rules    = discovery.relabel.docker_logs.rules
+  refresh_interval = "5s"
+}
+
+// Process Docker logs - parse and enrich
+loki.process "docker_logs" {
+  forward_to = [loki.write.loki.receiver]
+
+  // Try to extract log level from common formats
+  // JSON format: {"level":"info", ...}
+  stage.json {
+    expressions = {
+      level = "level",
+    }
+  }
+
+  // Fallback: logfmt format: level=info ...
+  stage.logfmt {
+    mapping = {
+      level = "level",
+    }
+  }
+
+  // Set level label if extracted
+  stage.labels {
+    values = {
+      level = "",
+    }
+  }
+}
+
+// Push logs to Loki (multi-tenant mode)
+loki.write "loki" {
+  endpoint {
+    url       = env("LOKI_URL")
+    tenant_id = env("LOKI_TENANT_ID")
+  }
+}

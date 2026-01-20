@@ -1,0 +1,57 @@
+# Grafana Alloy - Unified telemetry agent
+# Base configuration - override with environment-specific settings
+#
+# Collects metrics and logs from Docker host and containers,
+# pushes to Prometheus and Loki via Tailscale endpoints.
+name: alloy
+
+services:
+  alloy:
+    image: grafana/alloy:v1.5.1
+    container_name: alloy
+    restart: unless-stopped
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --storage.path=/var/lib/alloy/data
+      - /etc/alloy/config.alloy
+    environment:
+      # Cluster identification
+      - CLUSTER_NAME=${CLUSTER_NAME:-shangkuei-unraid}
+      # Loki endpoint (via Tailscale)
+      - LOKI_URL=${LOKI_URL:-http://loki/loki/api/v1/push}
+      - LOKI_TENANT_ID=${LOKI_TENANT_ID:-shangkuei-lab}
+      # Prometheus endpoint (via Tailscale)
+      - PROMETHEUS_URL=${PROMETHEUS_URL:-http://prometheus:9090/api/v1/write}
+      # Host identification
+      - HOSTNAME=${HOSTNAME:-unraid}
+    volumes:
+      # Alloy configuration
+      - ./config.alloy:/etc/alloy/config.alloy:ro
+      # Alloy data directory
+      - alloy-data:/var/lib/alloy/data
+      # Docker socket for container discovery and log collection
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # System logs
+      - /var/log:/var/log:ro
+      # Container logs (Docker default path)
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    # Required for Docker socket access
+    user: root
+    networks:
+      - alloy
+    # Healthcheck
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:12345/-/ready"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  alloy-data:
+    driver: local
+
+networks:
+  alloy:
+    name: alloy-internal
