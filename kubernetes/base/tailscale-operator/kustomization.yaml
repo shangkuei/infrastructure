@@ -8,6 +8,7 @@ resources:
   - namespace-tailscale.yaml
   - helmrepository-tailscale.yaml
   - helmrelease-tailscale-operator.yaml
+  - proxyclass-default.yaml
 
 labels:
   - pairs:

@@ -1,0 +1,22 @@
+---
+# Default ProxyClass for Tailscale service proxies
+#
+# Uses userspace networking mode (TS_USERSPACE=true) to avoid routing conflicts
+# between Tailscale's WireGuard kernel routing and the cluster's use of
+# Tailscale IPs (100.x.x.x) as node InternalIPs.
+#
+# Without userspace mode, tailscaled in kernel mode intercepts traffic to
+# 100.x.x.x addresses, breaking TCP connections to the Kubernetes API
+# which runs on control plane at its Tailscale IP.
+apiVersion: tailscale.com/v1alpha1
+kind: ProxyClass
+metadata:
+  name: default
+  namespace: tailscale
+spec:
+  statefulSet:
+    pod:
+      tailscaleContainer:
+        env:
+          - name: TS_USERSPACE
+            value: "true"

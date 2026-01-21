@@ -4,9 +4,8 @@ kind: Kustomization
 
 resources:
   - ../../../base/tailscale-cluster
-  # Tailscale-exposed services
-  - service-prometheus-tailscale.yaml
-  - service-loki-tailscale.yaml
+  # Tailscale Ingress (HTTPS with automatic certs)
+  - ingress-monitoring.yaml
 
 labels:
   - pairs:
