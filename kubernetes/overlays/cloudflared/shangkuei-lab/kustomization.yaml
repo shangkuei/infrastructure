@@ -1,0 +1,27 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../../base/cloudflared
+  # SOPS-encrypted secret for Cloudflare Tunnel credentials
+  # Secret name: cloudflared (matches cloudflare.secretName in HelmRelease)
+  - secret-tunnel-credentials.enc.yaml
+
+patches:
+  - target:
+      kind: HelmRelease
+      name: cloudflared
+    patch: |
+      - op: add
+        path: /spec/values/cloudflare/tunnelName
+        value: "shangkuei-lab"
+      # Force HTTP/2 protocol instead of QUIC (UDP may be blocked)
+      - op: add
+        path: /spec/values/cloudflare/protocol
+        value: "http2"
+
+labels:
+  - pairs:
+      app.kubernetes.io/instance: shangkuei-lab
+      app.kubernetes.io/environment: lab

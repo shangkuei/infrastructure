@@ -1,0 +1,38 @@
+---
+# Flux Kustomization for Cloudflared
+# Exposes Kubernetes services via Cloudflare Tunnel
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: cloudflared
+  namespace: flux-system
+spec:
+  interval: 30m
+  timeout: 15m
+  prune: true
+  wait: true
+
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+
+  path: ./kubernetes/overlays/cloudflared/shangkuei-lab
+
+  # Dependencies: CNI must be ready, and target services must exist
+  dependsOn:
+    - name: cilium
+    - name: monitor-cluster
+
+  # Decrypt SOPS-encrypted secrets
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
+
+  healthChecks:
+    # Cloudflared deployment
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: cloudflared-cloudflare-tunnel
+      namespace: cloudflared

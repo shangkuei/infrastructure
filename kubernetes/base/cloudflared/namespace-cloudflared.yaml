@@ -1,0 +1,14 @@
+---
+# Cloudflared namespace
+# Contains the cloudflared tunnel connector pods
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cloudflared
+  labels:
+    app.kubernetes.io/name: cloudflared
+    app.kubernetes.io/managed-by: flux
+    # Pod Security Standards - baseline is sufficient for cloudflared
+    pod-security.kubernetes.io/enforce: baseline
+    pod-security.kubernetes.io/audit: baseline
+    pod-security.kubernetes.io/warn: baseline

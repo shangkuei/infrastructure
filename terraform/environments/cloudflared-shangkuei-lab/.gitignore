@@ -1,0 +1,28 @@
+# Terraform
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.backup
+*.tfplan
+
+# Sensitive files
+terraform.tfvars
+backend.hcl
+*.auto.tfvars
+
+# SOPS decrypted files
+*.dec.*
+
+# Local testing
+.env
+*.local
+
+# macOS
+.DS_Store
+
+# Editor files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/

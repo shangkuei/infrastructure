@@ -18,9 +18,9 @@ labels:
 # The chart automatically uses this secret when oauth.clientId/clientSecret are not set
 patches:
   - patch: |-
-      # Resource limits (conservative for home lab)
+      # Operator resource limits (conservative for home lab)
       - op: add
-        path: /spec/values/resources
+        path: /spec/values/operatorConfig/resources
         value:
           requests:
             cpu: 25m

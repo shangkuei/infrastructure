@@ -73,6 +73,9 @@ resources:
   # Tailscale - Services exposed via Tailscale (depends on tailscale-operator + monitor-cluster)
   - kustomization-tailscale-cluster.yaml
 
+  # Cloudflared - Cloudflare Tunnel for external access (depends on monitor-cluster)
+  - kustomization-cloudflared.yaml
+
   # Infrastructure applications (Flux Kustomization CRs)
   # Flux foundation (installed via Helm)
   - kustomization-flux-operator.yaml

@@ -1,0 +1,8 @@
+# SOPS configuration for cloudflared secrets
+# Uses Flux age key for encryption (same key as flux-instance)
+# Naming convention: *.enc.yaml (encrypted files)
+
+creation_rules:
+  - path_regex: \.enc\.yaml$
+    encrypted_regex: '^(data|stringData)$'
+    age: age169cuuq59c5dzagy3j70h7ul0q5meeqvmdc84vx4ffwg6ptxsgdvshem39p

@@ -94,19 +94,16 @@ loki.source.docker "containers" {
 loki.process "docker_logs" {
   forward_to = [loki.write.loki.receiver]
 
-  // Try to extract log level from common formats
-  // JSON format: {"level":"info", ...}
+  // Try to extract log level from JSON format: {"level":"info", ...}
   stage.json {
     expressions = {
       level = "level",
     }
   }
 
-  // Fallback: logfmt format: level=info ...
-  stage.logfmt {
-    mapping = {
-      level = "level",
-    }
+  // Fallback: extract level from logfmt style (level=info, level=INFO)
+  stage.regex {
+    expression = "(?i)level=(?P<level>\\w+)"
   }
 
   // Set level label if extracted

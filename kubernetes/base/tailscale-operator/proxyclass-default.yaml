@@ -20,3 +20,10 @@ spec:
         env:
           - name: TS_USERSPACE
             value: "true"
+        resources:
+          requests:
+            cpu: 25m
+            memory: 64Mi
+          limits:
+            cpu: 100m
+            memory: 128Mi

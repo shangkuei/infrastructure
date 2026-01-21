@@ -1,0 +1,15 @@
+---
+# Cloudflared - Cloudflare Tunnel connector for Kubernetes
+# Exposes internal services via Cloudflare Zero Trust Network
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - namespace-cloudflared.yaml
+  - helmrepository-cloudflare.yaml
+  - helmrelease-cloudflared.yaml
+
+labels:
+  - pairs:
+      app.kubernetes.io/name: cloudflared
+      app.kubernetes.io/managed-by: flux
