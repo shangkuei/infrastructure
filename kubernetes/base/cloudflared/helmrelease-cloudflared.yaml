@@ -48,6 +48,10 @@ spec:
     # Simplify resource names (avoid cloudflared-cloudflare-tunnel)
     fullnameOverride: cloudflared
 
+    # Use latest cloudflared image (chart default 2024.8.3 is outdated)
+    image:
+      tag: "2026.1.1"
+
     # Replica count for high availability
     replicaCount: 2
 

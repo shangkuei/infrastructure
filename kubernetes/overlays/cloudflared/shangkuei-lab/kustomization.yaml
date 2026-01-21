@@ -16,10 +16,27 @@ patches:
       - op: add
         path: /spec/values/cloudflare/tunnelName
         value: "shangkuei-lab"
-      # Force HTTP/2 protocol instead of QUIC (UDP may be blocked)
+      # Use postRenderers to patch ConfigMap with protocol setting
+      # (Helm chart doesn't expose protocol as a value)
       - op: add
-        path: /spec/values/cloudflare/protocol
-        value: "http2"
+        path: /spec/postRenderers
+        value:
+          - kustomize:
+              patches:
+                - target:
+                    kind: ConfigMap
+                    name: cloudflared
+                  patch: |
+                    - op: replace
+                      path: /data/config.yaml
+                      value: |
+                        tunnel: shangkuei-lab
+                        credentials-file: /etc/cloudflared/creds/credentials.json
+                        protocol: http2
+                        warp-routing:
+                          enabled: false
+                        metrics: 0.0.0.0:2000
+                        no-autoupdate: true
 
 labels:
   - pairs:

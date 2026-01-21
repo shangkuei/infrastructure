@@ -8,6 +8,11 @@
 # Without userspace mode, tailscaled in kernel mode intercepts traffic to
 # 100.x.x.x addresses, breaking TCP connections to the Kubernetes API
 # which runs on control plane at its Tailscale IP.
+#
+# Note: Container resources are intentionally omitted due to Tailscale operator
+# v1.92.5 K8s 1.34 incompatibility - the operator sets hardcoded pod-level
+# resources (1m/1Mi) that conflict with any container resources specified here.
+# See: https://github.com/tailscale/tailscale/issues/new
 apiVersion: tailscale.com/v1alpha1
 kind: ProxyClass
 metadata:
@@ -20,10 +25,3 @@ spec:
         env:
           - name: TS_USERSPACE
             value: "true"
-        resources:
-          requests:
-            cpu: 25m
-            memory: 64Mi
-          limits:
-            cpu: 100m
-            memory: 128Mi
