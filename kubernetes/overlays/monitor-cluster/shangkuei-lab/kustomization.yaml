@@ -41,6 +41,8 @@ resources:
   - grafanadashboards/grafanadashboard-vpa.yaml
   - grafanadashboards/grafanadashboard-metrics-server.yaml
   - grafanadashboards/grafanadashboard-kubelet-cert-approver.yaml
+  # Infrastructure dashboards
+  - grafanadashboards/grafanadashboard-cloudflared.yaml
 
   # Prometheus - Metrics collection
   - prometheus-cluster.yaml
@@ -76,6 +78,7 @@ resources:
 
   # PodMonitors - Scrape configurations for pods without services
   - podmonitors/podmonitor-flux.yaml
+  - podmonitors/podmonitor-cloudflared.yaml
 
   # ServiceMonitors - Scrape configurations
   - servicemonitors/servicemonitor-alertmanager.yaml

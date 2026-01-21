@@ -37,6 +37,17 @@ patches:
                           enabled: false
                         metrics: 0.0.0.0:2000
                         no-autoupdate: true
+                # Add named port for metrics scraping (PodMonitor requires named ports)
+                - target:
+                    kind: Deployment
+                    name: cloudflared
+                  patch: |
+                    - op: add
+                      path: /spec/template/spec/containers/0/ports
+                      value:
+                        - name: metrics
+                          containerPort: 2000
+                          protocol: TCP
 
 labels:
   - pairs:

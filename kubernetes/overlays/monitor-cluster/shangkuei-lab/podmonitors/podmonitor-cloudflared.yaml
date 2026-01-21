@@ -1,0 +1,48 @@
+---
+# PodMonitor for Cloudflare Tunnel (cloudflared)
+# Scrapes metrics from cloudflared pods on port 2000
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: cloudflared
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: cloudflared
+    app.kubernetes.io/component: tunnel
+    app.kubernetes.io/part-of: monitoring
+    app.kubernetes.io/managed-by: kustomize
+    prometheus.io/scrape-by: alloy
+spec:
+  podMetricsEndpoints:
+    # Named port added via HelmRelease postRenderers patch
+    - port: metrics
+      path: /metrics
+      interval: 30s
+      scrapeTimeout: 10s
+      relabelings:
+        - action: replace
+          replacement: shangkuei-lab
+          targetLabel: cluster
+        - action: replace
+          replacement: cloudflared
+          targetLabel: job
+        # Add tunnel label for filtering (matches tunnel name in config)
+        - action: replace
+          replacement: shangkuei-lab
+          targetLabel: tunnel
+      metricRelabelings:
+        # Drop go runtime metrics
+        - action: drop
+          regex: go_(gc|sched)_.*_bucket
+          sourceLabels:
+            - __name__
+        - action: drop
+          regex: go_godebug_.*
+          sourceLabels:
+            - __name__
+  namespaceSelector:
+    matchNames:
+      - cloudflared
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: cloudflare-tunnel
