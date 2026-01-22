@@ -79,6 +79,25 @@ local isIncludedDashboard(filename) =
   filename != 'loki-mixin-recording-rules.json' &&
   filename != 'prometheus-remote-write.json';
 
+// Unhide cluster variable in dashboard templating
+// kube-prometheus defaults to hide=2 (completely hidden) for single-cluster setups
+// We need hide=0 (visible) to select between multiple clusters (e.g., shangkuei-lab, shangkuei-unraid)
+local unhideClusterVariable(dashboard) =
+  if std.objectHas(dashboard, 'templating') && std.objectHas(dashboard.templating, 'list') then
+    dashboard {
+      templating+: {
+        list: [
+          if std.objectHas(item, 'name') && item.name == 'cluster' then
+            item { hide: 0 }
+          else
+            item
+          for item in dashboard.templating.list
+        ],
+      },
+    }
+  else
+    dashboard;
+
 // Fix loki-mixin metric name bug: loki_write_memory_streams -> loki_ingester_memory_streams
 // See: https://github.com/grafana/loki/issues/13479 (similar pattern)
 local fixLokiMetrics(dashboard) =
@@ -141,16 +160,18 @@ local removeDeprecatedCorednsPanels(dashboard) =
 
 // Extract dashboard definitions from kube-prometheus
 // Each item is a ConfigMap with data containing {filename.json: jsonContent}
+// Parse JSON strings and unhide cluster variable for multi-cluster support
 local kpDashboards = {
-  [std.objectFields(item.data)[0]]: item.data[std.objectFields(item.data)[0]]
+  [std.objectFields(item.data)[0]]: unhideClusterVariable(std.parseJson(item.data[std.objectFields(item.data)[0]]))
   for item in kp.grafana.dashboardDefinitions.items
   if isIncludedDashboard(std.objectFields(item.data)[0])
 };
 
 // Extract dashboards from mixins (apply same filter and fix metric names)
 // Apply removeDeprecatedCorednsPanels to coredns dashboard
+// Apply unhideClusterVariable to all dashboards for multi-cluster support
 local corednsDashboards = {
-  [k]: if k == 'coredns.json' then removeDeprecatedCorednsPanels(coredns.grafanaDashboards[k]) else coredns.grafanaDashboards[k]
+  [k]: unhideClusterVariable(if k == 'coredns.json' then removeDeprecatedCorednsPanels(coredns.grafanaDashboards[k]) else coredns.grafanaDashboards[k])
   for k in std.objectFields(coredns.grafanaDashboards)
 };
 
@@ -200,14 +221,14 @@ local processLokiDashboard(name, dashboard) =
     fixed;
 
 local lokiDashboards = {
-  [k]: processLokiDashboard(k, loki.grafanaDashboards[k])
+  [k]: unhideClusterVariable(processLokiDashboard(k, loki.grafanaDashboards[k]))
   for k in std.objectFields(loki.grafanaDashboards)
   if isIncludedDashboard(k)
 };
 
 // Extract dashboards from OpenEBS mixin
 local openebsDashboards = {
-  [k]: openebs.grafanaDashboards[k]
+  [k]: unhideClusterVariable(openebs.grafanaDashboards[k])
   for k in std.objectFields(openebs.grafanaDashboards)
 };
 
@@ -252,7 +273,7 @@ local patchAlloyLogsDashboard(dashboard) =
   std.parseJson(patched3);
 
 local alloyDashboards = {
-  [k]: if k == 'alloy-logs.json' then patchAlloyLogsDashboard(alloyMixin.grafanaDashboards[k]) else alloyMixin.grafanaDashboards[k]
+  [k]: unhideClusterVariable(if k == 'alloy-logs.json' then patchAlloyLogsDashboard(alloyMixin.grafanaDashboards[k]) else alloyMixin.grafanaDashboards[k])
   for k in std.objectFields(alloyMixin.grafanaDashboards)
   if isRelevantAlloyDashboard(k)
 };
@@ -268,7 +289,7 @@ local isRelevantCiliumDashboard(filename) =
   filename != 'cilium-external-fqdn-proxy.json';
 
 local ciliumDashboards = {
-  [k]: ciliumMixin.grafanaDashboards[k]
+  [k]: unhideClusterVariable(ciliumMixin.grafanaDashboards[k])
   for k in std.objectFields(ciliumMixin.grafanaDashboards)
   if isRelevantCiliumDashboard(k)
 };
@@ -277,7 +298,7 @@ local ciliumDashboards = {
 // Provides dashboards for certificate expiry, issuance, and overall health
 local certManagerMixin = (import 'cert-manager-mixin/mixin.libsonnet');
 local certManagerDashboards = {
-  [k]: certManagerMixin.grafanaDashboards[k]
+  [k]: unhideClusterVariable(certManagerMixin.grafanaDashboards[k])
   for k in std.objectFields(certManagerMixin.grafanaDashboards)
 };
 

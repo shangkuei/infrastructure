@@ -22,7 +22,6 @@ spec:
   # Dependencies: CNI must be ready, and target services must exist
   dependsOn:
     - name: cilium
-    - name: monitor-cluster
 
   # Decrypt SOPS-encrypted secrets
   decryption:

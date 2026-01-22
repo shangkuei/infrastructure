@@ -19,10 +19,9 @@ spec:
 
   path: ./kubernetes/overlays/tailscale-cluster/shangkuei-lab
 
-  # Dependencies: Tailscale operator must be ready, and target services must exist
+  # Dependencies: Tailscale operator must be ready
   dependsOn:
     - name: tailscale-operator
-    - name: monitor-cluster
 
   healthChecks:
     # Prometheus Tailscale service

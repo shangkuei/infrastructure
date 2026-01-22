@@ -43,6 +43,7 @@ resources:
   - grafanadashboards/grafanadashboard-kubelet-cert-approver.yaml
   # Infrastructure dashboards
   - grafanadashboards/grafanadashboard-cloudflared.yaml
+  - grafanadashboards/grafanadashboard-docker-containers.yaml
 
   # Prometheus - Metrics collection
   - prometheus-cluster.yaml

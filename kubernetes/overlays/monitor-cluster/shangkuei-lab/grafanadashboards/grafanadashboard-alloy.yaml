@@ -438,6 +438,7 @@ spec:
           },
           {
             "datasource": "${datasource}",
+            "hide": 0,
             "label": "cluster",
             "name": "cluster",
             "query": {
@@ -889,6 +890,7 @@ spec:
           },
           {
             "datasource": "${datasource}",
+            "hide": 0,
             "label": "cluster",
             "name": "cluster",
             "query": {
@@ -1458,6 +1460,7 @@ spec:
           },
           {
             "datasource": "${datasource}",
+            "hide": 0,
             "label": "cluster",
             "name": "cluster",
             "query": {
@@ -1775,6 +1778,7 @@ spec:
           },
           {
             "datasource": "${datasource}",
+            "hide": 0,
             "includeAll": false,
             "label": "Cluster",
             "multi": true,
@@ -2463,6 +2467,7 @@ spec:
           },
           {
             "datasource": "${datasource}",
+            "hide": 0,
             "label": "cluster",
             "name": "cluster",
             "query": {
@@ -2864,6 +2869,7 @@ spec:
           },
           {
             "datasource": "${datasource}",
+            "hide": 0,
             "label": "cluster",
             "name": "cluster",
             "query": {
