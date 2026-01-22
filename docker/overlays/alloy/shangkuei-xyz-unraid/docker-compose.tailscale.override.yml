@@ -1,7 +1,3 @@
-# Alloy - Tailscale Raw Override (unencrypted)
-# Contains YAML syntax that cannot be encrypted (!reset)
-#
-# Resets network settings so Alloy uses Tailscale's network stack
 services:
   alloy:
     networks: !reset

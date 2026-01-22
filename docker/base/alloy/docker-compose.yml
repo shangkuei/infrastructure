@@ -25,6 +25,9 @@ services:
       - PROMETHEUS_URL=${PROMETHEUS_URL:-http://prometheus:9090/api/v1/write}
       # Host identification
       - HOSTNAME=${HOSTNAME:-unraid}
+      # Metrics scrape targets (via alloy-internal network)
+      - NODE_EXPORTER_URL=${NODE_EXPORTER_URL:-node-exporter:9100}
+      - CADVISOR_URL=${CADVISOR_URL:-cadvisor:8080}
     volumes:
       # Alloy configuration
       - ./config.alloy:/etc/alloy/config.alloy:ro

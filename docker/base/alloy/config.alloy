@@ -121,3 +121,50 @@ loki.write "loki" {
     tenant_id = env("LOKI_TENANT_ID")
   }
 }
+
+// ============================================================
+// METRICS COLLECTION - Node Exporter & cAdvisor
+// ============================================================
+
+// Scrape Node Exporter metrics (host-level metrics)
+prometheus.scrape "node_exporter" {
+  targets = [{
+    __address__ = coalesce(env("NODE_EXPORTER_URL"), "node-exporter:9100"),
+  }]
+  forward_to      = [prometheus.relabel.add_labels.receiver]
+  job_name        = "node-exporter"
+  scrape_interval = "30s"
+}
+
+// Scrape cAdvisor metrics (container metrics)
+prometheus.scrape "cadvisor" {
+  targets = [{
+    __address__ = coalesce(env("CADVISOR_URL"), "cadvisor:8080"),
+  }]
+  forward_to      = [prometheus.relabel.add_labels.receiver]
+  job_name        = "cadvisor"
+  scrape_interval = "30s"
+  metrics_path    = "/metrics"
+}
+
+// Add cluster and host labels to all metrics
+prometheus.relabel "add_labels" {
+  forward_to = [prometheus.remote_write.prometheus.receiver]
+
+  rule {
+    target_label = "cluster"
+    replacement  = env("CLUSTER_NAME")
+  }
+
+  rule {
+    target_label = "host"
+    replacement  = env("HOSTNAME")
+  }
+}
+
+// Push metrics to Prometheus via remote_write
+prometheus.remote_write "prometheus" {
+  endpoint {
+    url = env("PROMETHEUS_URL")
+  }
+}

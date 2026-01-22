@@ -6,32 +6,36 @@ Unified telemetry agent for collecting metrics and logs from Docker hosts.
 
 Alloy collects:
 
-- **Docker container logs** - via Docker socket
-- **Metrics** - from node_exporter, cAdvisor, and services (future)
+- **Docker container logs** - via Docker socket, pushed to Loki
+- **Host metrics** - from Node Exporter (CPU, memory, disk, network)
+- **Container metrics** - from cAdvisor (container resource usage)
 
 All data is pushed to centralized Prometheus and Loki instances via Tailscale.
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                      Unraid Host                              │
-│                                                               │
-│  ┌─────────────┐     ┌──────────────────────────────────┐   │
-│  │   Docker    │     │           Alloy                   │   │
-│  │  Containers │────▶│  • Docker log discovery           │   │
-│  │             │     │  • Log processing & enrichment    │   │
-│  └─────────────┘     │  • Metrics scraping (future)      │   │
-│                      └──────────────┬───────────────────┘   │
-│                                     │                        │
-└─────────────────────────────────────┼────────────────────────┘
-                                      │ Tailscale
-                      ┌───────────────┴───────────────┐
-                      │                               │
-               ┌──────▼──────┐               ┌───────▼───────┐
-               │    Loki     │               │  Prometheus   │
-               │  (logs)     │               │  (metrics)    │
-               └─────────────┘               └───────────────┘
+┌──────────────────────────────────────────────────────────────────┐
+│                         Unraid Host                              │
+│                                                                  │
+│  ┌─────────────┐  ┌──────────────┐  ┌──────────────────────────┐│
+│  │   Docker    │  │ Node Exporter│  │          Alloy           ││
+│  │  Containers │  │   :9100      │  │  • Docker log discovery  ││
+│  │             │  └──────┬───────┘  │  • Log processing        ││
+│  └──────┬──────┘         │          │  • Metrics scraping      ││
+│         │          ┌─────┴────┐     │    - node-exporter       ││
+│         │          │ cAdvisor │     │    - cAdvisor            ││
+│         └──────────│  :8080   │─────│                          ││
+│                    └──────────┘     └────────────┬─────────────┘│
+│                                                  │              │
+└──────────────────────────────────────────────────┼──────────────┘
+                                                   │ Tailscale
+                                   ┌───────────────┴───────────────┐
+                                   │                               │
+                            ┌──────▼──────┐               ┌───────▼───────┐
+                            │    Loki     │               │  Prometheus   │
+                            │   (logs)    │               │  (metrics)    │
+                            └─────────────┘               └───────────────┘
 ```
 
 ## Environment Variables
@@ -43,6 +47,8 @@ All data is pushed to centralized Prometheus and Loki instances via Tailscale.
 | `LOKI_TENANT_ID` | `shangkuei-lab` | Loki tenant ID for multi-tenancy |
 | `PROMETHEUS_URL` | `http://prometheus:9090/api/v1/write` | Prometheus remote_write endpoint |
 | `HOSTNAME` | `unraid` | Host identifier |
+| `NODE_EXPORTER_URL` | `node-exporter:9100` | Node Exporter scrape target (via alloy-internal network) |
+| `CADVISOR_URL` | `cadvisor:8080` | cAdvisor scrape target (via alloy-internal network) |
 
 ## Log Labels
 

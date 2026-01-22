@@ -1,0 +1,30 @@
+# Node Exporter overlay - shangkuei-xyz-unraid
+# Joins alloy-internal network for metrics scraping
+# Overrides volumes for Unraid compatibility (no rslave support)
+# No port exposure - Alloy scrapes via internal network
+
+services:
+  node-exporter:
+    ports: !reset
+    healthcheck:
+      test: ["CMD", "sh", "-c", "wget -q --spider --timeout=5 http://localhost:9100/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    volumes:
+      # Override base volumes - Unraid doesn't support rslave mount propagation
+      # Use individual mounts instead
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/host:ro
+      - /run/udev/data:/run/udev/data:ro
+    networks:
+      node-exporter:
+      alloy:
+        ipv4_address: 172.24.0.4
+
+networks:
+  alloy:
+    external: true
+    name: alloy-internal

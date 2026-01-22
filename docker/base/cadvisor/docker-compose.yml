@@ -1,0 +1,38 @@
+# cAdvisor - Container metrics exporter
+# Base configuration - override with environment-specific settings
+#
+# Collects resource usage and performance metrics from running containers.
+# Exposes metrics at :8080/metrics for Prometheus/Alloy scraping.
+
+name: cadvisor
+
+services:
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    container_name: cadvisor
+    restart: unless-stopped
+    privileged: true
+    volumes:
+      # Root filesystem (read-only)
+      - /:/rootfs:ro
+      # Runtime socket
+      - /var/run:/var/run:ro
+      # System information
+      - /sys:/sys:ro
+      # Docker data (container info)
+      - /var/lib/docker/:/var/lib/docker:ro
+    ports:
+      - "8080:8080"
+    networks:
+      - cadvisor
+    # Healthcheck
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+networks:
+  cadvisor:
+    name: cadvisor-internal

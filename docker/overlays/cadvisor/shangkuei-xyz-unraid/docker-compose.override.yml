@@ -1,0 +1,16 @@
+# cAdvisor overlay - shangkuei-xyz-unraid
+# Joins alloy-internal network for metrics scraping
+# No port exposure - Alloy scrapes via internal network
+
+services:
+  cadvisor:
+    ports: !reset
+    networks:
+      cadvisor:
+      alloy:
+        ipv4_address: 172.24.0.3
+
+networks:
+  alloy:
+    external: true
+    name: alloy-internal
