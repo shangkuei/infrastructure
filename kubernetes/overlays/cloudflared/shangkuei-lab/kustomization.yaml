@@ -4,8 +4,8 @@ kind: Kustomization
 
 resources:
   - ../../../base/cloudflared
-  # SOPS-encrypted secret for Cloudflare Tunnel credentials
-  # Secret name: cloudflared (matches cloudflare.secretName in HelmRelease)
+  # SOPS-encrypted secret for Cloudflare Tunnel token
+  # Secret name: cloudflared (contains tunnel token for authentication)
   - secret-tunnel-credentials.enc.yaml
 
 patches:
@@ -16,38 +16,51 @@ patches:
       - op: add
         path: /spec/values/cloudflare/tunnelName
         value: "shangkuei-lab"
-      # Use postRenderers to patch ConfigMap with protocol setting
-      # (Helm chart doesn't expose protocol as a value)
+      # Use postRenderers to customize deployment for token-based auth
+      # Token-based auth: cloudflared fetches ingress config from Cloudflare API
       - op: add
         path: /spec/postRenderers
         value:
           - kustomize:
               patches:
-                - target:
-                    kind: ConfigMap
-                    name: cloudflared
-                  patch: |
-                    - op: replace
-                      path: /data/config.yaml
-                      value: |
-                        tunnel: shangkuei-lab
-                        credentials-file: /etc/cloudflared/creds/credentials.json
-                        protocol: http2
-                        warp-routing:
-                          enabled: false
-                        metrics: 0.0.0.0:2000
-                        no-autoupdate: true
-                # Add named port for metrics scraping (PodMonitor requires named ports)
+                # Patch Deployment to use token-based authentication
+                # This replaces credentials.json with TUNNEL_TOKEN env var
                 - target:
                     kind: Deployment
                     name: cloudflared
                   patch: |
+                    - op: replace
+                      path: /spec/template/spec/containers/0/args
+                      value:
+                        - tunnel
+                        - --protocol
+                        - http2
+                        - --metrics
+                        - 0.0.0.0:2000
+                        - --no-autoupdate
+                        - run
+                        - --token
+                        - $(TUNNEL_TOKEN)
+                    - op: add
+                      path: /spec/template/spec/containers/0/env
+                      value:
+                        - name: TUNNEL_TOKEN
+                          valueFrom:
+                            secretKeyRef:
+                              name: cloudflared
+                              key: token
+                    # Add named port for metrics scraping (PodMonitor requires named ports)
                     - op: add
                       path: /spec/template/spec/containers/0/ports
                       value:
                         - name: metrics
                           containerPort: 2000
                           protocol: TCP
+                    # Remove volume mounts for credentials (not needed with token auth)
+                    - op: remove
+                      path: /spec/template/spec/containers/0/volumeMounts
+                    - op: remove
+                      path: /spec/template/spec/volumes
 
 labels:
   - pairs:
