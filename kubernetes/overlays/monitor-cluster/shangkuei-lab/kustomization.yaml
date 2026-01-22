@@ -44,6 +44,7 @@ resources:
   # Infrastructure dashboards
   - grafanadashboards/grafanadashboard-cloudflared.yaml
   - grafanadashboards/grafanadashboard-docker-containers.yaml
+  - grafanadashboards/grafanadashboard-unraid-nas.yaml
 
   # Prometheus - Metrics collection
   - prometheus-cluster.yaml
@@ -76,6 +77,8 @@ resources:
   - prometheusrules/prometheusrule-openebs.yaml
   - prometheusrules/prometheusrule-prometheus.yaml
   - prometheusrules/prometheusrule-prometheus-operator.yaml
+  # Unraid-specific alerts for Docker host
+  - prometheusrules/prometheusrule-unraid.yaml
 
   # PodMonitors - Scrape configurations for pods without services
   - podmonitors/podmonitor-flux.yaml

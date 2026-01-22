@@ -1,0 +1,171 @@
+---
+# PrometheusRule for Unraid standalone Docker host
+# Alerts for node-exporter and cAdvisor metrics from shangkuei-unraid cluster
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  labels:
+    app.kubernetes.io/component: exporter
+    app.kubernetes.io/name: unraid
+    app.kubernetes.io/part-of: kube-prometheus
+    prometheus: k8s
+    role: alert-rules
+    prometheus.io/scrape-by: prometheus-cluster
+  name: unraid-rules
+  namespace: monitoring
+spec:
+  groups:
+    # Alerts for Unraid Docker containers (cAdvisor metrics)
+    - name: unraid-containers
+      rules:
+        - alert: UnraidContainerHighCPU
+          annotations:
+            description: Container {{ $labels.name }} on {{ $labels.cluster }} has been using more than 80% CPU for the last 15 minutes, currently at {{ printf "%.2f" $value }}%.
+            summary: Unraid container high CPU usage.
+          expr: |
+            (
+              sum by (cluster, name) (rate(container_cpu_usage_seconds_total{cluster="shangkuei-unraid", job="cadvisor", id=~"/docker/.*", name!=""}[5m]))
+              / on (cluster) group_left()
+              count by (cluster) (node_cpu_seconds_total{cluster="shangkuei-unraid", job="node-exporter", mode="idle"})
+            ) * 100 > 80
+          for: 15m
+          labels:
+            severity: warning
+        - alert: UnraidContainerHighMemory
+          annotations:
+            description: Container {{ $labels.name }} on {{ $labels.cluster }} is using {{ $value | humanize1024 }} of memory.
+            summary: Unraid container high memory usage (>4GB).
+          expr: |
+            container_memory_usage_bytes{cluster="shangkuei-unraid", job="cadvisor", id=~"/docker/.*", name!=""} > 4294967296
+          for: 15m
+          labels:
+            severity: warning
+        - alert: UnraidContainerHighMemoryCritical
+          annotations:
+            description: Container {{ $labels.name }} on {{ $labels.cluster }} is using {{ $value | humanize1024 }} of memory.
+            summary: Unraid container critical memory usage (>8GB).
+          expr: |
+            container_memory_usage_bytes{cluster="shangkuei-unraid", job="cadvisor", id=~"/docker/.*", name!=""} > 8589934592
+          for: 5m
+          labels:
+            severity: critical
+
+    # Target health alerts for Unraid exporters
+    - name: unraid-targets
+      rules:
+        - alert: UnraidNodeExporterDown
+          annotations:
+            description: Node Exporter on {{ $labels.cluster }} has been down for more than 5 minutes.
+            summary: Unraid Node Exporter is not responding.
+          expr: |
+            up{cluster="shangkuei-unraid", job="node-exporter"} == 0
+          for: 5m
+          labels:
+            severity: critical
+        - alert: UnraidCAdvisorDown
+          annotations:
+            description: cAdvisor on {{ $labels.cluster }} has been down for more than 5 minutes.
+            summary: Unraid cAdvisor is not responding.
+          expr: |
+            up{cluster="shangkuei-unraid", job="cadvisor"} == 0
+          for: 5m
+          labels:
+            severity: critical
+
+    # Node-level alerts specific to Unraid (supplements node-exporter alerts)
+    - name: unraid-node
+      rules:
+        - alert: UnraidHighMemoryUsage
+          annotations:
+            description: Memory usage on {{ $labels.cluster }} has been above 90% for the last 15 minutes, currently at {{ printf "%.2f" $value }}%.
+            summary: Unraid host is running out of memory.
+          expr: |
+            (1 - (node_memory_MemAvailable_bytes{cluster="shangkuei-unraid", job="node-exporter"} / node_memory_MemTotal_bytes{cluster="shangkuei-unraid", job="node-exporter"})) * 100 > 90
+          for: 15m
+          labels:
+            severity: warning
+        - alert: UnraidHighCPUUsage
+          annotations:
+            description: CPU usage on {{ $labels.cluster }} has been above 90% for the last 15 minutes, currently at {{ printf "%.2f" $value }}%.
+            summary: Unraid host high CPU usage.
+          expr: |
+            (1 - avg(rate(node_cpu_seconds_total{cluster="shangkuei-unraid", job="node-exporter", mode="idle"}[5m]))) * 100 > 90
+          for: 15m
+          labels:
+            severity: warning
+        - alert: UnraidDiskSpaceLow
+          annotations:
+            description: Disk {{ $labels.mountpoint }} on {{ $labels.cluster }} has only {{ printf "%.2f" $value }}% space remaining.
+            summary: Unraid disk space is running low.
+          expr: |
+            (node_filesystem_avail_bytes{cluster="shangkuei-unraid", job="node-exporter", mountpoint!=""} / node_filesystem_size_bytes{cluster="shangkuei-unraid", job="node-exporter", mountpoint!=""}) * 100 < 10
+          for: 30m
+          labels:
+            severity: warning
+        - alert: UnraidDiskSpaceCritical
+          annotations:
+            description: Disk {{ $labels.mountpoint }} on {{ $labels.cluster }} has only {{ printf "%.2f" $value }}% space remaining.
+            summary: Unraid disk space is critically low.
+          expr: |
+            (node_filesystem_avail_bytes{cluster="shangkuei-unraid", job="node-exporter", mountpoint!=""} / node_filesystem_size_bytes{cluster="shangkuei-unraid", job="node-exporter", mountpoint!=""}) * 100 < 5
+          for: 15m
+          labels:
+            severity: critical
+
+    # NAS-specific alerts for temperatures and disk health
+    - name: unraid-nas
+      rules:
+        - alert: UnraidDiskTemperatureHigh
+          annotations:
+            description: Disk {{ $labels.chip }} on {{ $labels.cluster }} temperature is {{ printf "%.1f" $value }}C, which is above the warning threshold.
+            summary: Unraid disk temperature is high.
+          expr: |
+            node_hwmon_temp_celsius{cluster="shangkuei-unraid", job="node-exporter", chip=~".*drivetemp.*"} > 45
+          for: 10m
+          labels:
+            severity: warning
+        - alert: UnraidDiskTemperatureCritical
+          annotations:
+            description: Disk {{ $labels.chip }} on {{ $labels.cluster }} temperature is {{ printf "%.1f" $value }}C, which is critically high and may cause disk damage.
+            summary: Unraid disk temperature is critically high.
+          expr: |
+            node_hwmon_temp_celsius{cluster="shangkuei-unraid", job="node-exporter", chip=~".*drivetemp.*"} > 50
+          for: 5m
+          labels:
+            severity: critical
+        - alert: UnraidCPUTemperatureHigh
+          annotations:
+            description: CPU on {{ $labels.cluster }} temperature is {{ printf "%.1f" $value }}C, which is above the warning threshold.
+            summary: Unraid CPU temperature is high.
+          expr: |
+            max(node_hwmon_temp_celsius{cluster="shangkuei-unraid", job="node-exporter", chip=~".*coretemp.*|.*k10temp.*"}) > 75
+          for: 5m
+          labels:
+            severity: warning
+        - alert: UnraidCPUTemperatureCritical
+          annotations:
+            description: CPU on {{ $labels.cluster }} temperature is {{ printf "%.1f" $value }}C, which may cause thermal throttling.
+            summary: Unraid CPU temperature is critically high.
+          expr: |
+            max(node_hwmon_temp_celsius{cluster="shangkuei-unraid", job="node-exporter", chip=~".*coretemp.*|.*k10temp.*"}) > 85
+          for: 2m
+          labels:
+            severity: critical
+        - alert: UnraidArrayDegraded
+          annotations:
+            description: RAID array {{ $labels.device }} on {{ $labels.cluster }} is degraded with {{ $value }} disk(s) missing.
+            summary: Unraid RAID array is degraded.
+          expr: |
+            node_md_disks_required{cluster="shangkuei-unraid", job="node-exporter"} - ignoring(state) (node_md_disks{cluster="shangkuei-unraid", job="node-exporter", state="active"}) > 0
+          for: 5m
+          labels:
+            severity: critical
+        - alert: UnraidDiskIOSaturation
+          annotations:
+            description: Disk {{ $labels.device }} on {{ $labels.cluster }} I/O utilization is {{ printf "%.1f" $value }}%, indicating possible saturation.
+            summary: Unraid disk I/O is saturated.
+          expr: |
+            rate(node_disk_io_time_seconds_total{cluster="shangkuei-unraid", job="node-exporter", device=~"sd.*|nvme.*|md.*"}[5m]) * 100 > 90
+          for: 15m
+          labels:
+            severity: warning

@@ -131,9 +131,45 @@ prometheus.scrape "node_exporter" {
   targets = [{
     __address__ = coalesce(env("NODE_EXPORTER_URL"), "node-exporter:9100"),
   }]
-  forward_to      = [prometheus.relabel.add_labels.receiver]
+  forward_to      = [prometheus.relabel.node_exporter_filter.receiver]
   job_name        = "node-exporter"
   scrape_interval = "30s"
+}
+
+// Filter Node Exporter metrics - keep only metrics used by dashboards and alerts
+// This significantly reduces cardinality by dropping unused collectors
+prometheus.relabel "node_exporter_filter" {
+  forward_to = [prometheus.relabel.add_labels.receiver]
+
+  // Keep metrics used by Node Exporter dashboards, alerts, and NAS monitoring:
+  // Standard metrics:
+  // - node_cpu_* (CPU usage, recording rules)
+  // - node_load* (load averages)
+  // - node_memory_* (memory usage)
+  // - node_disk_* (disk I/O)
+  // - node_filesystem_* (disk space, alerts)
+  // - node_network_* (network I/O, errors)
+  // - node_vmstat_pgmajfault (memory saturation)
+  // - node_time_seconds (cluster variable query)
+  // - node_timex_* (clock skew alerts)
+  // - node_uname_info (instance variable query)
+  // - node_exporter_build_info (metadata)
+  // - node_nf_conntrack_* (conntrack alerts)
+  // - node_textfile_* (custom metrics, SMART data)
+  // - node_md_* (RAID alerts - important for Unraid)
+  // - node_filefd_* (file descriptor alerts)
+  // - node_systemd_* (systemd service alerts)
+  // - node_bonding_* (network bonding alerts)
+  // NAS-specific metrics:
+  // - node_hwmon_* (temperature sensors - CPU, disks)
+  // - node_thermal_* (thermal zone info)
+  // - node_cooling_* (cooling device state)
+  // - node_power_supply_* (UPS/power info if available)
+  rule {
+    source_labels = ["__name__"]
+    regex         = "(node_(cpu|load|memory|disk|filesystem|network|vmstat_pgmajfault|time_seconds|timex|uname_info|exporter_build_info|nf_conntrack|textfile|md|filefd|systemd|bonding|hwmon|thermal|cooling|power_supply).*|up)"
+    action        = "keep"
+  }
 }
 
 // Scrape cAdvisor metrics (container metrics)
@@ -141,10 +177,29 @@ prometheus.scrape "cadvisor" {
   targets = [{
     __address__ = coalesce(env("CADVISOR_URL"), "cadvisor:8080"),
   }]
-  forward_to      = [prometheus.relabel.add_labels.receiver]
+  forward_to      = [prometheus.relabel.cadvisor_filter.receiver]
   job_name        = "cadvisor"
   scrape_interval = "30s"
   metrics_path    = "/metrics"
+}
+
+// Filter cAdvisor metrics - keep only metrics used by Docker containers dashboard
+// This significantly reduces cardinality by dropping unused metrics
+prometheus.relabel "cadvisor_filter" {
+  forward_to = [prometheus.relabel.add_labels.receiver]
+
+  // Keep only the container metrics used by the Docker containers dashboard:
+  // - container_cpu_usage_seconds_total (CPU usage)
+  // - container_memory_usage_bytes (memory usage)
+  // - container_network_receive_bytes_total (network RX)
+  // - container_network_transmit_bytes_total (network TX)
+  // - container_fs_reads_bytes_total (disk read I/O)
+  // - container_fs_writes_bytes_total (disk write I/O)
+  rule {
+    source_labels = ["__name__"]
+    regex         = "container_(cpu_usage_seconds_total|memory_usage_bytes|network_(receive|transmit)_bytes_total|fs_(reads|writes)_bytes_total)"
+    action        = "keep"
+  }
 }
 
 // Add cluster and host labels to all metrics
