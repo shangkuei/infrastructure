@@ -362,7 +362,7 @@ spec:
         },
         {
           "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "description": "Latency of proxy connections to origin services. Only shows data when requests are actively flowing through the tunnel.",
+          "description": "Latency to establish TCP/stream connections to origin. Only populated for TCP proxying, WebSocket, or non-HTTP streaming traffic. HTTP requests use connection pooling and don't trigger this metric.",
           "fieldConfig": {
             "defaults": {
               "color": { "mode": "palette-classic" },

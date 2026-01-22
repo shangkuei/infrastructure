@@ -55,13 +55,15 @@ spec:
     # Replica count for high availability
     replicaCount: 2
 
-    # Resource configuration (conservative for home lab)
+    # Resource configuration based on Goldilocks VPA recommendations
+    # VPA target: cpu 15m, memory 35Mi | Upper bound: cpu 23m, memory 74Mi
+    # CPU limit increased to 200m to prevent throttling during bursts
     resources:
       requests:
-        cpu: 25m
-        memory: 64Mi
+        cpu: 15m
+        memory: 48Mi
       limits:
-        cpu: 100m
+        cpu: 200m
         memory: 128Mi
 
     # Cloudflare tunnel configuration
