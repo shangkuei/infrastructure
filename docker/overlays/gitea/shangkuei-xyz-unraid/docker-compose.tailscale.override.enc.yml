@@ -4,54 +4,49 @@
 # Required: Set TS_AUTHKEY in environment or .env file
 # Generate key at: https://login.tailscale.com/admin/settings/keys
 services:
-  tailscale:
-    image: tailscale/tailscale:latest
-    container_name: gitea_tailscale
-    hostname: gitea
-    restart: unless-stopped
-    cap_add:
-      - net_admin
-    environment:
-      - ENC[AES256_GCM,data:80PEAChiMiOryfmL10Bgj9iHHzbAi5Xyk93w1W+g82wNEZHgO0ueFzHlHp4oAF+hGq7ioXofaB0=,iv:2RytRkjK7GSSUYV5vKxUZ8R2Dl7BOAJIorPpd5s66hM=,tag:iy/JOgcj7NnH40rwfrnbRg==,type:comment]
-      - ENC[AES256_GCM,data:+Tr/6PgZqW/BLyqBpucZn6liC7jfoovKbAQ=,iv:OmO9RyCBwm5e9b+zi0H012twqaXE694JmtyuQyPXvMQ=,tag:saXxogLuSgr7h4mIvQ81QQ==,type:str]
-      - ENC[AES256_GCM,data:bkoSrznSxdv+dR0WzNOa2K9PMYOyMYF4D3qpIM63,iv:s9FV2K9o6C4BnxTRvx8ZMAj1nL7HFLqz33RxLhg248g=,tag:no4/QLbP7YUVxHoIoOr/MQ==,type:comment]
-      - ENC[AES256_GCM,data:xOLi7LDKdV4CfH8uUiLCNPcO9MHRZF8EZbAu39PqaQ==,iv:zQWbC7kT6Vs59lMZ1EZsPynEwjKITArkH+CUjfXHF1w=,tag:qGGQxjeSc7mNycGZbeh6Lw==,type:str]
-      - ENC[AES256_GCM,data:uHA18gsp47vmKPE5ZFdTGEOqR6wlK+VehpWZawRC1Vfw8OmlZzE=,iv:9NNZ1XGwNk2IJ3u82qPyN/bhtmda4UuFbokaRR9Rt0M=,tag:+H9dQBQrrFds+haT/UeyHw==,type:comment]
-      - ENC[AES256_GCM,data:IlDdmpndZKoKRrGpkBu+CM1o,iv:i/7wuxP/xQ56my99Os35ls5urpjy3BJZrlqnK4/cAeI=,tag:zliRRzbZ5RLsiUsObBtcHQ==,type:str]
-      - ENC[AES256_GCM,data:a+jSb875a7hdnTBc3JEnf/UnYlztr8GAmsiHXQUI,iv:TFN9unQSTo5wVpCFA9TH/tesKL7mRjfdFyWUwG507gM=,tag:7lh7gIj7Xv9CIjdTSxyRvg==,type:comment]
-      - ENC[AES256_GCM,data:TLvfJpu3KDJ6fh3bOQ460oWxTMdrjrPQm3dR/PteOZdWew==,iv:gSonpQn5hRYfPVYftdvmtLXaN4e3TJVZc5OsLk9WqVE=,tag:cQ8zKFyZZp40vyoV+3yWew==,type:str]
-      - ENC[AES256_GCM,data:I68NzrbNwnt4oFxZsPprjK4JOK/w9U/6t3B5DBeMNihDqtbykKXlUKOi6tKVfXQ6FtPGRw==,iv:Lp+cSZ2ICwrkENof67i/shDQLSvp/xmz9xWOeG6fTBo=,tag:Kw5QID/R/FfZRgTlp0hzsg==,type:comment]
-      - ENC[AES256_GCM,data:SI2YZYlBaNE+ibJRpBAoUIu5fhxYXXy5qco7hdM9YAM=,iv:np3GQxsUY8GVpLSatsiitZ05d9IRhaZ2tHZnZssOHJQ=,tag:Hh1R4nk5TxZ+NuA6bVO2fw==,type:str]
-    volumes:
-      - ENC[AES256_GCM,data:YBmSWFpnenc91DmXlZPffjhkZ7pT+1GE502tf24DbQdHhWM1UjvheSRmLIkw6jA=,iv:/x3krNRVqmIvJEqgcPoSZ+R5YsGQQAHXWXHBHwob6ok=,tag:rAISpUl0qYlnW3HF42GtIA==,type:comment]
-      - ENC[AES256_GCM,data:J09hzsHN2hVJ0hLekxeh1DkIik4yUky7HQ1ybCbigsoReEFOBjH4N6ojbrtABYqNdp0=,iv:+l2no1MHmGbKXwYg6G5XMFpETTGz3cj7I5zPfO0/PBE=,tag:42rULZgjMLqof2A8225wjw==,type:str]
-      - ENC[AES256_GCM,data:dskIss6Prh11yea7KwU6Vg+tGgI=,iv:Z5nNCn+lYMStBjw29OGb0NQ1iPUmXRXUzNof/II1cYE=,tag:PKnLgn463eMcppNz1pnKLw==,type:comment]
-      - ENC[AES256_GCM,data:FfMyGejk9ShmD4xKeIk86ZuvvTQWT5hD3ttRduVl5BUp+JF7t8mnCDghhru3JdMTz2LsmQKTbGq6i5H5IX+kjX1hKhw=,iv:ESpdnPezr4PWZCzFuONjdU2XHANzUuezpFy/kpNuw+E=,tag:H0MBKtI/PNDPWVIXHIN66w==,type:str]
-    devices:
-      - /dev/net/tun:/dev/net/tun
-    networks:
-      - gitea
-  gitea:
-    # Database stays on internal network
-    # Use Tailscale's network stack
-    network_mode: service:tailscale
-    depends_on:
-      - tailscale
-  database:
-    networks:
-      - gitea
+    tailscale:
+        depends_on:
+            - gitea
+        image: tailscale/tailscale:latest
+        container_name: gitea_tailscale
+        restart: unless-stopped
+        cap_add:
+            - net_admin
+        environment:
+            - ENC[AES256_GCM,data:80PEAChiMiOryfmL10Bgj9iHHzbAi5Xyk93w1W+g82wNEZHgO0ueFzHlHp4oAF+hGq7ioXofaB0=,iv:2RytRkjK7GSSUYV5vKxUZ8R2Dl7BOAJIorPpd5s66hM=,tag:iy/JOgcj7NnH40rwfrnbRg==,type:comment]
+            - ENC[AES256_GCM,data:+Tr/6PgZqW/BLyqBpucZn6liC7jfoovKbAQ=,iv:OmO9RyCBwm5e9b+zi0H012twqaXE694JmtyuQyPXvMQ=,tag:saXxogLuSgr7h4mIvQ81QQ==,type:str]
+            - ENC[AES256_GCM,data:bkoSrznSxdv+dR0WzNOa2K9PMYOyMYF4D3qpIM63,iv:s9FV2K9o6C4BnxTRvx8ZMAj1nL7HFLqz33RxLhg248g=,tag:no4/QLbP7YUVxHoIoOr/MQ==,type:comment]
+            - ENC[AES256_GCM,data:xOLi7LDKdV4CfH8uUiLCNPcO9MHRZF8EZbAu39PqaQ==,iv:zQWbC7kT6Vs59lMZ1EZsPynEwjKITArkH+CUjfXHF1w=,tag:qGGQxjeSc7mNycGZbeh6Lw==,type:str]
+            - ENC[AES256_GCM,data:uHA18gsp47vmKPE5ZFdTGEOqR6wlK+VehpWZawRC1Vfw8OmlZzE=,iv:9NNZ1XGwNk2IJ3u82qPyN/bhtmda4UuFbokaRR9Rt0M=,tag:+H9dQBQrrFds+haT/UeyHw==,type:comment]
+            - ENC[AES256_GCM,data:IlDdmpndZKoKRrGpkBu+CM1o,iv:i/7wuxP/xQ56my99Os35ls5urpjy3BJZrlqnK4/cAeI=,tag:zliRRzbZ5RLsiUsObBtcHQ==,type:str]
+            - ENC[AES256_GCM,data:a+jSb875a7hdnTBc3JEnf/UnYlztr8GAmsiHXQUI,iv:TFN9unQSTo5wVpCFA9TH/tesKL7mRjfdFyWUwG507gM=,tag:7lh7gIj7Xv9CIjdTSxyRvg==,type:comment]
+            - ENC[AES256_GCM,data:TLvfJpu3KDJ6fh3bOQ460oWxTMdrjrPQm3dR/PteOZdWew==,iv:gSonpQn5hRYfPVYftdvmtLXaN4e3TJVZc5OsLk9WqVE=,tag:cQ8zKFyZZp40vyoV+3yWew==,type:str]
+            - ENC[AES256_GCM,data:I68NzrbNwnt4oFxZsPprjK4JOK/w9U/6t3B5DBeMNihDqtbykKXlUKOi6tKVfXQ6FtPGRw==,iv:Lp+cSZ2ICwrkENof67i/shDQLSvp/xmz9xWOeG6fTBo=,tag:Kw5QID/R/FfZRgTlp0hzsg==,type:comment]
+            - ENC[AES256_GCM,data:SI2YZYlBaNE+ibJRpBAoUIu5fhxYXXy5qco7hdM9YAM=,iv:np3GQxsUY8GVpLSatsiitZ05d9IRhaZ2tHZnZssOHJQ=,tag:Hh1R4nk5TxZ+NuA6bVO2fw==,type:str]
+        volumes:
+            - ENC[AES256_GCM,data:YBmSWFpnenc91DmXlZPffjhkZ7pT+1GE502tf24DbQdHhWM1UjvheSRmLIkw6jA=,iv:/x3krNRVqmIvJEqgcPoSZ+R5YsGQQAHXWXHBHwob6ok=,tag:rAISpUl0qYlnW3HF42GtIA==,type:comment]
+            - ENC[AES256_GCM,data:J09hzsHN2hVJ0hLekxeh1DkIik4yUky7HQ1ybCbigsoReEFOBjH4N6ojbrtABYqNdp0=,iv:+l2no1MHmGbKXwYg6G5XMFpETTGz3cj7I5zPfO0/PBE=,tag:42rULZgjMLqof2A8225wjw==,type:str]
+            - ENC[AES256_GCM,data:dskIss6Prh11yea7KwU6Vg+tGgI=,iv:Z5nNCn+lYMStBjw29OGb0NQ1iPUmXRXUzNof/II1cYE=,tag:PKnLgn463eMcppNz1pnKLw==,type:comment]
+            - ENC[AES256_GCM,data:FfMyGejk9ShmD4xKeIk86ZuvvTQWT5hD3ttRduVl5BUp+JF7t8mnCDghhru3JdMTz2LsmQKTbGq6i5H5IX+kjX1hKhw=,iv:ESpdnPezr4PWZCzFuONjdU2XHANzUuezpFy/kpNuw+E=,tag:H0MBKtI/PNDPWVIXHIN66w==,type:str]
+        devices:
+            - /dev/net/tun:/dev/net/tun
+        networks:
+            - gitea
+    database:
+        networks:
+            - gitea
 sops:
-  age:
-    - recipient: age18pns8av0m2g3wgenjnfkj046340azfytlp0jgpkw4dw7zkh83dwqlct4np
-      enc: |
-        -----BEGIN AGE ENCRYPTED FILE-----
-        YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBtMGJqdXFSYTVvNUFodVRX
-        YkRqZEJiYllaUUc1SDY4cGZhSVVYbjRCMERnCitDd0VqM0pkbEpQQVFHWEp0UlFp
-        MkJmcnZPWWVuN1B0SlhHT3VRM3hQUHMKLS0tIDdKTFgvMEx3K05peWttQmJVQlQv
-        WjNyaUxCUjFqQ0lyaGI1NTd6K1pNOFEKX6INqbKckYj/6NNsFyihY6EpQeSxJ195
-        /CC3FdB5CvAjcPRGKlwjrLwXO3pKsxkFw6qCjdNMFv4UQJpng1QnGg==
-        -----END AGE ENCRYPTED FILE-----
-  lastmodified: "2025-11-26T04:03:29Z"
-  mac: ENC[AES256_GCM,data:kbry1flqInsGNkJAaRoaJ/cqCroVx1of4uXZjYQZRWqYMPADuq9nyHezKqNcIw1ijoubBz38ZK60ZipZgQ4IIVO+uWVYyIFkXyYLP8BB8oEkIeQCIXnHl8FxpMCWPdSU7uUliRaGh9Usd2byWC7IvyeOgOrcEShB8lWPgZs4Cqg=,iv:DHOWTnF1QC9rQFgyHr88GEQDbatRWHxKAHHDFse1EqE=,tag:MSHNgh1Tc59mGEP/7aENlg==,type:str]
-  encrypted_regex: ^(environment|volumes)$
-  version: 3.11.0
+    age:
+        - recipient: age18pns8av0m2g3wgenjnfkj046340azfytlp0jgpkw4dw7zkh83dwqlct4np
+          enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBtMGJqdXFSYTVvNUFodVRX
+            YkRqZEJiYllaUUc1SDY4cGZhSVVYbjRCMERnCitDd0VqM0pkbEpQQVFHWEp0UlFp
+            MkJmcnZPWWVuN1B0SlhHT3VRM3hQUHMKLS0tIDdKTFgvMEx3K05peWttQmJVQlQv
+            WjNyaUxCUjFqQ0lyaGI1NTd6K1pNOFEKX6INqbKckYj/6NNsFyihY6EpQeSxJ195
+            /CC3FdB5CvAjcPRGKlwjrLwXO3pKsxkFw6qCjdNMFv4UQJpng1QnGg==
+            -----END AGE ENCRYPTED FILE-----
+    lastmodified: "2026-01-24T14:58:02Z"
+    mac: ENC[AES256_GCM,data:QjIegI+VqoRH9wYaBcuUGBlh9PTYvX4wirkroRW4A4iu4xlUs1FyeN7BMZbbmwueeDJjVpWieUtsFLzK57whpiKIjT/ip1GxWDxVs3eMBQ282Es876ZlzCiqfm7/7xq/iU7PVs1oudG7/pkrTmLg0w0QAiQah4wmw3EiSCoujXY=,iv:pG65gWxvcOIip5XZ4pl1SJ/15Fv+KHWylvYHykrt7R0=,tag:WILtf59WG9yBUEks7ZRLTg==,type:str]
+    encrypted_regex: ^(environment|volumes)$
+    version: 3.11.0

@@ -12,6 +12,11 @@
 // - LOKI_TENANT_ID: Loki tenant ID (e.g., shangkuei-lab)
 // - PROMETHEUS_URL: Prometheus remote_write endpoint
 // - HOSTNAME: Host identifier
+// - NODE_EXPORTER_URL: Node exporter metrics endpoint
+// - CADVISOR_URL: cAdvisor metrics endpoint
+// - IMMICH_URL: Immich metrics endpoint (optional)
+// - GITEA_URL: Gitea metrics endpoint (optional)
+// - GITEA_METRICS_TOKEN: Gitea metrics authentication token (optional)
 //
 // ============================================================
 
@@ -199,6 +204,40 @@ prometheus.relabel "cadvisor_filter" {
     source_labels = ["__name__"]
     regex         = "container_(cpu_usage_seconds_total|memory_usage_bytes|network_(receive|transmit)_bytes_total|fs_(reads|writes)_bytes_total)"
     action        = "keep"
+  }
+}
+
+// ============================================================
+// APPLICATION METRICS - Immich & Gitea (Optional)
+// ============================================================
+
+// Scrape Immich metrics (photo management)
+// Set IMMICH_URL environment variable to enable
+prometheus.scrape "immich" {
+  targets = [{
+    __address__ = coalesce(env("IMMICH_URL"), ""),
+  }]
+  forward_to      = [prometheus.relabel.add_labels.receiver]
+  job_name        = "immich"
+  scrape_interval = "30s"
+  metrics_path    = "/metrics"
+}
+
+// Scrape Gitea metrics (git hosting)
+// Set GITEA_URL and GITEA_METRICS_TOKEN environment variables to enable
+prometheus.scrape "gitea" {
+  targets = [{
+    __address__ = coalesce(env("GITEA_URL"), ""),
+  }]
+  forward_to      = [prometheus.relabel.add_labels.receiver]
+  job_name        = "gitea"
+  scrape_interval = "30s"
+  metrics_path    = "/metrics"
+
+  // Bearer token authentication for Gitea metrics
+  authorization {
+    type        = "Bearer"
+    credentials = coalesce(env("GITEA_METRICS_TOKEN"), "")
   }
 }
 

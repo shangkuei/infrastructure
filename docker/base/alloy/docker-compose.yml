@@ -28,6 +28,10 @@ services:
       # Metrics scrape targets (via alloy-internal network)
       - NODE_EXPORTER_URL=${NODE_EXPORTER_URL:-node-exporter:9100}
       - CADVISOR_URL=${CADVISOR_URL:-cadvisor:8080}
+      # Application metrics (optional)
+      - IMMICH_URL=${IMMICH_URL:-}
+      - GITEA_URL=${GITEA_URL:-}
+      - GITEA_METRICS_TOKEN=${GITEA_METRICS_TOKEN:-}
     volumes:
       # Alloy configuration
       - ./config.alloy:/etc/alloy/config.alloy:ro

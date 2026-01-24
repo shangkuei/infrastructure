@@ -1,4 +1,13 @@
 services:
   gitea:
     ports: !reset
-    networks: !reset
+    networks:
+      gitea:
+      alloy:
+        ipv4_address: 172.24.0.12
+
+networks:
+  gitea:
+  alloy:
+    external: true
+    name: alloy-internal

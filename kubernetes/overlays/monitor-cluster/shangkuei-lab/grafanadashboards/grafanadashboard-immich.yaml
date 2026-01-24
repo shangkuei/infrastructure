@@ -1,0 +1,580 @@
+---
+# Custom Grafana Dashboard for Immich - Native OpenTelemetry Metrics
+# Uses repository/API metrics exposed by Immich server
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDashboard
+metadata:
+  name: immich
+  namespace: monitoring
+spec:
+  instanceSelector:
+    matchLabels:
+      dashboards: grafana
+  allowCrossNamespaceImport: true
+  folder: "Unraid Applications"
+  resyncPeriod: 24h
+  json: |
+    {
+      "annotations": {"list": []},
+      "editable": false,
+      "fiscalYearStartMonth": 0,
+      "graphTooltip": 1,
+      "id": null,
+      "links": [],
+      "panels": [
+        {
+          "gridPos": {"h": 1, "w": 24, "x": 0, "y": 0},
+          "id": 1,
+          "title": "Overview",
+          "type": "row"
+        },
+        {
+          "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+          "fieldConfig": {
+            "defaults": {
+              "color": {"mode": "thresholds"},
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [{"color": "green", "value": null}]
+              },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {"h": 4, "w": 4, "x": 0, "y": 1},
+          "id": 2,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false},
+            "textMode": "auto"
+          },
+          "title": "Total Users",
+          "type": "stat",
+          "targets": [
+            {
+              "expr": "immich_users_total{job=\"immich\"}",
+              "legendFormat": "Users",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+          "fieldConfig": {
+            "defaults": {
+              "color": {"mode": "thresholds"},
+              "mappings": [
+                {"options": {"0": {"color": "red", "index": 0, "text": "DOWN"}}, "type": "value"},
+                {"options": {"1": {"color": "green", "index": 1, "text": "UP"}}, "type": "value"}
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [{"color": "red", "value": null}, {"color": "green", "value": 1}]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {"h": 4, "w": 4, "x": 4, "y": 1},
+          "id": 3,
+          "options": {
+            "colorMode": "background",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false},
+            "textMode": "auto"
+          },
+          "title": "Server Status",
+          "type": "stat",
+          "targets": [
+            {
+              "expr": "up{job=\"immich\"}",
+              "legendFormat": "Status",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+          "fieldConfig": {
+            "defaults": {
+              "color": {"mode": "thresholds"},
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [{"color": "green", "value": null}]
+              },
+              "unit": "ops"
+            },
+            "overrides": []
+          },
+          "gridPos": {"h": 4, "w": 4, "x": 8, "y": 1},
+          "id": 4,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false},
+            "textMode": "auto"
+          },
+          "title": "API Request Rate",
+          "type": "stat",
+          "targets": [
+            {
+              "expr": "sum(rate(immich_asset_repository_get_by_id_duration_count{job=\"immich\"}[5m]))",
+              "legendFormat": "req/s",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+          "fieldConfig": {
+            "defaults": {
+              "color": {"mode": "palette-classic"},
+              "custom": {
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {"legend": false, "tooltip": false, "viz": false},
+                "lineInterpolation": "smooth",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {"type": "linear"},
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": {"group": "A", "mode": "none"},
+                "thresholdsStyle": {"mode": "off"}
+              },
+              "mappings": [],
+              "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]},
+              "unit": "ops"
+            },
+            "overrides": []
+          },
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 1},
+          "id": 5,
+          "options": {
+            "legend": {"calcs": ["mean", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true},
+            "tooltip": {"mode": "multi", "sort": "desc"}
+          },
+          "title": "Repository Operations Rate",
+          "type": "timeseries",
+          "targets": [
+            {
+              "expr": "sum(rate(immich_asset_repository_get_by_id_duration_count{job=\"immich\"}[5m]))",
+              "legendFormat": "asset_get_by_id",
+              "refId": "A"
+            },
+            {
+              "expr": "sum(rate(immich_database_repository_get_row_count_duration_count{job=\"immich\"}[5m]))",
+              "legendFormat": "database_get_row_count",
+              "refId": "B"
+            },
+            {
+              "expr": "sum(rate(immich_job_repository_queue_duration_count{job=\"immich\"}[5m]))",
+              "legendFormat": "job_queue",
+              "refId": "C"
+            },
+            {
+              "expr": "sum(rate(immich_event_repository_emit_duration_count{job=\"immich\"}[5m]))",
+              "legendFormat": "event_emit",
+              "refId": "D"
+            },
+            {
+              "expr": "sum(rate(immich_storage_repository_read_file_duration_count{job=\"immich\"}[5m]))",
+              "legendFormat": "storage_read_file",
+              "refId": "E"
+            }
+          ]
+        },
+        {
+          "gridPos": {"h": 1, "w": 24, "x": 0, "y": 9},
+          "id": 10,
+          "title": "Repository Performance",
+          "type": "row"
+        },
+        {
+          "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+          "fieldConfig": {
+            "defaults": {
+              "color": {"mode": "palette-classic"},
+              "custom": {
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {"legend": false, "tooltip": false, "viz": false},
+                "lineInterpolation": "smooth",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {"type": "linear"},
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": {"group": "A", "mode": "none"},
+                "thresholdsStyle": {"mode": "off"}
+              },
+              "mappings": [],
+              "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]},
+              "unit": "s"
+            },
+            "overrides": []
+          },
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 10},
+          "id": 11,
+          "options": {
+            "legend": {"calcs": ["mean", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true},
+            "tooltip": {"mode": "multi", "sort": "desc"}
+          },
+          "title": "Asset Repository Latency (avg)",
+          "type": "timeseries",
+          "targets": [
+            {
+              "expr": "rate(immich_asset_repository_get_by_id_duration_sum{job=\"immich\"}[5m]) / rate(immich_asset_repository_get_by_id_duration_count{job=\"immich\"}[5m])",
+              "legendFormat": "get_by_id",
+              "refId": "A"
+            },
+            {
+              "expr": "rate(immich_asset_repository_get_time_bucket_duration_sum{job=\"immich\"}[5m]) / rate(immich_asset_repository_get_time_bucket_duration_count{job=\"immich\"}[5m])",
+              "legendFormat": "get_time_bucket",
+              "refId": "B"
+            },
+            {
+              "expr": "rate(immich_asset_repository_get_file_samples_duration_sum{job=\"immich\"}[5m]) / rate(immich_asset_repository_get_file_samples_duration_count{job=\"immich\"}[5m])",
+              "legendFormat": "get_file_samples",
+              "refId": "C"
+            }
+          ]
+        },
+        {
+          "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+          "fieldConfig": {
+            "defaults": {
+              "color": {"mode": "palette-classic"},
+              "custom": {
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {"legend": false, "tooltip": false, "viz": false},
+                "lineInterpolation": "smooth",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {"type": "linear"},
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": {"group": "A", "mode": "none"},
+                "thresholdsStyle": {"mode": "off"}
+              },
+              "mappings": [],
+              "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]},
+              "unit": "s"
+            },
+            "overrides": []
+          },
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 10},
+          "id": 12,
+          "options": {
+            "legend": {"calcs": ["mean", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true},
+            "tooltip": {"mode": "multi", "sort": "desc"}
+          },
+          "title": "Database Repository Latency (avg)",
+          "type": "timeseries",
+          "targets": [
+            {
+              "expr": "rate(immich_database_repository_get_row_count_duration_sum{job=\"immich\"}[5m]) / rate(immich_database_repository_get_row_count_duration_count{job=\"immich\"}[5m])",
+              "legendFormat": "get_row_count",
+              "refId": "A"
+            },
+            {
+              "expr": "rate(immich_database_repository_acquire_lock_duration_sum{job=\"immich\"}[5m]) / rate(immich_database_repository_acquire_lock_duration_count{job=\"immich\"}[5m])",
+              "legendFormat": "acquire_lock",
+              "refId": "B"
+            },
+            {
+              "expr": "rate(immich_database_repository_with_lock_duration_sum{job=\"immich\"}[5m]) / rate(immich_database_repository_with_lock_duration_count{job=\"immich\"}[5m])",
+              "legendFormat": "with_lock",
+              "refId": "C"
+            }
+          ]
+        },
+        {
+          "gridPos": {"h": 1, "w": 24, "x": 0, "y": 18},
+          "id": 20,
+          "title": "Machine Learning & Events",
+          "type": "row"
+        },
+        {
+          "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+          "fieldConfig": {
+            "defaults": {
+              "color": {"mode": "palette-classic"},
+              "custom": {
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {"legend": false, "tooltip": false, "viz": false},
+                "lineInterpolation": "smooth",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {"type": "linear"},
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": {"group": "A", "mode": "none"},
+                "thresholdsStyle": {"mode": "off"}
+              },
+              "mappings": [],
+              "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]},
+              "unit": "ops"
+            },
+            "overrides": []
+          },
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 19},
+          "id": 21,
+          "options": {
+            "legend": {"calcs": ["mean", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true},
+            "tooltip": {"mode": "multi", "sort": "desc"}
+          },
+          "title": "Machine Learning Operations",
+          "type": "timeseries",
+          "targets": [
+            {
+              "expr": "rate(immich_machine_learning_repository_check_duration_count{job=\"immich\"}[5m])",
+              "legendFormat": "check",
+              "refId": "A"
+            },
+            {
+              "expr": "rate(immich_machine_learning_repository_tick_duration_count{job=\"immich\"}[5m])",
+              "legendFormat": "tick",
+              "refId": "B"
+            },
+            {
+              "expr": "rate(immich_machine_learning_repository_set_healthy_duration_count{job=\"immich\"}[5m])",
+              "legendFormat": "set_healthy",
+              "refId": "C"
+            }
+          ]
+        },
+        {
+          "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+          "fieldConfig": {
+            "defaults": {
+              "color": {"mode": "palette-classic"},
+              "custom": {
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {"legend": false, "tooltip": false, "viz": false},
+                "lineInterpolation": "smooth",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {"type": "linear"},
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": {"group": "A", "mode": "none"},
+                "thresholdsStyle": {"mode": "off"}
+              },
+              "mappings": [],
+              "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]},
+              "unit": "ops"
+            },
+            "overrides": []
+          },
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 19},
+          "id": 22,
+          "options": {
+            "legend": {"calcs": ["mean", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true},
+            "tooltip": {"mode": "multi", "sort": "desc"}
+          },
+          "title": "Event Repository Operations",
+          "type": "timeseries",
+          "targets": [
+            {
+              "expr": "rate(immich_event_repository_emit_duration_count{job=\"immich\"}[5m])",
+              "legendFormat": "emit",
+              "refId": "A"
+            },
+            {
+              "expr": "rate(immich_event_repository_on_event_duration_count{job=\"immich\"}[5m])",
+              "legendFormat": "on_event",
+              "refId": "B"
+            }
+          ]
+        },
+        {
+          "gridPos": {"h": 1, "w": 24, "x": 0, "y": 27},
+          "id": 30,
+          "title": "Storage & Jobs",
+          "type": "row"
+        },
+        {
+          "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+          "fieldConfig": {
+            "defaults": {
+              "color": {"mode": "palette-classic"},
+              "custom": {
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {"legend": false, "tooltip": false, "viz": false},
+                "lineInterpolation": "smooth",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {"type": "linear"},
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": {"group": "A", "mode": "none"},
+                "thresholdsStyle": {"mode": "off"}
+              },
+              "mappings": [],
+              "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]},
+              "unit": "ops"
+            },
+            "overrides": []
+          },
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 28},
+          "id": 31,
+          "options": {
+            "legend": {"calcs": ["mean", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true},
+            "tooltip": {"mode": "multi", "sort": "desc"}
+          },
+          "title": "Storage Repository Operations",
+          "type": "timeseries",
+          "targets": [
+            {
+              "expr": "rate(immich_storage_repository_read_file_duration_count{job=\"immich\"}[5m])",
+              "legendFormat": "read_file",
+              "refId": "A"
+            },
+            {
+              "expr": "rate(immich_storage_repository_overwrite_file_duration_count{job=\"immich\"}[5m])",
+              "legendFormat": "overwrite_file",
+              "refId": "B"
+            },
+            {
+              "expr": "rate(immich_storage_repository_check_disk_usage_duration_count{job=\"immich\"}[5m])",
+              "legendFormat": "check_disk_usage",
+              "refId": "C"
+            }
+          ]
+        },
+        {
+          "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+          "fieldConfig": {
+            "defaults": {
+              "color": {"mode": "palette-classic"},
+              "custom": {
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {"legend": false, "tooltip": false, "viz": false},
+                "lineInterpolation": "smooth",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {"type": "linear"},
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": {"group": "A", "mode": "none"},
+                "thresholdsStyle": {"mode": "off"}
+              },
+              "mappings": [],
+              "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]},
+              "unit": "ops"
+            },
+            "overrides": []
+          },
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 28},
+          "id": 32,
+          "options": {
+            "legend": {"calcs": ["mean", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true},
+            "tooltip": {"mode": "multi", "sort": "desc"}
+          },
+          "title": "Job Repository Operations",
+          "type": "timeseries",
+          "targets": [
+            {
+              "expr": "rate(immich_job_repository_queue_duration_count{job=\"immich\"}[5m])",
+              "legendFormat": "queue",
+              "refId": "A"
+            },
+            {
+              "expr": "rate(immich_job_repository_queue_all_duration_count{job=\"immich\"}[5m])",
+              "legendFormat": "queue_all",
+              "refId": "B"
+            },
+            {
+              "expr": "rate(immich_job_repository_get_queue_duration_count{job=\"immich\"}[5m])",
+              "legendFormat": "get_queue",
+              "refId": "C"
+            }
+          ]
+        }
+      ],
+      "refresh": "30s",
+      "schemaVersion": 38,
+      "style": "dark",
+      "tags": ["immich", "unraid"],
+      "templating": {
+        "list": [
+          {
+            "current": {"selected": false, "text": "Prometheus", "value": "Prometheus"},
+            "hide": 0,
+            "includeAll": false,
+            "label": "Datasource",
+            "multi": false,
+            "name": "DS_PROMETHEUS",
+            "options": [],
+            "query": "prometheus",
+            "refresh": 1,
+            "regex": "",
+            "skipUrlSync": false,
+            "type": "datasource"
+          }
+        ]
+      },
+      "time": {"from": "now-1h", "to": "now"},
+      "timepicker": {},
+      "timezone": "",
+      "title": "Immich",
+      "uid": "immich",
+      "version": 1,
+      "weekStart": ""
+    }

@@ -2,35 +2,41 @@
 # Extends: docker/base/gitea/docker-compose.yml
 #
 # Optional: Add docker-compose.traefik.yml for reverse proxy support
+# Includes: Prometheus metrics endpoint configuration
 services:
-  gitea:
-    environment:
-      - ENC[AES256_GCM,data:lXPuTvkkbb/T1Mg=,iv:X2V4Vhu8oLAXTs3fp3ZB4rUk/nGkrDKRJVVP8UGCv5Q=,tag:zbgjqwujPfpLAybdkj9Z0g==,type:str]
-    volumes:
-      - ENC[AES256_GCM,data:mlT3yWjGFcKynDBaRVsxCxFedVwXeVGEHvt3C2lDvUPE2t6La5XYD8W73nVw3btwsCFw,iv:MT77A7kft1Y1dz5G6yFkc/B4tJGUGloCWMOIxtAut1g=,tag:NTBFSuJ4iMgr61t5Tzcb4g==,type:comment]
-      - ENC[AES256_GCM,data:SphORCjfMTmmy13MdVutXpq12vm39r0HE4au,iv:qx2QGxVw2Qii2DIV91kCmgB0wP7NXe0al4FtAwH0VKI=,tag:KfahvQI0Fjsdf1yLgUifZg==,type:str]
-  database:
-    user: "99"
-    volumes:
-      - ENC[AES256_GCM,data:3BLDF2YQ1vGzJUlBEOULru9Gh9/wR5OMFWL8FZepS7HRkzfzz4OhWyv3TKswUYWaMlvA,iv:I+OFYftNi5K/38QXbRxZRSBxW2K4wFmUM/o6wH0w9OM=,tag:DVwkdAT0fntaPoraSXcIWA==,type:comment]
-      - ENC[AES256_GCM,data:FTH+/3g8GTM+GVUGRAdXZS08Pe7JyYo5VYp6UI2J0LjdcTQ/JFvOeLnZxh3mJjZmNg==,iv:NVSW4wNTDok5zF2VYjxImL46szZte9w7STnDxmLPR/0=,tag:1ZJHDgGK7wEIbcn7BAMCWg==,type:str]
-  runner:
-    volumes:
-      - ENC[AES256_GCM,data:bomWTfMQQYMnlAdQMzB23Rq/NKkIFOJP28lF4WvnVKyMN7Pk06iMueHQJhPTSrVNMFAz,iv:qmhJ35sYt7inTBLvf5VsyIIoicWw3X6YySx7opf0AxE=,tag:ZHrLaUb8diVnjNc9QPZ69Q==,type:comment]
-      - ENC[AES256_GCM,data:Y3PkcOEkQOlodWsqWJ9ehb+h0KULcEtaLUaZlZ5+M+u8jw==,iv:D4mzo7DjX9IxRpdSc9b8+tmlM0iSMFs6E7pBK74+mTo=,tag:y1mPDs738Tn7ghj5SJbXgA==,type:str]
-      - ENC[AES256_GCM,data:Bb+gxQxhHh8e889eP7Qk9e8iFDMU7lHnROFvSYYaRqZklL2iSkRqx8NQa5EPiNxF6THUBSX6inTCRrnTrQ==,iv:eVUqfF0tINOsrtOnZ2ztXiBvJX1DGEOjSLaUeCJxG9E=,tag:DdBtnBAuZdyGTMKhVXSPpw==,type:str]
+    gitea:
+        environment:
+            - ENC[AES256_GCM,data:h3hpNfXdOQSchzo=,iv:AGSZVGVyjrAD1+hHPF8+VpVP2KlvJFCs/jl2gQ/7Vdw=,tag:jo7drKvX3JCKu/5n9S9f1g==,type:str]
+            - ENC[AES256_GCM,data:J+KqI9Mnf47EDEjiat9H70lLs7AQVnEX/F6Ntp2ONXdb,iv:Q/NqOMz87gHo9JCiYSw6kmBlyyNTgjHfWnL8R0M2pD0=,tag:PonlRA5S47wWkoCv2sCZlA==,type:comment]
+            - ENC[AES256_GCM,data:X7HGwZc6sUZ87g0jOnwyQNko5a0bNFg+mPF+6g==,iv:jZRS1dhZ8mpAyf651wSio46YhfTTuYrzK7N9VzWzf1g=,tag:yh7igJ+NVYEm/5HPL3s4GA==,type:str]
+            - ENC[AES256_GCM,data:QoZ3vJSzNTBlvl+qRkidyhFoY+7MREp6/vEObMH7vu8bxH7+0op2kXgHdA==,iv:nAKIYRxS/gdn8yug3L9630LAPcx6eyAGZXg5WtY9dGE=,tag:OCDVS69swQ1nnovFjmirag==,type:str]
+            - ENC[AES256_GCM,data:ZparIib+FBdvDYlF8btiGWQ7jCpi3zDsdBPuRy/9LymiR2LmIuzZCBAjcRwRVx8s,iv:7w6aqgcnzWmtyHD6/RxNwQAFnW0UMgzYnl1tZ6zxMEk=,tag:+QVPapHgbVoUV2x1W3z4fg==,type:str]
+            - ENC[AES256_GCM,data:u7cRIDcfqJQZMojPp4PZO9bb24ItVB255brg4B8JNJLBdc9w/6jX+mXUgcU=,iv:j4wDMkRdgHQDh40DYRig9UCdWzHWr3csr61JEB2AEeg=,tag:RFOx9v5QpNXhpHqXRSAL6w==,type:str]
+        volumes:
+            - ENC[AES256_GCM,data:SuWU7GoLb2MnvJFcwWBkklmxPyKj20gEHOa/dyEsbgFyxdt2LGl46a3dtHbmFNVoEeEz,iv:s1ytL+9G+wTNz0uOKhvdxaVbCDl0BTMwD0zDyshrjGU=,tag:5WgHcZ4L377CTqN6Su9iaQ==,type:comment]
+            - ENC[AES256_GCM,data:RxTLa9qttaYYIJUIAkaIxOAXtTKR340KL+SH,iv:vOdhc8tjX76JVIk5nV3rL7520iuryYaCFCL2ctElZJ4=,tag:pebBP3O/Ocv7pLapUq7EJg==,type:str]
+    database:
+        user: "99"
+        volumes:
+            - ENC[AES256_GCM,data:jJsVNQpWTPv69Wfj3hi2aMlCeRf6Z6U4FdMj3jjH1NGBKdaaTs0eJWpgyUa0XbI9swyT,iv:9WhE4G8Qq6msqtAk0sBsjTNcAZ9cIR7PPemnjYACXWE=,tag:cq+zmIqIG4ka7dHCgdr6JA==,type:comment]
+            - ENC[AES256_GCM,data:11dEBKJxPWQ57wooaXq+CS5Vs8tThE1MTM51GTTnG3UJPn4j9gQqAe7fSwZ7t4Y2Mg==,iv:tyL+TUd3Tdy7yU3OdgRAJjsaDPC/NREUrkscHlvY50g=,tag:fIh+aSd3smbpWKLMQI48SA==,type:str]
+    runner:
+        volumes:
+            - ENC[AES256_GCM,data:Cw77X3KvQI0KXuD05Has16BAxovIJ6wJBsTKfE1/Ui/tvhePxNDqCIsWbML28PwEp5MS,iv:JgpoBSjFGVho7V6vL/j2J3msZS3j4uD4GEXKkQOljGA=,tag:X/nWsV4+IOeb4Tkjsx7JQw==,type:comment]
+            - ENC[AES256_GCM,data:4uhN6ApWOnPy+8APeOYYxj0aw7W2pLRwl0tDBm1IijtwKg==,iv:P3lhAfIIesj9jmbhcgtJTMOwuLfDortOk7WS8TyiJZQ=,tag:ZRY78ivm9vDCvL9+5NnYqw==,type:str]
+            - ENC[AES256_GCM,data:2lb0sxe7N6TqyaVvNIJXPTHOo2amWa+M5nVQP0PYXfYzc6DdhxBPUbtPQOqAZwnesTCG1FhAtbwEqadJAQ==,iv:mVQGqUtkXdQ8pkGnpf6mAIm4bywf7TGcfdagQIqBcdY=,tag:bUI3EqYafbV8C3ahZWRvEw==,type:str]
 sops:
-  age:
-    - recipient: age18pns8av0m2g3wgenjnfkj046340azfytlp0jgpkw4dw7zkh83dwqlct4np
-      enc: |
-        -----BEGIN AGE ENCRYPTED FILE-----
-        YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSA5ZWVvbk1RMXdJdFEzbmpn
-        MTNYZFJJbDRTVFpuL3Foem04c0lKM0xtWjBjCkwvOW95RHN0WUJySExiNjM2YklP
-        d0p2QXdIWERtSWV1ZU5zdS9iWkJrR00KLS0tIEd3d21xV3lac0g0QkFFRXErYUxU
-        MUdidkZrREF6aGttcVh4Y1U1UHBNYTgK1WDiHpj1wSEBSUOlvRbAWC5+51alMyhU
-        hmlQroMhKxBh0455KXQ0AkO+NjHr1MoIXz85uxay0RRTkbX608xKiw==
-        -----END AGE ENCRYPTED FILE-----
-  lastmodified: "2025-11-26T04:00:07Z"
-  mac: ENC[AES256_GCM,data:5cc29lSomkgrqPCHw2iXb2SXW47XIVR11vMkDJC4n89UOF1rbaA3v1TcbZQqwSG/VKYzZreQ8AOv79tts8WOZ9aINK6Z7drURGGP36w6K14vZu4EeyvJAoRq4YTmhIyl5nRfARF90g4GMn0FxP7zK6itLagLAIIMaiUplDGICp4=,iv:BH6adEUoYN2K0HpFUd9lxBiloRvRUU1sOMWM4Hxwrmg=,tag:YTWJh+SwxIhU2/nD4lfr7A==,type:str]
-  encrypted_regex: ^(environment|volumes)$
-  version: 3.11.0
+    age:
+        - recipient: age18pns8av0m2g3wgenjnfkj046340azfytlp0jgpkw4dw7zkh83dwqlct4np
+          enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBYVHNoVjk3MktEMjBTWkZ3
+            MjROMGYwVE50UndxN0NFakM3bjVCRS9yRFVNCnpSVWNOSkdQOCtEVElSRllsVDZ4
+            RG9XZWIyZDZZTlZpVkpKS3V5RWIybW8KLS0tIFV1NHF2Q2d6dmRUODVTZlZxSVFq
+            Y2Rodm1oaFZ6MTdpblJhaXZLTEd4OG8KG+vnC++XX5wOIa1h9mqRCGX/vLaCOF+2
+            xDMLmbc5UfheyLbjP9lG1JwWDLg8kKhrqiJ3vMDTRX62KnusIpVw0Q==
+            -----END AGE ENCRYPTED FILE-----
+    lastmodified: "2026-01-24T14:45:57Z"
+    mac: ENC[AES256_GCM,data:Fm6JzLfygDkUfyj6zHvj9rMi4nCbx2ZMPno3QpAES2EFFSVLZjxxtyyHKofdnY/5mtvSqsZL8VQ4zAGXuyMlrbt/mWL9/aXJU2LqU7g9jyfkYgvBzY4wc9UXo+oUzemgUw9IYtniLXqUu6oWrAgYPr17DYSyo+NgeyPYL3Qgwqk=,iv:+hT73lncYatPrzjutyj0Z5dn5cEw3nj1rTW3DwvlKHY=,tag:LcVKMz14qZOGq4yCcHM+yg==,type:str]
+    encrypted_regex: ^(environment|volumes)$
+    version: 3.11.0

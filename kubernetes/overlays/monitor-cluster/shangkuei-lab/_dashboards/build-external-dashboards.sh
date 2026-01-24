@@ -12,6 +12,11 @@ MANIFEST_DIR="${SCRIPT_DIR}/../grafanadashboards"
 # Dashboard sources
 FLUX_REPO="https://raw.githubusercontent.com/fluxcd/flux2-monitoring-example/main/monitoring/configs/dashboards"
 SEAWEEDFS_REPO="https://raw.githubusercontent.com/seaweedfs/seaweedfs/master/other/metrics"
+GRAFANA_LABS_API="https://grafana.com/api/dashboards"
+
+# Grafana Labs dashboard IDs
+GITEA_DASHBOARD_ID="13192"
+# Note: Immich uses a custom dashboard (grafanadashboard-immich.yaml) due to metrics format differences
 
 # Create output directory
 rm -rf "${OUTPUT_DIR}"
@@ -26,6 +31,10 @@ echo "==> Downloading SeaweedFS dashboards..."
 curl -sL "${SEAWEEDFS_REPO}/grafana_seaweedfs.json" -o "${OUTPUT_DIR}/seaweedfs-overview.json"
 curl -sL "${SEAWEEDFS_REPO}/grafana_seaweedfs_heartbeat.json" -o "${OUTPUT_DIR}/seaweedfs-heartbeat.json"
 curl -sL "${SEAWEEDFS_REPO}/grafana_seaweedfs_k8s.json" -o "${OUTPUT_DIR}/seaweedfs-s3-api.json"
+
+echo "==> Downloading Gitea dashboard from Grafana Labs..."
+# Gitea dashboard (ID 13192) - simple dashboard for Gitea metrics
+curl -sL "${GRAFANA_LABS_API}/${GITEA_DASHBOARD_ID}/revisions/latest/download" -o "${OUTPUT_DIR}/gitea.json"
 
 echo "==> Patching dashboards..."
 
@@ -71,6 +80,9 @@ patch_dashboard "${OUTPUT_DIR}/seaweedfs-overview.json" "seaweedfs-overview" "Se
 patch_dashboard "${OUTPUT_DIR}/seaweedfs-heartbeat.json" "seaweedfs-heartbeat" "SeaweedFS Heartbeat"
 patch_dashboard "${OUTPUT_DIR}/seaweedfs-s3-api.json" "seaweedfs-s3-api" "SeaweedFS S3 API"
 
+# Patch Gitea dashboard
+patch_dashboard "${OUTPUT_DIR}/gitea.json" "gitea" "Gitea"
+
 # Fix SeaweedFS datasource references
 # The upstream dashboards use __inputs with DS_PROMETHEUS and mixed datasource formats
 # Convert to the standard format: {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}
@@ -102,6 +114,42 @@ fix_seaweedfs_datasource() {
 fix_seaweedfs_datasource "${OUTPUT_DIR}/seaweedfs-overview.json"
 fix_seaweedfs_datasource "${OUTPUT_DIR}/seaweedfs-heartbeat.json"
 fix_seaweedfs_datasource "${OUTPUT_DIR}/seaweedfs-s3-api.json"
+
+# Fix Gitea dashboard datasource references
+# This dashboard uses __inputs with DS_PROMETHEUS placeholder
+echo "==> Fixing Gitea dashboard datasource references..."
+fix_seaweedfs_datasource "${OUTPUT_DIR}/gitea.json"
+
+# Add DS_PROMETHEUS templating variable to Gitea dashboard
+# This is required because the datasource uses ${DS_PROMETHEUS} placeholder
+echo "==> Adding datasource variable to Gitea dashboard..."
+add_datasource_variable() {
+  local input_file="$1"
+  jq '
+    # Ensure templating.list exists and add DS_PROMETHEUS variable if not present
+    .templating.list = (
+      (.templating.list // []) |
+      if any(.name == "DS_PROMETHEUS") then . else
+        [{
+          "current": {"selected": false, "text": "Prometheus", "value": "Prometheus"},
+          "hide": 0,
+          "includeAll": false,
+          "label": "Datasource",
+          "multi": false,
+          "name": "DS_PROMETHEUS",
+          "options": [],
+          "query": "prometheus",
+          "refresh": 1,
+          "regex": "",
+          "skipUrlSync": false,
+          "type": "datasource"
+        }] + .
+      end
+    )
+  ' "$input_file" > "${input_file}.tmp" && mv "${input_file}.tmp" "$input_file"
+}
+
+add_datasource_variable "${OUTPUT_DIR}/gitea.json"
 
 # Fix SeaweedFS job labels in queries
 # Upstream dashboards use exported_job="filer|volume" but our ServiceMonitors use job="seaweedfs-*"
@@ -234,9 +282,18 @@ generate_manifest \
   "${OUTPUT_DIR}/seaweedfs-heartbeat.json" \
   "${OUTPUT_DIR}/seaweedfs-s3-api.json"
 
+# Generate Gitea dashboard manifest
+# Note: Immich uses a custom dashboard (grafanadashboard-immich.yaml) due to metrics format differences
+generate_manifest \
+  "${MANIFEST_DIR}/grafanadashboard-gitea.yaml" \
+  "Unraid Applications" \
+  "Grafana Dashboard for Gitea - Source: https://grafana.com/grafana/dashboards/13192" \
+  "${OUTPUT_DIR}/gitea.json"
+
 echo "==> Generated manifests:"
 echo "    - ${MANIFEST_DIR}/grafanadashboard-flux.yaml"
 echo "    - ${MANIFEST_DIR}/grafanadashboard-seaweedfs.yaml"
+echo "    - ${MANIFEST_DIR}/grafanadashboard-gitea.yaml"
 
 # Cleanup
 rm -rf "${OUTPUT_DIR}"

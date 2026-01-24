@@ -4,14 +4,14 @@
       "HTTPS": true
     },
     "22": {
-      "TCPForward": "localhost:22"
+      "TCPForward": "gitea:22"
     }
   },
   "Web": {
     "${TS_CERT_DOMAIN}:443": {
       "Handlers": {
         "/": {
-          "Proxy": "http://localhost:3000"
+          "Proxy": "http://gitea:3000"
         }
       }
     }

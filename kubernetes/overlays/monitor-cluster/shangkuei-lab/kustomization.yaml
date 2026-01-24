@@ -45,6 +45,9 @@ resources:
   - grafanadashboards/grafanadashboard-cloudflared.yaml
   - grafanadashboards/grafanadashboard-docker-containers.yaml
   - grafanadashboards/grafanadashboard-unraid-nas.yaml
+  # Unraid application dashboards (Gitea from Grafana Labs, Immich custom)
+  - grafanadashboards/grafanadashboard-gitea.yaml
+  - grafanadashboards/grafanadashboard-immich.yaml
 
   # Prometheus - Metrics collection
   - prometheus-cluster.yaml
