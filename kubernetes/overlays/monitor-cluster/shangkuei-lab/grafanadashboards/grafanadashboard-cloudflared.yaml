@@ -473,6 +473,108 @@ spec:
         },
         {
           "gridPos": { "h": 1, "w": 24, "x": 0, "y": 22 },
+          "id": 30,
+          "title": "Control Plane",
+          "type": "row"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "description": "Percentage of failed RPC calls to Cloudflare edge. High error rate indicates control plane connectivity issues.",
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "custom": {
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": { "type": "linear" },
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": { "group": "A", "mode": "none" },
+                "thresholdsStyle": { "mode": "line+area" }
+              },
+              "mappings": [],
+              "max": 1,
+              "min": 0,
+              "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 0.01 }] },
+              "unit": "percentunit"
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 6, "w": 12, "x": 0, "y": 23 },
+          "id": 31,
+          "options": {
+            "legend": { "calcs": ["mean", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true },
+            "tooltip": { "mode": "multi", "sort": "desc" }
+          },
+          "title": "RPC Error Rate",
+          "type": "timeseries",
+          "targets": [
+            {
+              "expr": "sum(rate(cloudflared_rpc_client_failures{cluster=\"$cluster\", tunnel=~\"$tunnel\"}[$__rate_interval])) / sum(rate(cloudflared_rpc_client_operations{cluster=\"$cluster\", tunnel=~\"$tunnel\"}[$__rate_interval]))",
+              "legendFormat": "Error Rate",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "description": "Rate of tunnel registrations. Spikes indicate reconnection events (pod restarts, network issues, or edge failovers).",
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "custom": {
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": { "type": "linear" },
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": { "group": "A", "mode": "none" },
+                "thresholdsStyle": { "mode": "off" }
+              },
+              "mappings": [],
+              "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 6, "w": 12, "x": 12, "y": 23 },
+          "id": 32,
+          "options": {
+            "legend": { "calcs": ["sum"], "displayMode": "table", "placement": "bottom", "showLegend": true },
+            "tooltip": { "mode": "multi", "sort": "desc" }
+          },
+          "title": "Tunnel Registrations",
+          "type": "timeseries",
+          "targets": [
+            {
+              "expr": "sum(increase(cloudflared_tunnel_tunnel_register_success{cluster=\"$cluster\", tunnel=~\"$tunnel\"}[$__rate_interval]))",
+              "legendFormat": "Registrations",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 29 },
           "id": 20,
           "title": "Sessions",
           "type": "row"
@@ -507,7 +609,7 @@ spec:
             },
             "overrides": []
           },
-          "gridPos": { "h": 6, "w": 8, "x": 0, "y": 23 },
+          "gridPos": { "h": 6, "w": 8, "x": 0, "y": 30 },
           "id": 21,
           "options": {
             "legend": { "calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true },
@@ -558,7 +660,7 @@ spec:
             },
             "overrides": []
           },
-          "gridPos": { "h": 6, "w": 8, "x": 8, "y": 23 },
+          "gridPos": { "h": 6, "w": 8, "x": 8, "y": 30 },
           "id": 22,
           "options": {
             "legend": { "calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true },
@@ -609,7 +711,7 @@ spec:
             },
             "overrides": []
           },
-          "gridPos": { "h": 6, "w": 8, "x": 16, "y": 23 },
+          "gridPos": { "h": 6, "w": 8, "x": 16, "y": 30 },
           "id": 23,
           "options": {
             "legend": { "calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true },

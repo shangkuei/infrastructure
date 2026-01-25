@@ -1,5 +1,8 @@
 # Plex Media Server
 # Base configuration - override with environment-specific settings
+#
+# Metrics: plex-media-server-exporter at :9594/metrics (requires PLEX_TOKEN)
+# Docs: https://github.com/axsuul/plex-media-server-exporter
 
 name: plex
 
@@ -25,6 +28,22 @@ services:
       timeout: 10s
       retries: 3
       start_period: 60s
+
+  # Prometheus metrics exporter for Plex Media Server
+  # Exports: library counts, session states, transcode metrics
+  plex-exporter:
+    image: ghcr.io/axsuul/plex-media-server-exporter:latest
+    container_name: plex_exporter
+    restart: unless-stopped
+    depends_on:
+      plex:
+        condition: service_healthy
+    environment:
+      - PLEX_ADDR=http://plex:32400
+      - PLEX_TOKEN=${PLEX_TOKEN}
+    networks:
+      - plex
+    # Metrics exposed at :9594/metrics
 
 volumes:
   plex_config:

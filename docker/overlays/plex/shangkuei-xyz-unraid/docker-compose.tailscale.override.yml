@@ -1,4 +1,21 @@
+# Plex - Tailscale Override for shangkuei-xyz-unraid
+# Extends: docker/base/plex/docker-compose.yml
+#
+# Adds Alloy network for plex-exporter Prometheus scraping
 services:
   plex:
     ports: !reset
     networks: !reset
+
+  # Add plex-exporter to alloy network for Prometheus scraping
+  plex-exporter:
+    networks:
+      plex:
+      alloy:
+        ipv4_address: 172.24.0.15
+
+networks:
+  plex:
+  alloy:
+    external: true
+    name: alloy-internal

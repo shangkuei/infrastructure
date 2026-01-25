@@ -31,13 +31,11 @@ spec:
           replacement: shangkuei-lab
           targetLabel: tunnel
       metricRelabelings:
-        # Drop go runtime metrics
-        - action: drop
-          regex: go_(gc|sched)_.*_bucket
-          sourceLabels:
-            - __name__
-        - action: drop
-          regex: go_godebug_.*
+        # Keep only metrics used by the Cloudflare Tunnel dashboard
+        # This matches the filter in docker/base/alloy/config.alloy
+        # Keeps: tunnel status, requests, latency, RPC errors, sessions (TCP/UDP/ICMP)
+        - action: keep
+          regex: (cloudflared_(tunnel_(ha_connections|server_locations|concurrent_requests_per_tunnel|total_requests|response_by_code|request_errors|tunnel_register_success)|orchestration_config_version|proxy_connect_.*|rpc_client_.*|tcp_.*|udp_.*|icmp_.*)|up)
           sourceLabels:
             - __name__
   namespaceSelector:

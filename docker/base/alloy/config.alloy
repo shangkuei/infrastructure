@@ -14,9 +14,12 @@
 // - HOSTNAME: Host identifier
 // - NODE_EXPORTER_URL: Node exporter metrics endpoint
 // - CADVISOR_URL: cAdvisor metrics endpoint
+// - CLOUDFLARED_URL: Cloudflared metrics endpoint (optional)
+// - VAULTWARDEN_URL: Vaultwarden metrics endpoint (optional, via vwmetrics)
 // - IMMICH_URL: Immich metrics endpoint (optional)
 // - GITEA_URL: Gitea metrics endpoint (optional)
 // - GITEA_METRICS_TOKEN: Gitea metrics authentication token (optional)
+// - PLEX_URL: Plex metrics endpoint (optional, via plex-media-server-exporter)
 //
 // ============================================================
 
@@ -208,8 +211,58 @@ prometheus.relabel "cadvisor_filter" {
 }
 
 // ============================================================
-// APPLICATION METRICS - Immich & Gitea (Optional)
+// APPLICATION METRICS - Docker Services (Optional)
 // ============================================================
+
+// Scrape Cloudflared metrics (Cloudflare Tunnel)
+// Set CLOUDFLARED_URL environment variable to enable
+prometheus.scrape "cloudflared" {
+  targets = [{
+    __address__ = coalesce(env("CLOUDFLARED_URL"), ""),
+  }]
+  forward_to      = [prometheus.relabel.cloudflared_filter.receiver]
+  job_name        = "cloudflared"
+  scrape_interval = "30s"
+  metrics_path    = "/metrics"
+}
+
+// Filter Cloudflared metrics - keep only metrics used by dashboard
+// Reduces cardinality from ~400 metrics to ~20 used metrics
+prometheus.relabel "cloudflared_filter" {
+  forward_to = [prometheus.relabel.add_labels.receiver]
+
+  // Keep only metrics used by the Cloudflare Tunnel dashboard:
+  // - cloudflared_tunnel_ha_connections (HA connections count)
+  // - cloudflared_orchestration_config_version (config version)
+  // - cloudflared_tunnel_server_locations (edge locations)
+  // - cloudflared_tunnel_concurrent_requests_per_tunnel (concurrent requests)
+  // - cloudflared_tunnel_total_requests (total requests counter)
+  // - cloudflared_tunnel_response_by_code (response status codes)
+  // - cloudflared_tunnel_request_errors (request errors)
+  // - cloudflared_tunnel_tunnel_register_success (registration counter)
+  // - cloudflared_proxy_connect_* (proxy connection metrics)
+  // - cloudflared_rpc_client_* (RPC client metrics: latency, failures, operations)
+  // - cloudflared_tcp_* (TCP session metrics)
+  // - cloudflared_udp_* (UDP session metrics)
+  // - cloudflared_icmp_* (ICMP metrics)
+  rule {
+    source_labels = ["__name__"]
+    regex         = "(cloudflared_(tunnel_(ha_connections|server_locations|concurrent_requests_per_tunnel|total_requests|response_by_code|request_errors|tunnel_register_success)|orchestration_config_version|proxy_connect_.*|rpc_client_.*|tcp_.*|udp_.*|icmp_.*)|up)"
+    action        = "keep"
+  }
+}
+
+// Scrape Vaultwarden metrics (via vwmetrics exporter)
+// Set VAULTWARDEN_URL environment variable to enable
+prometheus.scrape "vaultwarden" {
+  targets = [{
+    __address__ = coalesce(env("VAULTWARDEN_URL"), ""),
+  }]
+  forward_to      = [prometheus.relabel.add_labels.receiver]
+  job_name        = "vaultwarden"
+  scrape_interval = "60s"  // Lower frequency - metrics update every 60s
+  metrics_path    = "/metrics"
+}
 
 // Scrape Immich metrics (photo management)
 // Set IMMICH_URL environment variable to enable
@@ -239,6 +292,18 @@ prometheus.scrape "gitea" {
     type        = "Bearer"
     credentials = coalesce(env("GITEA_METRICS_TOKEN"), "")
   }
+}
+
+// Scrape Plex metrics (via plex-media-server-exporter)
+// Set PLEX_URL environment variable to enable
+prometheus.scrape "plex" {
+  targets = [{
+    __address__ = coalesce(env("PLEX_URL"), ""),
+  }]
+  forward_to      = [prometheus.relabel.add_labels.receiver]
+  job_name        = "plex"
+  scrape_interval = "30s"
+  metrics_path    = "/metrics"
 }
 
 // Add cluster and host labels to all metrics

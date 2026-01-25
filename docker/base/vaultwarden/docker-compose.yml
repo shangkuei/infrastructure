@@ -1,5 +1,8 @@
 # Vaultwarden - Self-hosted Bitwarden Compatible Server with PostgreSQL
 # Base configuration - override with environment-specific settings
+#
+# Metrics: vwmetrics exporter at :3040/metrics (reads database)
+# Docs: https://github.com/Tricked-dev/vwmetrics
 
 name: vaultwarden
 
@@ -94,6 +97,22 @@ services:
       timeout: 10s
       retries: 3
       start_period: 30s
+
+  # Prometheus metrics exporter for Vaultwarden
+  # Reads database to expose vault statistics
+  vwmetrics:
+    image: ghcr.io/tricked-dev/vwmetrics:latest
+    container_name: vaultwarden_metrics
+    restart: unless-stopped
+    depends_on:
+      database:
+        condition: service_healthy
+    environment:
+      # PostgreSQL connection (read-only access recommended)
+      - DATABASE_URL=postgres://${DB_USER:-vaultwarden}:${DB_PASS:-vaultwarden}@database:5432/${DB_NAME:-vaultwarden}
+    networks:
+      - vaultwarden
+    # Metrics exposed at :3040/metrics
 
 volumes:
   vaultwarden_data:

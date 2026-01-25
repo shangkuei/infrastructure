@@ -1,5 +1,8 @@
 # Cloudflare Tunnel - Secure ingress without exposing ports
 # Base configuration - override with environment-specific settings
+#
+# Metrics: Prometheus endpoint at :60123/metrics (via --metrics flag)
+# Docs: https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/monitor-tunnels/metrics/
 
 name: cloudflared
 
@@ -8,10 +11,11 @@ services:
     image: cloudflare/cloudflared:latest
     container_name: cloudflared
     restart: unless-stopped
-    command: tunnel run
+    command: tunnel --metrics 0.0.0.0:60123 run
     environment:
       - TUNNEL_TOKEN=${TUNNEL_TOKEN}
     # No ports exposed - tunnel connects outbound to Cloudflare
+    # Metrics port (60123) only accessible on internal networks
     networks:
       - cloudflared
 

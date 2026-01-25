@@ -29,9 +29,12 @@ services:
       - NODE_EXPORTER_URL=${NODE_EXPORTER_URL:-node-exporter:9100}
       - CADVISOR_URL=${CADVISOR_URL:-cadvisor:8080}
       # Application metrics (optional)
+      - CLOUDFLARED_URL=${CLOUDFLARED_URL:-}
+      - VAULTWARDEN_URL=${VAULTWARDEN_URL:-}
       - IMMICH_URL=${IMMICH_URL:-}
       - GITEA_URL=${GITEA_URL:-}
       - GITEA_METRICS_TOKEN=${GITEA_METRICS_TOKEN:-}
+      - PLEX_URL=${PLEX_URL:-}
     volumes:
       # Alloy configuration
       - ./config.alloy:/etc/alloy/config.alloy:ro
