@@ -50,6 +50,7 @@ resources:
   - grafanadashboards/grafanadashboard-immich.yaml
   - grafanadashboards/grafanadashboard-vaultwarden.yaml
   - grafanadashboards/grafanadashboard-plex.yaml
+  - grafanadashboards/grafanadashboard-code-server.yaml
 
   # Prometheus - Metrics collection
   - prometheus-cluster.yaml

@@ -35,6 +35,7 @@ services:
       - GITEA_URL=${GITEA_URL:-}
       - GITEA_METRICS_TOKEN=${GITEA_METRICS_TOKEN:-}
       - PLEX_URL=${PLEX_URL:-}
+      - CODE_SERVER_URL=${CODE_SERVER_URL:-}
     volumes:
       # Alloy configuration
       - ./config.alloy:/etc/alloy/config.alloy:ro

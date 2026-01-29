@@ -1,0 +1,15 @@
+# code-server - Tailscale Raw Override (unencrypted)
+# Contains YAML syntax that cannot be encrypted (!reset)
+#
+# This file is used when running Tailscale-only mode to clear
+# the direct port binding and network from docker-compose.override.yml
+# since code-server uses network_mode: service:tailscale
+#
+# Usage: Only included with tailscale-only mode (make up-tailscale)
+
+services:
+  code-server:
+    # Clear direct port binding when using Tailscale
+    ports: !reset
+    # Clear networks - using network_mode: service:tailscale instead
+    networks: !reset

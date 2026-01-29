@@ -75,6 +75,14 @@ module "edatw_tunnel" {
         http_host_header = "immich.shangkuei.xyz"
       }
     },
+    {
+      hostname = "code.shangkuei.xyz"
+      service  = "https://code-server.vimba-char.ts.net"
+      origin_request = {
+        connect_timeout  = "300"
+        http_host_header = "code.shangkuei.xyz"
+      }
+    },
   ]
 
   zone_id = var.cloudflare_zone_id
@@ -93,6 +101,11 @@ module "edatw_tunnel" {
       name    = "immich"
       proxied = true
       comment = "Unraid docker-compose hosted immich through TailScale"
+    }
+    "code" = {
+      name    = "code"
+      proxied = true
+      comment = "Unraid docker-compose hosted code-server through TailScale"
     }
   }
 }

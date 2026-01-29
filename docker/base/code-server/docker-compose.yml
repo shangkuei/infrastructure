@@ -1,0 +1,65 @@
+# code-server - VS Code in the browser (LinuxServer.io)
+# Base configuration - override with environment-specific settings
+#
+# Metrics: Process exporter at :9256/metrics (CPU, memory, file descriptors)
+# Docs: https://docs.linuxserver.io/images/docker-code-server
+
+name: code-server
+
+services:
+  code-server:
+    # https://github.com/linuxserver/docker-code-server/releases
+    image: lscr.io/linuxserver/code-server:latest
+    container_name: code-server
+    restart: unless-stopped
+    environment:
+      # User/Group ID for file permissions
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+      - UMASK=${UMASK:-022}
+      # Timezone
+      - TZ=${TZ:-UTC}
+      # Authentication
+      - PASSWORD=${PASSWORD:-}
+      - HASHED_PASSWORD=${HASHED_PASSWORD:-}
+      - SUDO_PASSWORD=${SUDO_PASSWORD:-}
+      - SUDO_PASSWORD_HASH=${SUDO_PASSWORD_HASH:-}
+      # Proxy configuration (for reverse proxy setups)
+      - PROXY_DOMAIN=${PROXY_DOMAIN:-}
+      # Default workspace path inside container
+      - DEFAULT_WORKSPACE=${DEFAULT_WORKSPACE:-/workspace}
+      # Docker mods for additional functionality
+      # Pipe-separated list: mod1|mod2|mod3
+      - DOCKER_MODS=${DOCKER_MODS:-}
+      # Additional packages to install (space-separated)
+      - INSTALL_PACKAGES=${INSTALL_PACKAGES:-}
+    ports:
+      - "${CODE_SERVER_PORT:-8443}:8443"
+    networks:
+      - code-server
+    healthcheck:
+      test: ["CMD", "curl", "-fsSL", "http://localhost:8443/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Process exporter for Prometheus metrics
+  # Monitors code-server process: CPU, memory, file descriptors
+  process-exporter:
+    image: ncabatoff/process-exporter:latest
+    container_name: code-server_metrics
+    restart: unless-stopped
+    command:
+      - --procfs=/host/proc
+      - --config.path=/config/process-exporter.yml
+    volumes:
+      - /proc:/host/proc:ro
+      - ./process-exporter.yml:/config/process-exporter.yml:ro
+    networks:
+      - code-server
+    # Metrics exposed at :9256/metrics
+
+networks:
+  code-server:
+    name: code-server-internal

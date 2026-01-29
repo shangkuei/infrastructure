@@ -1,0 +1,26 @@
+# Process Exporter configuration for code-server (LinuxServer.io)
+# Monitors the Node.js process running code-server
+#
+# Metrics exposed:
+# - namedprocess_namegroup_cpu_seconds_total
+# - namedprocess_namegroup_memory_bytes
+# - namedprocess_namegroup_open_filedesc
+# - namedprocess_namegroup_num_procs
+# - namedprocess_namegroup_num_threads
+# - namedprocess_namegroup_read/write_bytes_total
+
+process_names:
+  # Monitor code-server main process
+  - name: "code-server"
+    cmdline:
+      - 'code-server'
+
+  # Capture Node.js processes (code-server extensions, language servers)
+  - name: "code-server-node"
+    cmdline:
+      - 'node.*code-server'
+
+  # LinuxServer.io S6 supervisor (optional, for container health)
+  - name: "s6-supervisor"
+    cmdline:
+      - 's6-supervise'

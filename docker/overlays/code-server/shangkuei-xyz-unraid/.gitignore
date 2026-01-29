@@ -1,0 +1,5 @@
+# Ignore decrypted files
+.env
+
+# Ignore Age private key
+age-key.txt

@@ -25,7 +25,7 @@ All data is pushed to centralized Prometheus and Loki instances via Tailscale.
 │  └──────┬──────┘         │          │  • Metrics scraping      ││
 │         │          ┌─────┴────┐     │    - node-exporter       ││
 │         │          │ cAdvisor │     │    - cAdvisor            ││
-│         └──────────│  :8080   │─────│                          ││
+│         └──────────│  :8080   │─────│    - self (:12345)       ││
 │                    └──────────┘     └────────────┬─────────────┘│
 │                                                  │              │
 └──────────────────────────────────────────────────┼──────────────┘
@@ -49,6 +49,46 @@ All data is pushed to centralized Prometheus and Loki instances via Tailscale.
 | `HOSTNAME` | `unraid` | Host identifier |
 | `NODE_EXPORTER_URL` | `node-exporter:9100` | Node Exporter scrape target (via alloy-internal network) |
 | `CADVISOR_URL` | `cadvisor:8080` | cAdvisor scrape target (via alloy-internal network) |
+
+## Self-Monitoring
+
+Alloy is configured to scrape its own metrics from `localhost:12345/metrics` for self-monitoring. This enables:
+
+- **Component health tracking**: Monitor running/unhealthy components
+- **Scrape statistics**: Track scrape success rates and durations
+- **Resource usage**: CPU, memory, goroutines, GC metrics
+- **Pipeline metrics**: Loki write and remote write statistics
+
+### Key Metrics
+
+| Metric | Description |
+|--------|-------------|
+| `alloy_component_controller_running_components` | Number of running components by health status |
+| `alloy_component_evaluation_slow_seconds` | Slow component evaluations (used in alerts) |
+| `alloy_resources_process_cpu_seconds_total` | CPU usage |
+| `alloy_resources_process_resident_memory_bytes` | Memory (RSS) usage |
+| `prometheus_target_scrape_*` | Scrape statistics per target |
+| `loki_write_*` | Loki write pipeline metrics |
+
+### Grafana Dashboards
+
+Pre-built dashboards are available in the monitoring stack:
+
+- **Alloy / Controller**: Component health and evaluation metrics
+- **Alloy / Resources**: CPU, memory, GC, and goroutine metrics
+- **Alloy / Prometheus Remote Write**: Remote write success/failure rates
+- **Alloy / Loki**: Loki pipeline metrics
+
+### Alerts
+
+The following alerts are configured via PrometheusRules:
+
+| Alert | Severity | Description |
+|-------|----------|-------------|
+| `UnhealthyComponents` | warning | Unhealthy components detected |
+| `SlowComponentEvaluations` | warning | Component evaluations taking too long |
+| `ClusterNotConverging` | warning | Cluster nodes disagree on peer count |
+| `ClusterNodeUnhealthy` | warning | High gossip health score |
 
 ## Log Labels
 

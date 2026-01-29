@@ -20,6 +20,7 @@
 // - GITEA_URL: Gitea metrics endpoint (optional)
 // - GITEA_METRICS_TOKEN: Gitea metrics authentication token (optional)
 // - PLEX_URL: Plex metrics endpoint (optional, via plex-media-server-exporter)
+// - CODE_SERVER_URL: code-server metrics endpoint (optional, via process-exporter)
 //
 // ============================================================
 
@@ -304,6 +305,61 @@ prometheus.scrape "plex" {
   job_name        = "plex"
   scrape_interval = "30s"
   metrics_path    = "/metrics"
+}
+
+// Scrape code-server metrics (via process-exporter)
+// Set CODE_SERVER_URL environment variable to enable
+// Exports process-level metrics: CPU, memory, file descriptors, threads
+prometheus.scrape "code_server" {
+  targets = [{
+    __address__ = coalesce(env("CODE_SERVER_URL"), ""),
+  }]
+  forward_to      = [prometheus.relabel.add_labels.receiver]
+  job_name        = "code-server"
+  scrape_interval = "30s"
+  metrics_path    = "/metrics"
+}
+
+// ============================================================
+// ALLOY SELF-MONITORING
+// ============================================================
+
+// Scrape Alloy's own metrics for self-monitoring
+// Exposes internal health, scrape statistics, and resource usage
+// Key metrics:
+// - alloy_component_controller_running_components (component health)
+// - prometheus_target_scrape_* (scrape statistics)
+// - go_memstats_*, process_* (resource usage)
+prometheus.scrape "alloy_internal" {
+  targets = [{
+    __address__ = "localhost:12345",
+  }]
+  forward_to      = [prometheus.relabel.alloy_internal_filter.receiver]
+  job_name        = "alloy"
+  scrape_interval = "15s"
+  metrics_path    = "/metrics"
+}
+
+// Filter Alloy internal metrics - keep only metrics used by dashboards and alerts
+// Reduces cardinality while preserving essential monitoring capabilities
+prometheus.relabel "alloy_internal_filter" {
+  forward_to = [prometheus.relabel.add_labels.receiver]
+
+  // Keep metrics for:
+  // - Component health: alloy_component_* (controller, evaluation)
+  // - Resources: alloy_resources_* (CPU, memory - used by dashboards)
+  // - Config: alloy_config_* (hash for drift detection)
+  // - Clustering: cluster_node_* (if using clustering mode)
+  // - Scrape statistics: prometheus_target_*, prometheus_sd_*
+  // - Loki pipeline: loki_process_*, loki_write_*
+  // - Remote write: prometheus_remote_write_*
+  // - Resource usage: go_*, process_* (fallback for older versions)
+  // - Standard: up, scrape_*
+  rule {
+    source_labels = ["__name__"]
+    regex         = "(alloy_(component|config|resources)_.*|cluster_node_.*|prometheus_(target|sd|remote_write)_.*|loki_(process|write)_.*|go_(memstats|gc|goroutines|threads).*|process_(cpu|resident_memory|open_fds|start_time).*|up|scrape_.*)"
+    action        = "keep"
+  }
 }
 
 // Add cluster and host labels to all metrics
