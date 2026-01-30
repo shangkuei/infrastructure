@@ -21,7 +21,6 @@ BASE_DIR := ../../../base/$(SERVICE_NAME)
 # Encrypted files (committed to git, encrypted in-place)
 ENV_ENC := .enc.env
 OVERRIDE_ENC := docker-compose.override.enc.yml
-TRAEFIK_ENC := docker-compose.traefik.override.enc.yml
 TAILSCALE_ENC := docker-compose.tailscale.override.enc.yml
 
 # Non-encrypted files
@@ -31,7 +30,7 @@ TAILSCALE_RAW := docker-compose.tailscale.override.yml
 BASE_COMPOSE := $(BASE_DIR)/docker-compose.yml
 
 # Docker compose file lists (for docker-compose.mk)
-COMPOSE_ENC_FILES := $(OVERRIDE_ENC) $(TRAEFIK_ENC) $(TAILSCALE_ENC)
+COMPOSE_ENC_FILES := $(OVERRIDE_ENC) $(TAILSCALE_ENC)
 COMPOSE_RAW_FILES := $(TAILSCALE_RAW)
 
 # Include shared Docker Compose operations
@@ -88,12 +87,6 @@ encrypt: sops-check-deps sops-check-config ## Encrypt plaintext files (first-tim
 	elif [ -f "$(OVERRIDE_ENC)" ]; then \
 		echo "  [$(_SOPS_INFO)] $(OVERRIDE_ENC) already encrypted"; \
 	fi; \
-	if [ -f "$(TRAEFIK_ENC)" ] && ! head -1 "$(TRAEFIK_ENC)" | grep -q "^sops:"; then \
-		sops --encrypt --in-place $(TRAEFIK_ENC); \
-		echo "  [$(_SOPS_OK)] Encrypted $(TRAEFIK_ENC)"; \
-	elif [ -f "$(TRAEFIK_ENC)" ]; then \
-		echo "  [$(_SOPS_INFO)] $(TRAEFIK_ENC) already encrypted"; \
-	fi; \
 	if [ -f "$(TAILSCALE_ENC)" ] && ! head -1 "$(TAILSCALE_ENC)" | grep -q "^sops:"; then \
 		sops --encrypt --in-place $(TAILSCALE_ENC); \
 		echo "  [$(_SOPS_OK)] Encrypted $(TAILSCALE_ENC)"; \
@@ -114,7 +107,6 @@ edit: ## Edit encrypted file with sops (interactive menu)
 	case $$choice in \
 		1) EDITOR="$(SOPS_EDITOR)" sops $(ENV_ENC) ;; \
 		2) EDITOR="$(SOPS_EDITOR)" sops $(OVERRIDE_ENC) ;; \
-		3) EDITOR="$(SOPS_EDITOR)" sops $(TRAEFIK_ENC) ;; \
 		4) EDITOR="$(SOPS_EDITOR)" sops $(TAILSCALE_ENC) ;; \
 		*) echo "Invalid choice" ;; \
 	esac
@@ -127,10 +119,6 @@ edit-env: sops-check-deps ## Edit .enc.env with sops
 edit-override: sops-check-deps ## Edit docker-compose.override.enc.yml with sops
 	@EDITOR="$(SOPS_EDITOR)" SOPS_AGE_KEY_FILE="$(SOPS_AGE_KEY_FILE)" sops $(OVERRIDE_ENC)
 
-.PHONY: edit-traefik
-edit-traefik: sops-check-deps ## Edit docker-compose.traefik.override.enc.yml with sops
-	@EDITOR="$(SOPS_EDITOR)" SOPS_AGE_KEY_FILE="$(SOPS_AGE_KEY_FILE)" sops $(TRAEFIK_ENC)
-
 .PHONY: edit-tailscale
 edit-tailscale: sops-check-deps ## Edit docker-compose.tailscale.override.enc.yml with sops
 	@EDITOR="$(SOPS_EDITOR)" SOPS_AGE_KEY_FILE="$(SOPS_AGE_KEY_FILE)" sops $(TAILSCALE_ENC)
@@ -140,7 +128,7 @@ validate: sops-check-deps ## Validate all encrypted secrets can be decrypted
 	@echo "$(_SOPS_BLUE)Validating Docker encrypted files...$(_SOPS_NC)"
 	@_failed=0; _count=0; \
 	export SOPS_AGE_KEY_FILE="$(SOPS_AGE_KEY_FILE)"; \
-	for file in $(ENV_ENC) $(OVERRIDE_ENC) $(TRAEFIK_ENC) $(TAILSCALE_ENC); do \
+	for file in $(ENV_ENC) $(OVERRIDE_ENC) $(TAILSCALE_ENC); do \
 		if [ -f "$$file" ]; then \
 			_count=$$((_count + 1)); \
 			if sops --decrypt "$$file" > /dev/null 2>&1; then \

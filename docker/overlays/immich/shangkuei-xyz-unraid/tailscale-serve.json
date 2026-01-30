@@ -8,7 +8,7 @@
     "${TS_CERT_DOMAIN}:443": {
       "Handlers": {
         "/": {
-          "Proxy": "http://immich_server:2283"
+          "Proxy": "http://immich-server:2283"
         }
       }
     }

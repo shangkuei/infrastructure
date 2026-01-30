@@ -1,5 +1,5 @@
-# Salary Mailman Application Infrastructure
-# Deploys Cloudflare Tunnel and DNS for salary-mailman application
+# Cloudflare Tunnel Infrastructure for Unraid Services
+# Deploys Cloudflare Tunnel with direct service access (non-VPN mode)
 
 terraform {
   required_version = ">= 1.5.0"
@@ -16,8 +16,8 @@ provider "cloudflare" {
   api_token = var.cloudflare_api_token
 }
 
-# Deploy salary-mailman Cloudflare Tunnel
-module "edatw_tunnel" {
+# Deploy Unraid Cloudflare Tunnel
+module "unraid_tunnel" {
   source = "../../modules/cloudflared"
 
   account_id  = var.cloudflare_account_id
@@ -35,7 +35,7 @@ module "edatw_tunnel" {
     },
     {
       hostname = "gitea.shangkuei.xyz"
-      service  = "https://gitea.vimba-char.ts.net"
+      service  = "http://gitea:3000"
       origin_request = {
         connect_timeout  = "300"
         http_host_header = "gitea.shangkuei.xyz"
@@ -52,7 +52,7 @@ module "edatw_tunnel" {
     },
     {
       hostname = "vaultwarden.shangkuei.xyz"
-      service  = "https://vaultwarden.vimba-char.ts.net"
+      service  = "http://vaultwarden:80"
       origin_request = {
         connect_timeout  = "300"
         http_host_header = "vaultwarden.shangkuei.xyz"
@@ -69,7 +69,7 @@ module "edatw_tunnel" {
     },
     {
       hostname = "immich.shangkuei.xyz"
-      service  = "https://immich.vimba-char.ts.net"
+      service  = "http://immich-server:2283"
       origin_request = {
         connect_timeout  = "300"
         http_host_header = "immich.shangkuei.xyz"
@@ -77,7 +77,7 @@ module "edatw_tunnel" {
     },
     {
       hostname = "code.shangkuei.xyz"
-      service  = "https://code-server.vimba-char.ts.net"
+      service  = "http://code-server:8443"
       origin_request = {
         connect_timeout  = "300"
         http_host_header = "code.shangkuei.xyz"
@@ -90,22 +90,27 @@ module "edatw_tunnel" {
     "gitea" = {
       name    = "gitea"
       proxied = true
-      comment = "Unraid docker-compose hosted gitea through TailScale"
+      comment = "Unraid docker-compose hosted gitea (direct tunnel access)"
     }
     "vaultwarden" = {
       name    = "vaultwarden"
       proxied = true
-      comment = "Unraid docker-compose hosted vaultwarden through TailScale"
+      comment = "Unraid docker-compose hosted vaultwarden (direct tunnel access)"
     }
     "immich" = {
       name    = "immich"
       proxied = true
-      comment = "Unraid docker-compose hosted immich through TailScale"
+      comment = "Unraid docker-compose hosted immich (direct tunnel access)"
     }
     "code" = {
       name    = "code"
       proxied = true
-      comment = "Unraid docker-compose hosted code-server through TailScale"
+      comment = "Unraid docker-compose hosted code-server (direct tunnel access)"
     }
   }
+}
+
+moved {
+  from = module.edatw_tunnel
+  to   = module.unraid_tunnel
 }

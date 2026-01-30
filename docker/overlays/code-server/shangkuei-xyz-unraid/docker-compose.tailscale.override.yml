@@ -11,5 +11,3 @@ services:
   code-server:
     # Clear direct port binding when using Tailscale
     ports: !reset
-    # Clear networks - using network_mode: service:tailscale instead
-    networks: !reset

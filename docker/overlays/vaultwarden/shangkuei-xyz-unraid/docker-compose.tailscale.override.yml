@@ -5,17 +5,3 @@
 services:
   vaultwarden:
     ports: !reset
-    networks: !reset
-
-  # Add vwmetrics to alloy network for Prometheus scraping
-  vwmetrics:
-    networks:
-      vaultwarden:
-      alloy:
-        ipv4_address: 172.24.0.14
-
-networks:
-  vaultwarden:
-  alloy:
-    external: true
-    name: alloy-internal

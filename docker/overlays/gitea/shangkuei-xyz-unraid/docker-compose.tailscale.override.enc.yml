@@ -1,5 +1,6 @@
-# Tailscale sidecar configuration for Gitea
-# Replaces Traefik with Tailscale for secure access via tailnet
+# Gitea - Tailscale Override with Cloudflared Network
+# Tailscale sidecar for direct tailnet access
+# Service joins cloudflared network for tunnel access
 #
 # Required: Set TS_AUTHKEY in environment or .env file
 # Generate key at: https://login.tailscale.com/admin/settings/keys
@@ -13,40 +14,49 @@ services:
         cap_add:
             - net_admin
         environment:
-            - ENC[AES256_GCM,data:80PEAChiMiOryfmL10Bgj9iHHzbAi5Xyk93w1W+g82wNEZHgO0ueFzHlHp4oAF+hGq7ioXofaB0=,iv:2RytRkjK7GSSUYV5vKxUZ8R2Dl7BOAJIorPpd5s66hM=,tag:iy/JOgcj7NnH40rwfrnbRg==,type:comment]
-            - ENC[AES256_GCM,data:+Tr/6PgZqW/BLyqBpucZn6liC7jfoovKbAQ=,iv:OmO9RyCBwm5e9b+zi0H012twqaXE694JmtyuQyPXvMQ=,tag:saXxogLuSgr7h4mIvQ81QQ==,type:str]
-            - ENC[AES256_GCM,data:bkoSrznSxdv+dR0WzNOa2K9PMYOyMYF4D3qpIM63,iv:s9FV2K9o6C4BnxTRvx8ZMAj1nL7HFLqz33RxLhg248g=,tag:no4/QLbP7YUVxHoIoOr/MQ==,type:comment]
-            - ENC[AES256_GCM,data:xOLi7LDKdV4CfH8uUiLCNPcO9MHRZF8EZbAu39PqaQ==,iv:zQWbC7kT6Vs59lMZ1EZsPynEwjKITArkH+CUjfXHF1w=,tag:qGGQxjeSc7mNycGZbeh6Lw==,type:str]
-            - ENC[AES256_GCM,data:uHA18gsp47vmKPE5ZFdTGEOqR6wlK+VehpWZawRC1Vfw8OmlZzE=,iv:9NNZ1XGwNk2IJ3u82qPyN/bhtmda4UuFbokaRR9Rt0M=,tag:+H9dQBQrrFds+haT/UeyHw==,type:comment]
-            - ENC[AES256_GCM,data:IlDdmpndZKoKRrGpkBu+CM1o,iv:i/7wuxP/xQ56my99Os35ls5urpjy3BJZrlqnK4/cAeI=,tag:zliRRzbZ5RLsiUsObBtcHQ==,type:str]
-            - ENC[AES256_GCM,data:a+jSb875a7hdnTBc3JEnf/UnYlztr8GAmsiHXQUI,iv:TFN9unQSTo5wVpCFA9TH/tesKL7mRjfdFyWUwG507gM=,tag:7lh7gIj7Xv9CIjdTSxyRvg==,type:comment]
-            - ENC[AES256_GCM,data:TLvfJpu3KDJ6fh3bOQ460oWxTMdrjrPQm3dR/PteOZdWew==,iv:gSonpQn5hRYfPVYftdvmtLXaN4e3TJVZc5OsLk9WqVE=,tag:cQ8zKFyZZp40vyoV+3yWew==,type:str]
-            - ENC[AES256_GCM,data:I68NzrbNwnt4oFxZsPprjK4JOK/w9U/6t3B5DBeMNihDqtbykKXlUKOi6tKVfXQ6FtPGRw==,iv:Lp+cSZ2ICwrkENof67i/shDQLSvp/xmz9xWOeG6fTBo=,tag:Kw5QID/R/FfZRgTlp0hzsg==,type:comment]
-            - ENC[AES256_GCM,data:SI2YZYlBaNE+ibJRpBAoUIu5fhxYXXy5qco7hdM9YAM=,iv:np3GQxsUY8GVpLSatsiitZ05d9IRhaZ2tHZnZssOHJQ=,tag:Hh1R4nk5TxZ+NuA6bVO2fw==,type:str]
+            - ENC[AES256_GCM,data:aaXoaKQ0fvyKaigOp5Y+fcjL2/YnYqmLKHlP+mRvXaK5ec0CPzanVkv7n4P/y0TCCKrSxVw4ATw=,iv:gefHE+rhrKgvPK0jN2E9r4grhxIc1VwiPfoBokBMEro=,tag:t9qiS+5ZoiLRG0LD4YAlRA==,type:comment]
+            - ENC[AES256_GCM,data:UefCfPcFNRypOa9SUv57oXR1BDZQVMYGD0Q=,iv:+AGF6jQI0WuEK+wCZAbLmz2eoqGQVy3+vI3qiFWg9gY=,tag:tCzGpcA3/u6hhL6BYW5TGQ==,type:str]
+            - ENC[AES256_GCM,data:3BXbeZpLgygerJHGPCSUHMUIIz2dKr87cDkd0V0j,iv:FctY7GVz3G195+5lh8qvSRZ0FlXMqJoZpuuz4X1Jkjk=,tag:qGUckobYhrJ+rkf8FwvSkQ==,type:comment]
+            - ENC[AES256_GCM,data:4H1JxMqP51a1Ovhb04A+R7EZorjTx+QgN7Nw+77MVw==,iv:YZY55ZsZK2uQh5scR2uEnxOPDOArwjxNdWpmt1tbo9Q=,tag:h/X6QuLA0NwQ3w67nM0ZWQ==,type:str]
+            - ENC[AES256_GCM,data:X6noOMnIVfURedhtfalulwIpjafUTeYzwQZ/a3agATJVU041S3c=,iv:BpIKPGqw6069LLoiRoIW50g2Om0DnY3ZrB6u6mdK+Qw=,tag:iYJFG5ndOSPuB1DcZq/0eQ==,type:comment]
+            - ENC[AES256_GCM,data:VuVLICACRDOg58C5fH2XZp0K,iv:wCKlMZuGpU7hgMnw6lHqmVvKCwPFT3eYfsRxcF+X1ZY=,tag:+d1Fwism5Lkv6q/R5UOk/Q==,type:str]
+            - ENC[AES256_GCM,data:JQFqHy5Ad+XFnEZP8LSq+LFPZ7EucDW1My0VqOT4,iv:GbmXPDeYtlJ9N1tYWQJPgAFFoi9o8p6uxtsQqWg69EI=,tag:sSQVIBz9JpMiN1NKNcicMA==,type:comment]
+            - ENC[AES256_GCM,data:RoIpzHMIWiiDIWgO2cE9SNAbbRGWJRqT0uJqQm4gXmOXLw==,iv:rzlApO9eSXLrlAy8mKpa9dbT6g50566ryrGaljEbYEY=,tag:QIXJa+d2oltsMpMgAZvcyg==,type:str]
+            - ENC[AES256_GCM,data:UvS6CFRkoco9KpiFPh6vBpsGfSAenTTrPXLCY5NwnCLhY7+Ke/5rwA1vAxj4EFSL1NvVoQ==,iv:YF8nrUULbZduVeCWndPd3pniUopWQSrriNcRi0JofN4=,tag:GDsEMqNc2U0oMbVTCbjshA==,type:comment]
+            - ENC[AES256_GCM,data:nugveJsD4SMiBslNstqiV63OD9+7LvadPP+aP5DCrTk=,iv:9zaKQH+cR/DHwxVo2+8FBGRBPNmzP/Wk7Eu48GQ2LpU=,tag:FMlkSrZuD9ljve6wHeFD2A==,type:str]
         volumes:
-            - ENC[AES256_GCM,data:YBmSWFpnenc91DmXlZPffjhkZ7pT+1GE502tf24DbQdHhWM1UjvheSRmLIkw6jA=,iv:/x3krNRVqmIvJEqgcPoSZ+R5YsGQQAHXWXHBHwob6ok=,tag:rAISpUl0qYlnW3HF42GtIA==,type:comment]
-            - ENC[AES256_GCM,data:J09hzsHN2hVJ0hLekxeh1DkIik4yUky7HQ1ybCbigsoReEFOBjH4N6ojbrtABYqNdp0=,iv:+l2no1MHmGbKXwYg6G5XMFpETTGz3cj7I5zPfO0/PBE=,tag:42rULZgjMLqof2A8225wjw==,type:str]
-            - ENC[AES256_GCM,data:dskIss6Prh11yea7KwU6Vg+tGgI=,iv:Z5nNCn+lYMStBjw29OGb0NQ1iPUmXRXUzNof/II1cYE=,tag:PKnLgn463eMcppNz1pnKLw==,type:comment]
-            - ENC[AES256_GCM,data:FfMyGejk9ShmD4xKeIk86ZuvvTQWT5hD3ttRduVl5BUp+JF7t8mnCDghhru3JdMTz2LsmQKTbGq6i5H5IX+kjX1hKhw=,iv:ESpdnPezr4PWZCzFuONjdU2XHANzUuezpFy/kpNuw+E=,tag:H0MBKtI/PNDPWVIXHIN66w==,type:str]
+            - ENC[AES256_GCM,data:jaSqgoFK/eWNIrKWCU15/yZTvicYvQc38DUqsm/yuVVtOX1ksp+g34KfOrE+V9k=,iv:X8VQBmxQq4uVyB0wLU/pab6SO08h1dQvdRgAbOxMMn8=,tag:oPQubRTidoj8tng2dEMukw==,type:comment]
+            - ENC[AES256_GCM,data:cEtwMlgsZYLpdhDsffY60BSfN/68QuQBW6qXQHmyYFxro67asJ3ggnfFBJ5ZCDQ1q34=,iv:yoyhNXmr0d2OZ77ws5bwFl4SPSHE41/q1NMVnyYFrSs=,tag:8uyxWv++n3Y28JPICUIAhg==,type:str]
+            - ENC[AES256_GCM,data:LV8hWXiM+S82/J9AX0kbuNG1GuE=,iv:MG4PBBQ8ZBWRN4ZyhZafHrw97WcmkAH9vqpa7KQnOjg=,tag:mE96DlmOxXFI3q5dQrfsfg==,type:comment]
+            - ENC[AES256_GCM,data:/M9rL69qvXPjP1xBIlDn0n7sxPaKHATlyjlTO06zfLYa+7Iol+nwRUJ1nxgE2ASvMHNVxf3CQ7+ZJhI133uV8D//b+g=,iv:NPxGdI5NOq4s3sn3Bvn3q6fHEqhYeKic4UjQGFRverg=,tag:19IP67snCCLsp3NQ5B/Eng==,type:str]
         devices:
             - /dev/net/tun:/dev/net/tun
         networks:
             - gitea
+    # Gitea joins cloudflared network for direct tunnel access
+    gitea:
+        networks:
+            gitea: null
+            cloudflared: null
     database:
         networks:
             - gitea
+networks:
+    cloudflared:
+        external: true
+        name: cloudflared-internal
 sops:
     age:
         - recipient: age18pns8av0m2g3wgenjnfkj046340azfytlp0jgpkw4dw7zkh83dwqlct4np
           enc: |
             -----BEGIN AGE ENCRYPTED FILE-----
-            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBtMGJqdXFSYTVvNUFodVRX
-            YkRqZEJiYllaUUc1SDY4cGZhSVVYbjRCMERnCitDd0VqM0pkbEpQQVFHWEp0UlFp
-            MkJmcnZPWWVuN1B0SlhHT3VRM3hQUHMKLS0tIDdKTFgvMEx3K05peWttQmJVQlQv
-            WjNyaUxCUjFqQ0lyaGI1NTd6K1pNOFEKX6INqbKckYj/6NNsFyihY6EpQeSxJ195
-            /CC3FdB5CvAjcPRGKlwjrLwXO3pKsxkFw6qCjdNMFv4UQJpng1QnGg==
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBMaXBPdmZxYzhmODh1d0E4
+            R3FHcHY2aDU1MXJMdFN3THJjMStiS2svdkc0CktEWWZhQzlQMEdxcTMvZkVSU0tQ
+            UWRISGJmTEp2MGFnNnRQQWN5NEtyaE0KLS0tIEs3TVVCNEdmb2N0c3ZSQ0ZBL0tS
+            SXdKYW15ejJZS0tmc3hzK0lXS0tMUk0KWJWxSngtyWCSnk3lJ7QBEhtjRJZb7NZA
+            q0LH2pDR23fCUpkm5vSB//qH7Qmo8D6NZMWWdzQ3AiArGPIgiZj7OQ==
             -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2026-01-24T14:58:02Z"
-    mac: ENC[AES256_GCM,data:QjIegI+VqoRH9wYaBcuUGBlh9PTYvX4wirkroRW4A4iu4xlUs1FyeN7BMZbbmwueeDJjVpWieUtsFLzK57whpiKIjT/ip1GxWDxVs3eMBQ282Es876ZlzCiqfm7/7xq/iU7PVs1oudG7/pkrTmLg0w0QAiQah4wmw3EiSCoujXY=,iv:pG65gWxvcOIip5XZ4pl1SJ/15Fv+KHWylvYHykrt7R0=,tag:WILtf59WG9yBUEks7ZRLTg==,type:str]
+    lastmodified: "2026-01-30T06:52:08Z"
+    mac: ENC[AES256_GCM,data:O5ljndUSkptMOdpCKyzfOlXEWVmQPZrIIeRoXEdRPFdjp2znQNvHAjKVY+CCPMXkdHj2e9yGSE/tUDXDImjSgZlNSp4UHMw9u56ILc8gWxgi2nYdvIfo5iDJew0RUtuGYoJ7HDKk7eI8lvWrHBbnAH0GIjwAXEybXnIaepWDx0c=,iv:OzPoVB+BlfQ/KQxgj48MyOUUOVYg/3Zi8n88L/kCScI=,tag:fMt4r3YOxZFHQvMFkgJEwA==,type:str]
     encrypted_regex: ^(environment|volumes)$
     version: 3.11.0

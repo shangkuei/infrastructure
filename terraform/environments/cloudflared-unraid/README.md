@@ -200,7 +200,7 @@ No providers.
 
 | Name | Source | Version |
 |------|--------|---------|
-| <a name="module_edatw_tunnel"></a> [edatw\_tunnel](#module\_edatw\_tunnel) | ../../modules/cloudflared | n/a |
+| <a name="module_unraid_tunnel"></a> [unraid\_tunnel](#module\_unraid\_tunnel) | ../../modules/cloudflared | n/a |
 
 ## Resources
 
