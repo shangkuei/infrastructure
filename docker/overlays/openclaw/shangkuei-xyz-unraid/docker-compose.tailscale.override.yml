@@ -1,0 +1,20 @@
+# OpenClaw - Tailscale & Cloudflared Override for shangkuei-xyz-unraid
+# Extends: docker/base/openclaw/docker-compose.yml
+#
+# Adds Tailscale sidecar for tailnet access and cloudflared network for tunnel access
+# Mounts config directory with modular config files and .env for secrets
+
+services:
+  # Reset ports - access via Tailscale/Cloudflared instead
+  openclaw-gateway:
+    ports: !reset []
+    # Mount config directory (includes openclaw.json, gateway.json, channels/, .env)
+    # Workspace needs to be writable
+    volumes:
+      - ./config:/home/node/.openclaw:ro
+      - openclaw_workspace:/home/node/.openclaw/workspace
+
+# Override base volumes - only keep workspace, remove config volume
+volumes:
+  openclaw_workspace:
+    driver: local

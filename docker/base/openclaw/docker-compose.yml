@@ -1,0 +1,46 @@
+# OpenClaw - AI Agent Gateway
+# Base configuration - override with environment-specific settings
+#
+# Gateway UI: http://localhost:18789/
+# Docs: https://docs.molt.bot/
+# Source: https://github.com/openclaw/openclaw
+
+name: openclaw
+
+services:
+  openclaw-gateway:
+    image: ${OPENCLAW_IMAGE:-ghcr.io/openclaw/openclaw:latest}
+    container_name: openclaw_gateway
+    restart: unless-stopped
+    init: true
+    environment:
+      # Terminal settings
+      - TERM=xterm-256color
+      # Timezone
+      - TZ=${TZ:-UTC}
+    command:
+      - node
+      - dist/index.js
+      - gateway
+      - --allow-unconfigured
+    volumes:
+      - openclaw_config:/home/node/.openclaw
+      - openclaw_workspace:/home/node/.openclaw/workspace
+    networks:
+      - openclaw
+    healthcheck:
+      test: ["CMD", "curl", "-fsSL", "http://localhost:18789/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  openclaw_config:
+    driver: local
+  openclaw_workspace:
+    driver: local
+
+networks:
+  openclaw:
+    name: openclaw-internal
